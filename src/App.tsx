@@ -1,6 +1,7 @@
 import { useEffect, useState, type CSSProperties } from 'react'
 import { passages, passageTitles, syllableMap, units, type Syllable } from './content.ts'
 import { play } from './audio.ts'
+import { say } from './sound.ts'
 import { db, exportData, importData, importTranslationPack } from './db.ts'
 import Lesson from './Lesson.tsx'
 import Review from './Review.tsx'
@@ -73,7 +74,15 @@ function PathView({ onOpen, onStartLesson, onPlay }: { onOpen: (id: string) => v
               {open(u.n, u.target) ? u.n : '🔒'}
             </button>
             <div className="unit-title">{u.title}</div>
-            {u.examples.length > 0 && <div className="tib small">{u.examples.join('  ')}</div>}
+            {u.examples.length > 0 && (
+              <div className="tib small">
+                {u.examples.map((x) => (
+                  <span key={x} className="tap example" onClick={() => say(x)}>
+                    {x}
+                  </span>
+                ))}
+              </div>
+            )}
             {!u.target && <UnitNote st={states.get(u.n)} />}
           </li>
         ))}
@@ -190,11 +199,11 @@ function SyllableCard({ s, onClose }: { s: Syllable; onClose: () => void }) {
   return (
     <div className="sheet" onClick={onClose}>
       <div className="card" onClick={(e) => e.stopPropagation()}>
-        <div className="tib huge">{s.tibetan}</div>
+        <div className="tib huge tap" onClick={() => play(s.audio)}>{s.tibetan}</div>
         <div className="wylie center">{s.wylie}</div>
         <div className="parts">
           {PARTS.filter(([k]) => s[k]).map(([k, label]) => (
-            <div key={k} className={'part' + (k === 'root' ? ' root' : '')}>
+            <div key={k} className={'part tap' + (k === 'root' ? ' root' : '')} onClick={() => k !== 'vowel' && say(String(s[k]))}>
               <div className="tib">{k === 'vowel' ? '◌' + s.vowel : String(s[k])}</div>
               <div className="small">{label}</div>
             </div>

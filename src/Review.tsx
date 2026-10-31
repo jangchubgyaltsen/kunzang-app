@@ -3,6 +3,7 @@ import { db, type Flag } from './db.ts'
 import { dueKCs, todayStats } from './progress.ts'
 import { questionFor, type Question } from './course.ts'
 import Lesson from './Lesson.tsx'
+import { say } from './sound.ts'
 
 export default function Review() {
   const [due, setDue] = useState<string[]>([])
@@ -47,7 +48,7 @@ export default function Review() {
       <ul className="flags">
         {flags.map((f) => (
           <li key={f.id}>
-            <span className="tib">{f.ref}</span>
+            <span className="tib tap" onClick={() => say(f.ref)}>{f.ref}</span>
             <span className="small">{f.note || '（未填写说明）'}</span>
             <button
               className="link"
