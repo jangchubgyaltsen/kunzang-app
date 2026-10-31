@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { play } from './audio.ts'
 import {
-  FAST_MS, FLUENT_AT, HOOK_PAIRS, LETTER_NOTE, PRON, ROWS, SHAPE_PAIRS, VOWEL_INFO,
-  CV_MARKS, buildDaily, cvAudioOf, cvPron, isFluent, isLookalike, loadStats, optionsFor, record, saveStats,
+  ALL_CARDS, CV_MARKS, CV_PRON, CV_SOURCE, FAST_MS, FLUENT_AT, HOOK_PAIRS, LETTER_NOTE, PRON, ROWS, SHAPE_PAIRS, SOUND_PAIRS, VOWEL_INFO,
+  buildDaily, cardCounts, cvAudioOf, isFluent, isLookalike, isSoundPair, loadStats, markDailyDone, optionsFor, record, saveStats,
   type DrillItem, type Stat, type Step,
 } from './alphabet.ts'
 import { letterAudio } from './course.ts'
@@ -11,7 +11,7 @@ import './alphabet.css'
 const LETTER_POOL = ROWS.flat()
 
 /** “字母”页：字母表、元音、形近字，以及看字念音的练习入口 */
-export function AlphabetView({ onStart }: { onStart: () => void }) {
+export function AlphabetView({ onStart }: { onStart: (all?: boolean) => void }) {
   const [stats, setStats] = useState<Record<string, Stat>>({})
   const [hide, setHide] = useState(false)
   const [shown, setShown] = useState<Set<string>>(new Set())
@@ -21,6 +21,7 @@ export function AlphabetView({ onStart }: { onStart: () => void }) {
   }, [])
 
   const fluent = ROWS.flat().filter((l) => isFluent(stats['L:' + l])).length
+  const counts = cardCounts(stats)
   const tapLetter = (l: string) => {
     play(letterAudio(l))
     setNote(LETTER_NOTE[l] ? `${l}：${LETTER_NOTE[l]}` : null)
@@ -56,14 +57,29 @@ export function AlphabetView({ onStart }: { onStart: () => void }) {
         书上 ཀ 和 ག、ཏ 和 ད 注音相同，但读音不同，要靠音频听出来。带小点的字是和直觉不一样的地方，点一下看说明。
       </div>
 
-      <h2>每日认字</h2>
-      <p className="muted small">每天第一次打开 App 会自动弹出一组：没记牢的字多考几次，新字先看一遍再考，熟的字隔几天复习一下。看到字马上在心里念出来，再点读音。</p>
+      <h2>每日字卡</h2>
+      <p className="muted small">
+        30 个字母加 120 个字母 + 元音组合，一共 150 张卡。每天第一次打开 App 先考这个：到期的卡看字选注音、听音选字轮着考，
+        选项里放的是书上成对比较的形近字和发音相近的字；答错的当天再考，一眼认出的隔几天再考。新卡按字母表顺序每天带 15 张。
+      </p>
+      <p className="small">
+        今天到期 <b>{counts.due}</b> 张 · 还没见过 <b>{counts.fresh}</b> 张 · 已经一眼认出 <b>{counts.fluent}</b> / 150 张
+      </p>
       <div className="actions col alpha-go">
-        <button className="primary" onClick={onStart}>再练一组</button>
+        <button className="primary" onClick={() => onStart()}>开始今天的字卡</button>
+        <button onClick={() => onStart(true)}>150 张全部过一遍</button>
+      </div>
+
+      <h2>比较发音</h2>
+      <p className="muted small">《一本通》练习：比较下列成对字母的发音。书上很多对注音一样，读音不一样，点字听真人录音。</p>
+      <div className="pairs">
+        {SOUND_PAIRS.map(([a, b]) => (
+          <Pair key={a + b} a={a} b={b} />
+        ))}
       </div>
 
       <h2>形近字</h2>
-      <p className="muted small">《一本通》练习里成对比较的字。点字听音，注意看哪一笔不一样。</p>
+      <p className="muted small">《一本通》练习：比较下列成对字母的形体差异。点字听音，注意看哪一笔不一样。</p>
       <div className="pairs">
         {SHAPE_PAIRS.map(([a, b]) => (
           <Pair key={a + b} a={a} b={b} />
@@ -100,7 +116,8 @@ export function AlphabetView({ onStart }: { onStart: () => void }) {
       </div>
       <h2>字母 + 元音组合表</h2>
       <p className="muted small">
-        30 个字母各配四个元音，共 120 个，每天的认字练习里也会考。点格子听读音。只有《一本通》里出现过的组合才写注音，其余以音频为准。
+        30 个字母各配四个元音，共 120 个，每日字卡里都会考。点格子听真人录音。黑字是《一本通》上的注音，红字是书上例词里出现过的，
+        灰色斜体是按书上的规律推出来的，以录音为准。
       </p>
       <div className="cv-table">
         <div className="cv-row cv-head">
@@ -117,14 +134,16 @@ export function AlphabetView({ onStart }: { onStart: () => void }) {
                 onClick={() => play(k === 0 ? letterAudio(l) : cvAudioOf(x))}
               >
                 <span className="tib">{x}</span>
-                <span className="cv-pron">{k === 0 ? PRON[l][0] : (cvPron(x) ?? '\u00a0')}</span>
+                <span className={'cv-pron' + (k > 0 ? ' src' + CV_PRON[x][1] : '')} title={k > 0 ? CV_SOURCE[CV_PRON[x][1]] : undefined}>
+                  {k === 0 ? PRON[l][0] : CV_PRON[x][0]}
+                </span>
               </button>
             ))}
           </div>
         ))}
       </div>
 
-      <p className="muted small">注音和汉字近音照《安多藏语一本通》第一章抄录，读音是安多音 TTS，没有逐个人工核对。</p>
+      <p className="muted small">注音和汉字近音照《安多藏语一本通》第一章；读音是安多会话教材里的真人录音。</p>
     </section>
   )
 }
@@ -145,13 +164,12 @@ function Pair({ a, b }: { a: string; b: string }) {
 
 type Log = { it: DrillItem; ok: boolean; ms: number }[]
 
-/** 每日认字：新字先认识，再看字选读音；答错的过 3 题再来一次 */
-export function Drill({ onExit }: { onExit: () => void }) {
+/** 每日字卡：新卡先看一遍，再看字选注音、听音选字；答错的过 3 题再来一次 */
+export function Drill({ onExit, all = false }: { onExit: () => void; all?: boolean }) {
   const [stats, setStats] = useState<Record<string, Stat> | null>(null)
   const [queue, setQueue] = useState<Step[]>([])
   const [i, setI] = useState(0)
   const [picked, setPicked] = useState<DrillItem | null>(null)
-  const [revealed, setRevealed] = useState(false)
   const [ms, setMs] = useState(0)
   const [log, setLog] = useState<Log>([])
   const shownAt = useRef(0)
@@ -159,24 +177,27 @@ export function Drill({ onExit }: { onExit: () => void }) {
   useEffect(() => {
     loadStats().then((s) => {
       setStats(s)
-      setQueue(buildDaily(s))
+      setQueue(buildDaily(s, all))
     })
-  }, [])
+  }, [all])
   const step = queue[i]
   const it = step?.it
+  const done = !!stats && queue.length > 0 && i >= queue.length
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const opts = useMemo(() => (it && !step.intro && !step.say ? optionsFor(it, []) : []), [i, it?.key])
+  const opts = useMemo(() => (it && !step.intro ? optionsFor(it, step.mode) : []), [i, it?.key])
   useEffect(() => {
     shownAt.current = performance.now()
-    if (step?.intro) play(step.it.audio)
+    if (step && (step.intro || step.mode === 'hear')) play(step.it.audio)
   }, [i, step])
+  useEffect(() => {
+    if (done && !all) void markDailyDone()
+  }, [done, all])
 
   if (!stats || !queue.length) return <section className="lesson">载入中…</section>
-  if (i >= queue.length) return <DrillSummary log={log} stats={stats} onExit={onExit} />
+  if (done) return <DrillSummary log={log} stats={stats} onExit={onExit} />
 
   const go = () => {
     setPicked(null)
-    setRevealed(false)
     setI((k) => k + 1)
   }
   const answer = async (choice: DrillItem) => {
@@ -184,38 +205,33 @@ export function Drill({ onExit }: { onExit: () => void }) {
     const t = Math.round(performance.now() - shownAt.current)
     setMs(t)
     setPicked(choice)
-    setRevealed(true)
-    play(it.audio)
-    await save(ok, t)
-    if (ok && t <= FAST_MS) setTimeout(go, 700)
-  }
-  const save = async (ok: boolean, t: number) => {
+    if (step.mode === 'read' || !ok) play(it.audio)
     const s = { ...stats }
     record(s, it.key, ok, t)
     setStats(s)
     await saveStats(s)
     setLog((l) => [...l, { it, ok, ms: t }])
-    // 答错的过 3 题再来一次
-    if (!ok) setQueue((q) => [...q.slice(0, i + 4), { it, say: step.say }, ...q.slice(i + 4)])
-  }
-  // 组合：计时到点“看答案”为止
-  const reveal = () => {
-    setMs(Math.round(performance.now() - shownAt.current))
-    setRevealed(true)
-    play(it.audio)
-  }
-  const grade = async (right: boolean) => {
-    await save(right, ms)
-    go()
+    // 答错的过 3 题再来一次，换一种考法
+    if (!ok) setQueue((q) => [...q.slice(0, i + 4), { it, mode: step.mode === 'read' ? 'hear' : 'read' }, ...q.slice(i + 4)])
+    if (ok && t <= FAST_MS) setTimeout(go, 800)
   }
 
-  const ok = revealed ? picked?.key === it.key : null
+  const revealed = picked !== null
+  const ok = revealed ? picked.key === it.key : null
   const progress = Math.round((i / queue.length) * 100)
   const top = (
     <div className="lesson-top">
       <button className="link" onClick={onExit}>✕</button>
       <div className="bar"><div style={{ width: progress + '%' }} /></div>
-      <span className="small muted">每日认字</span>
+      <span className="small muted">{i + 1} / {queue.length}</span>
+    </div>
+  )
+  const ans = (x: DrillItem) => (
+    <div className="drill-ans">
+      <span className="drill-pron">{x.pron}</span>
+      {x.hanzi && <span className="drill-hz">{x.hanzi}</span>}
+      {x.src !== undefined && <span className="small muted">{CV_SOURCE[x.src]}</span>}
+      {LETTER_NOTE[x.tib] && <span className="small muted">{LETTER_NOTE[x.tib]}</span>}
     </div>
   )
 
@@ -223,79 +239,56 @@ export function Drill({ onExit }: { onExit: () => void }) {
     return (
       <section className="lesson drill">
         {top}
-        <div className="intro-label center">新字</div>
+        <div className="intro-label center">新卡</div>
         <div className="drill-card tap" onClick={() => play(it.audio)}>
           <div className="tib huge">{it.tib}</div>
-          <div className="drill-ans">
-            <span className="drill-pron">{it.pron}</span>
-            {it.hanzi && <span className="drill-hz">{it.hanzi}</span>}
-            {LETTER_NOTE[it.tib] && <span className="small muted">{LETTER_NOTE[it.tib]}</span>}
-          </div>
+          {ans(it)}
         </div>
-        <p className="small muted center">点字再听一遍。记住它的样子，等一下就考。</p>
+        <p className="small muted center">点字再听一遍。记住它的样子和读音，等一下就考。</p>
         <button className="primary" onClick={go}>记住了</button>
       </section>
     )
 
-  if (step.say)
-    return (
-      <section className="lesson drill">
-        {top}
-        <div className="intro-label center">字母 + 元音</div>
-        <div className={'drill-card' + (revealed ? ' tap' : '')} onClick={() => revealed && play(it.audio)}>
-          <div className="tib huge">{it.tib}</div>
-          {revealed && (
-            <div className="drill-ans">
-              {it.pron && <span className="drill-pron">{it.pron}</span>}
-              <span className="small muted">
-                {it.pron ? '《一本通》注音 · ' : ''}
-                {(ms / 1000).toFixed(1)} 秒 · 点字再听
-              </span>
-            </div>
-          )}
-        </div>
-        {!revealed ? (
-          <>
-            <p className="small muted center">出声念出来，再看答案</p>
-            <button className="primary" onClick={reveal}>念好了，听答案</button>
-          </>
-        ) : (
-          <div className="options">
-            <button className="opt wrong" onClick={() => grade(false)}>没念对</button>
-            <button className="opt right" onClick={() => grade(true)}>念对了</button>
-          </div>
-        )}
-      </section>
-    )
-
+  const hear = step.mode === 'hear'
+  const why = picked && !ok
+    ? isSoundPair(it.base, picked.base) && it.base !== picked.base
+      ? '书上专门比较这两个字的发音，再听一遍'
+      : isLookalike(it.base, picked.base)
+        ? '这两个字长得像，对比一下'
+        : it.base === picked.base
+          ? '同一个字母，元音不一样'
+          : '再看一眼'
+    : ''
   return (
     <section className="lesson drill">
       {top}
-      <div className={'drill-card' + (ok === true ? ' ok' : ok === false ? ' bad' : '')}>
-        <div className="tib huge">{it.tib}</div>
-        {revealed && (
-          <div className="drill-ans">
-            <span className="drill-pron">{it.pron}</span>
-            {it.hanzi && <span className="drill-hz">{it.hanzi}</span>}
-            <span className="small muted">{(ms / 1000).toFixed(1)} 秒</span>
-          </div>
-        )}
-      </div>
-      {!revealed && <p className="small muted center">先在心里念出来，再点读音</p>}
+      <div className="intro-label center">{hear ? '听音选字' : '看字选读音'}</div>
+      {hear ? (
+        <div className={'drill-card tap' + (ok === true ? ' ok' : ok === false ? ' bad' : '')} onClick={() => play(it.audio)}>
+          {revealed ? <div className="tib huge">{it.tib}</div> : <button className="play-big">▶</button>}
+          {revealed && ans(it)}
+        </div>
+      ) : (
+        <div className={'drill-card' + (revealed ? ' tap' : '') + (ok === true ? ' ok' : ok === false ? ' bad' : '')} onClick={() => revealed && play(it.audio)}>
+          <div className="tib huge">{it.tib}</div>
+          {revealed && ans(it)}
+        </div>
+      )}
+      {!revealed && <p className="small muted center">{hear ? '听到的是哪个字？点上面可以再听' : '先在心里念出来，再点读音'}</p>}
+      {revealed && <p className="small muted center">{(ms / 1000).toFixed(1)} 秒</p>}
       <div className="options">
         {opts.map((o) => {
           const cls = !revealed ? '' : o.key === it.key ? ' right' : o.key === picked?.key ? ' wrong' : ' dim'
           return (
-            <button key={o.key} className={'opt drill-opt' + cls} disabled={revealed} onClick={() => answer(o)}>
-              <span>{o.pron}{o.hanzi ? ' ' + o.hanzi : ''}</span>
-              {opts.some((x) => x !== o && x.pron === o.pron) && <span className="small muted">转写 {o.wylie}</span>}
+            <button key={o.key} className={'opt drill-opt' + cls + (hear ? ' tib-opt' : '')} disabled={revealed} onClick={() => answer(o)}>
+              {hear ? <span className="tib">{o.tib}</span> : <span>{o.pron}{o.hanzi ? ' ' + o.hanzi : ''}</span>}
             </button>
           )
         })}
       </div>
       {ok === false && picked && (
         <div className="feedback bad">
-          <div className="fb-title">{isLookalike(it.base, picked.base) ? '这两个字长得像，对比一下' : '再看一眼'}</div>
+          <div className="fb-title">{why}</div>
           <div className="pair big">
             {[it, picked].map((x) => (
               <button key={x.key} onClick={() => play(x.audio)}>
@@ -305,7 +298,7 @@ export function Drill({ onExit }: { onExit: () => void }) {
               </button>
             ))}
           </div>
-          <div className="small">过几题还会再考这个字。</div>
+          <div className="small">过几题还会再考这张卡。</div>
         </div>
       )}
       {revealed && (ok === false || ms > FAST_MS) && (
@@ -323,16 +316,17 @@ function DrillSummary({ log, stats, onExit }: { log: Log; stats: Record<string, 
   const fast = right.filter((x) => x.ms <= FAST_MS)
   const avg = right.length ? right.reduce((n, x) => n + x.ms, 0) / right.length / 1000 : 0
   const slow = [...new Map(log.filter((x) => !x.ok || x.ms > FAST_MS).map((x) => [x.it.key, x.it])).values()]
-  const fluent = LETTER_POOL.filter((l) => isFluent(stats['L:' + l])).length
-  const cvFluent = LETTER_POOL.flatMap((l) => CV_MARKS.map((m) => 'CV:' + l + m)).filter((k) => isFluent(stats[k])).length
+  const fluent = ALL_CARDS.filter((x) => isFluent(stats[x.key])).length
+  const letters = LETTER_POOL.filter((l) => isFluent(stats['L:' + l])).length
+  const { fresh } = cardCounts(stats)
   return (
     <section className="lesson summary">
-      <h1>每日认字</h1>
+      <h1>每日字卡</h1>
       <div className="big-number">
         {fluent}
-        <span className="small muted"> / 30 个字母一眼认出</span>
+        <span className="small muted"> / 150 张一眼认出</span>
       </div>
-      <p className="muted">字母 + 元音组合：{cvFluent} / 120 个念得又快又对</p>
+      <p className="muted">其中字母 {letters} / 30 个；还有 {fresh} 张新卡没见过。</p>
       <p className="muted">
         这一组 {log.length} 题，3 秒内答对 {fast.length} 题，答对的平均 {avg.toFixed(1)} 秒。明天打开 App 会自动出下一组。
       </p>

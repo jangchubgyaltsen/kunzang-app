@@ -8,7 +8,7 @@ import Review from './Review.tsx'
 import Game from './Games.tsx'
 import Today from './Today.tsx'
 import { AlphabetView, Drill } from './Alphabet.tsx'
-import { dailyDue, markDailyShown } from './alphabet.ts'
+import { dailyDue } from './alphabet.ts'
 import type { GameKind } from './daily.ts'
 import { CHECK_DAYS, dueChecks, dueKCs, ensureChecks, getPathState, type LevelState, type UnitState } from './progress.ts'
 import { PATH, TALK_BASE, letterAudio, unitByN, wordMap, type Level, type Track } from './course.ts'
@@ -24,14 +24,10 @@ export default function App() {
   const [passageId, setPassageId] = useState('title')
   const [session, setSession] = useState<Session | null>(null)
   const [game, setGame] = useState<{ kind?: GameKind; daily: boolean } | null>(null)
-  // 每日认字：每天第一次打开 App 自动弹出
+  // 每日字卡：每天打开 App 先考这个，做完一组之前每次打开都会弹出。负数表示 150 张全部过一遍
   const [drill, setDrill] = useState(0)
   useEffect(() => {
-    dailyDue().then((due) => {
-      if (!due) return
-      markDailyShown()
-      setDrill((n) => n || 1)
-    })
+    dailyDue().then((due) => due && setDrill((n) => n || 1))
   }, [])
   const busy = session !== null || game !== null || drill !== 0
 
@@ -61,8 +57,8 @@ export default function App() {
             <Lesson questions={session.questions} title={session.title} onFinish={session.onFinish} onExit={() => setSession(null)} />
           ))}
         {game !== null && <Game kind={game.kind} daily={game.daily} onExit={() => setGame(null)} />}
-        {drill !== 0 && <Drill key={drill} onExit={() => setDrill(0)} />}
-        {!busy && tab === 'alphabet' && <AlphabetView key={drill} onStart={() => setDrill(Date.now())} />}
+        {drill !== 0 && <Drill key={drill} all={drill < 0} onExit={() => setDrill(0)} />}
+        {!busy && tab === 'alphabet' && <AlphabetView key={drill} onStart={(all) => setDrill(all ? -Date.now() : Date.now())} />}
         {!busy && tab === 'path' && (
           <PathView onOpen={openPassage} onStart={setSession} onReview={() => setTab('review')} onPlay={(kind, daily) => setGame({ kind, daily })} />
         )}

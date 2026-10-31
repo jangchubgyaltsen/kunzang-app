@@ -1,21 +1,10 @@
 import { LETTERS, VOWELS, cvAudio, letterAudio, shuffle } from './course.ts'
 import { db } from './db.ts'
+import { CV_PRON, PRON, shapeMates, soundMates } from './pron.ts'
 
-// 字母表和“看字念音”练习的数据。
-// 注音和汉字近音照《安多藏语一本通》第一章抄录（见 content/安多读音对照表-v0.md 第 1、2 节）。
-// 书上 ཀ/ག、ཏ/ད 这类清浊字注音相同，实际读音不同，以音频为准。
+// 字母表和每日字卡的数据。注音体系见 pron.ts（《安多藏语一本通》）。
+export { PRON, CV_PRON, CV_SOURCE, SHAPE_PAIRS, HOOK_PAIRS, SOUND_PAIRS } from './pron.ts'
 
-/** 字母 → [一本通注音, 汉字近音] */
-export const PRON: Record<string, [string, string]> = {
-  ཀ: ['ga', '嘎'], ཁ: ['ka', '咔'], ག: ['ga', '嘎'], ང: ['nga', '那'],
-  ཅ: ['jia', '佳'], ཆ: ['qia', '恰'], ཇ: ['jia', '贾'], ཉ: ['nya', '尼啊'],
-  ཏ: ['da', '达'], ཐ: ['ta', '塔'], ད: ['da', '搭'], ན: ['na', '那'],
-  པ: ['ba', '吧'], ཕ: ['pa', '帕'], བ: ['wa', '哇'], མ: ['ma', '玛'],
-  ཙ: ['za', '杂'], ཚ: ['ca', '嚓'], ཛ: ['za', '杂'], ཝ: ['wa', '哇'],
-  ཞ: ['xia', '夏'], ཟ: ['sa', '萨'], འ: ['a', '阿'], ཡ: ['ya', '呀'],
-  ར: ['ra', '日啊'], ལ: ['la', '拉'], ཤ: ['xia', '夏'], ས: ['sa', '萨'],
-  ཧ: ['ha', '哈'], ཨ: ['a', '阿'],
-}
 
 /** 传统排列：四个一行，最后一行两个 */
 export const ROWS: string[][] = Array.from({ length: 8 }, (_, i) => LETTERS.slice(i * 4, i * 4 + 4).map((l) => l[0]))
@@ -34,22 +23,8 @@ export const LETTER_NOTE: Record<string, string> = {
   ས: '注音同 ཟ',
 }
 
-/** 《一本通》第一、二课练习里成对比较字形的字 */
-export const SHAPE_PAIRS: [string, string][] = [
-  ['ཁ', 'ག'], ['ཀ', 'ག'], ['ང', 'ད'], ['ད', 'ཏ'], ['པ', 'ཕ'], ['པ', 'བ'], ['ཉ', 'ན'], ['མ', 'ན'],
-  ['ཙ', 'ཚ'], ['ཇ', 'ཟ'], ['འ', 'ལ'], ['ཞ', 'ཤ'], ['ཟ', 'ས'], ['ཡ', 'ཨ'], ['འ', 'ར'], ['ཝ', 'ལ'],
-]
-/** ཅ ཆ ཇ 右上角加一个小钩就是 ཙ ཚ ཛ */
-export const HOOK_PAIRS: [string, string][] = [['ཅ', 'ཙ'], ['ཆ', 'ཚ'], ['ཇ', 'ཛ']]
 
-const partners = new Map<string, Set<string>>()
-for (const [a, b] of [...SHAPE_PAIRS, ...HOOK_PAIRS]) {
-  if (!partners.has(a)) partners.set(a, new Set())
-  if (!partners.has(b)) partners.set(b, new Set())
-  partners.get(a)!.add(b)
-  partners.get(b)!.add(a)
-}
-export const shapeLetters = [...partners.keys()]
+export const shapeLetters = [...shapeMates.keys()]
 
 /** 元音：位置和名称 */
 export const VOWEL_INFO: { mark: string; pos: '上' | '下'; name: string; examples: [string, string][] }[] = [
@@ -59,60 +34,68 @@ export const VOWEL_INFO: { mark: string; pos: '上' | '下'; name: string; examp
   { mark: 'ོ', pos: '上', name: VOWELS[3][2], examples: [['ཁོ', 'ko'], ['མོ', 'mu'], ['ལོ', 'luo'], ['འོ', 'ao']] },
 ]
 
-/** 《一本通》第 12–16 页的字母 + 元音拼读例子 */
-export const BOOK_CV: [string, string][] = [
-  ['ཀི', 'ge'], ['ཀུ', 'ge'], ['ཀེ', 'gei'], ['ཁུ', 'ke'], ['ཁོ', 'ko'], ['གོ', 'gu'], ['ངུ', 'ne'], ['ངོ', 'nu'],
-  ['ཆུ', 'qi'], ['ཆེ', 'qie'], ['ཉི', 'nie'], ['ཉོ', 'niu'], ['ཐོ', 'tu'], ['དེ', 'di'], ['ནུ', 'ne'], ['ནེ', 'nei'],
-  ['ཕུ', 'pu'], ['བུ', 'we'], ['མི', 'me'], ['མེ', 'mei'], ['མོ', 'mu'], ['ཙི', 'ze'], ['ཞི', 'xi'], ['ཞུ', 'xie'],
-  ['ཞོ', 'xiu'], ['ཟོ', 'suo'], ['འོ', 'ao'], ['རི', 'ri'], ['ལུ', 'le'], ['ལོ', 'luo'], ['ཤི', 'he'], ['སུ', 'se'], ['སོ', 'suo'],
-]
 export const cvAudioOf = (s: string) => cvAudio(s[0], s[1])
-const bookPron = new Map(BOOK_CV)
-/** 字母 × 元音组合表：30 个字母各配 ི ུ ེ ོ，共 120 个。书上有注音的才显示注音。 */
 export const CV_MARKS = VOWELS.map((v) => v[0])
-export const cvPron = (s: string) => bookPron.get(s)
+export const cvPron = (s: string) => CV_PRON[s]?.[0]
 
 const wylieOf = new Map(LETTERS)
 const vowelLatin = new Map(VOWELS.map(([m, v]) => [m, v]))
 
-/** 练习里的一项：一个字母，或书上的一个拼读例子 */
-export type DrillItem = { key: string; tib: string; pron: string; hanzi?: string; wylie: string; audio: string; base: string }
+/** 一张字卡：一个字母，或一个字母 + 元音组合。src：组合注音的来源（见 CV_PRON） */
+export type DrillItem = { key: string; tib: string; pron: string; hanzi?: string; wylie: string; audio: string; base: string; src?: 0 | 1 | 2 }
 
 export const letterItem = (l: string): DrillItem => ({
   key: 'L:' + l, tib: l, pron: PRON[l][0], hanzi: PRON[l][1], wylie: wylieOf.get(l)!, audio: letterAudio(l), base: l,
 })
 export const cvItem = (s: string): DrillItem => ({
-  key: 'CV:' + s, tib: s, pron: bookPron.get(s) ?? '', wylie: wylieOf.get(s[0])!.replace(/a$/, '') + vowelLatin.get(s[1]), audio: cvAudioOf(s), base: s[0],
+  key: 'CV:' + s, tib: s, pron: CV_PRON[s][0], src: CV_PRON[s][1], wylie: wylieOf.get(s[0])!.replace(/a$/, '') + vowelLatin.get(s[1]), audio: cvAudioOf(s), base: s[0],
 })
 
-/** 四个选项：答案 + 形近字 + 同行的字 + 其他。选项按转写区分，注音相同的也能分开。 */
-export function optionsFor(it: DrillItem, pool: DrillItem[]): DrillItem[] {
-  const all = it.key.startsWith('CV:') ? BOOK_CV.map(([x]) => cvItem(x)) : LETTERS.map((l) => letterItem(l[0]))
-  const near = it.key.startsWith('CV:')
-    ? all.filter((x) => x.base === it.base || partners.get(it.base)?.has(x.base) || x.tib[1] === it.tib[1])
-    : all.filter((x) => partners.get(it.tib)?.has(x.tib))
-  const row = ROWS.find((r) => r.includes(it.base)) ?? []
-  const sameRow = all.filter((x) => !it.key.startsWith('CV:') && row.includes(x.tib))
+/** 全部 150 张：按字母表顺序，每个字母后面跟它的四个元音组合 */
+export const ALL_CARDS: DrillItem[] = ROWS.flat().flatMap((l) => [letterItem(l), ...CV_MARKS.map((m) => cvItem(l + m))])
+const LETTER_CARDS = ALL_CARDS.filter((x) => x.key.startsWith('L:'))
+const CV_CARDS = ALL_CARDS.filter((x) => x.key.startsWith('CV:'))
+
+/** 两个字是不是书上成对比较的：形近，或发音相近 */
+export const isLookalike = (a: string, b: string) => !!shapeMates.get(a)?.has(b)
+export const isSoundPair = (a: string, b: string) => !!soundMates.get(a)?.has(b)
+/** 两张卡的元音一样（字母卡算没有元音） */
+const sameVowel = (a: DrillItem, b: DrillItem) => (a.tib[1] ?? '') === (b.tib[1] ?? '')
+
+/**
+ * 出题方式：
+ * read：看字选注音（考读音）；
+ * hear：听真人录音选字，干扰项是书上的形近字和发音相近的字（考形近字、辨音）。
+ */
+export type Mode = 'read' | 'hear'
+
+/** 四个选项：答案 + 书上成对比较的字 + 同一个字母的其他组合 + 其他 */
+export function optionsFor(it: DrillItem, mode: Mode): DrillItem[] {
+  const all = it.key.startsWith('CV:') ? CV_CARDS : LETTER_CARDS
+  const mates = all.filter((x) => sameVowel(x, it) && (isLookalike(it.base, x.base) || isSoundPair(it.base, x.base)))
+  const sameBase = all.filter((x) => x.base === it.base)
   const picked: DrillItem[] = []
-  for (const group of [shuffle(near), shuffle(sameRow), shuffle(pool), shuffle(all)])
+  for (const group of [shuffle(mates), shuffle(sameBase), shuffle(all)])
     for (const x of group) {
       if (picked.length >= 3) break
       if (x.key === it.key || picked.some((p) => p.key === x.key)) continue
-      // 拼读例子里读音完全一样的（如 ཀི ཀུ 都是 ge）不能同时出现
-      if (it.key.startsWith('CV:') && (x.pron === it.pron || picked.some((p) => p.pron === x.pron))) continue
+      if (mode === 'read') {
+        // 看字选注音：注音一样的选项分不出来，不能同时出现
+        if (x.pron === it.pron || picked.some((p) => p.pron === x.pron)) continue
+      } else if (x.pron === it.pron && !isSoundPair(it.base, x.base)) continue // 书上读音一样的（ཀི ཀུ 都是 ge、བ ཝ 都是 wa）听不出来；ཀ/ག 这种要专门练
       picked.push(x)
     }
   return shuffle([it, ...picked])
 }
 
-/** 形近的另一个字（答错时拿来对比） */
-export const isLookalike = (a: string, b: string) => !!partners.get(a)?.has(b)
-
-// ---- 熟练度：看到后 3 秒内答对，连续 3 次算“一眼认出” ----
+// ---- 熟练度和复习间隔 ----
+// 看到后 3 秒内答对算“一眼认出”，连续 3 次算熟。
+// 复习间隔按盒子走：一眼认出升一盒，答错回到第 0 盒（当天再考），答对但慢留在原盒。
 
 export const FAST_MS = 3000
 export const FLUENT_AT = 3
-export type Stat = { fast: number; seen: number; ok: number; lastMs?: number; at?: number }
+const GAP_DAYS = [0, 1, 2, 4, 7, 15, 30]
+export type Stat = { fast: number; seen: number; ok: number; lastMs?: number; at?: number; box?: number; due?: string }
 const KEY = 'alphabet-stats'
 
 export async function loadStats(): Promise<Record<string, Stat>> {
@@ -123,66 +106,84 @@ export async function saveStats(s: Record<string, Stat>) {
 }
 export const isFluent = (s?: Stat) => (s?.fast ?? 0) >= FLUENT_AT
 
+export const today = () => new Date().toLocaleDateString('sv')
+const addDays = (n: number) => {
+  const d = new Date()
+  d.setDate(d.getDate() + n)
+  return d.toLocaleDateString('sv')
+}
+/** 旧版练习留下的记录没有盒子，按连续一眼认出的次数补上 */
+const boxOf = (s: Stat) => s.box ?? Math.min(s.fast, GAP_DAYS.length - 1)
+const dueOf = (s: Stat) => s.due ?? (s.at ? new Date(s.at + GAP_DAYS[boxOf(s)] * 864e5).toLocaleDateString('sv') : today())
+
 export function record(stats: Record<string, Stat>, key: string, ok: boolean, ms: number) {
   const s = stats[key] ?? { fast: 0, seen: 0, ok: 0 }
+  const box = s.seen ? boxOf(s) : 0
   s.seen++
   if (ok) s.ok++
-  s.fast = ok && ms <= FAST_MS ? s.fast + 1 : 0
+  const fast = ok && ms <= FAST_MS
+  s.fast = fast ? s.fast + 1 : 0
+  s.box = !ok ? 0 : fast ? Math.min(box + 1, GAP_DAYS.length - 1) : Math.max(box, 1)
+  s.due = addDays(GAP_DAYS[s.box])
   s.lastMs = ms
   s.at = Date.now()
   stats[key] = s
 }
 
-/** 每日练习里的一步：新字先认识一下（intro），字母看字选读音，组合自己念再对答案（say） */
-export type Step = { it: DrillItem; intro?: boolean; say?: boolean }
+/** 字卡练习里的一步：新卡先看一遍（intro），然后看字选注音（read）或听音选字（hear） */
+export type Step = { it: DrillItem; intro?: boolean; mode: Mode }
 
-const noRepeat = (q: DrillItem[]) => {
+const noRepeat = (q: Step[]) => {
   for (let i = 1; i < q.length; i++)
-    if (q[i].key === q[i - 1].key) {
-      const j = q.findIndex((x, k) => k > i && x.key !== q[i].key && x.key !== q[i - 1].key)
+    if (q[i].it.key === q[i - 1].it.key) {
+      const j = q.findIndex((x, k) => k > i && x.it.key !== q[i].it.key && x.it.key !== q[i - 1].it.key)
       if (j > 0) [q[i], q[j]] = [q[j], q[i]]
     }
   return q
 }
 
-/** 从一组里挑：没记牢的优先，再按顺序带新的，最后挑最久没见的熟的复习 */
-function choose(all: DrillItem[], stats: Record<string, Stat>, n: number, maxFresh: number) {
-  const seen = (x: DrillItem) => (stats[x.key]?.seen ?? 0) > 0
-  const weak = all.filter((x) => seen(x) && !isFluent(stats[x.key])).sort((a, b) => stats[a.key].fast - stats[b.key].fast).slice(0, n)
-  const fresh = all.filter((x) => !seen(x)).slice(0, Math.max(0, Math.min(maxFresh, n - weak.length)))
-  const review = all
-    .filter((x) => isFluent(stats[x.key]))
-    .sort((a, b) => (stats[a.key].at ?? 0) - (stats[b.key].at ?? 0))
-    .slice(0, Math.max(2, n - weak.length - fresh.length))
-  return { weak, fresh, review }
+/** 每天最多带几张新卡（一个字母和它的四个组合算 5 张） */
+export const NEW_PER_DAY = 15
+const DUE_MAX = 60
+
+/** 到期没复习的卡有几张；新卡还剩几张没见过 */
+export function cardCounts(stats: Record<string, Stat>) {
+  const t = today()
+  const seen = ALL_CARDS.filter((x) => stats[x.key]?.seen)
+  return { due: seen.filter((x) => dueOf(stats[x.key]) <= t).length, fresh: ALL_CARDS.length - seen.length, fluent: ALL_CARDS.filter((x) => isFluent(stats[x.key])).length }
 }
 
 /**
- * 每天自动出的一组，分两段：
- * 1. 字母：没记牢的考两次，按字母表顺序带进几个新字（先看一遍再考），熟的挑最久没见的复习；
- * 2. 字母 + 元音组合：只用已经见过的字母，看组合自己念，再听答案自评。
+ * 每天早上的字卡：
+ * 1. 到期的卡（答错过的、到了复习日子的），盒子越低越先考，一张一题，看字选注音和听音选字轮着来；
+ * 2. 按字母表顺序带进新卡：先看一遍，再看字选注音、听音选字各考一次。
+ * all：150 张全部过一遍，每张一题。
  */
-export function buildDaily(stats: Record<string, Stat>): Step[] {
-  const letters = LETTERS.map((l) => letterItem(l[0]))
-  const L = choose(letters, stats, 10, 6)
-  const fresh = L.weak.length >= 8 ? L.fresh.slice(0, 2) : L.weak.length >= 4 ? L.fresh.slice(0, 4) : L.fresh
-  const letterQuiz = noRepeat(shuffle([...L.weak, ...L.weak, ...fresh, ...fresh, ...L.review]))
-
-  // 组合：字母见过（或今天刚学）的才出；按字母顺序，一个字母的四个元音一起带进来
-  const known = new Set([...letters.filter((x) => (stats[x.key]?.seen ?? 0) > 0), ...fresh].map((x) => x.tib))
-  const combos = LETTERS.map((l) => l[0]).filter((l) => known.has(l)).flatMap((l) => CV_MARKS.map((m) => cvItem(l + m)))
-  const C = choose(combos, stats, 8, 4)
-  const cvQuiz = noRepeat(shuffle([...C.weak, ...C.fresh, ...C.review]))
-
-  return [...fresh.map((it) => ({ it, intro: true })), ...letterQuiz.map((it) => ({ it })), ...cvQuiz.map((it) => ({ it, say: true }))]
+export function buildDaily(stats: Record<string, Stat>, all = false): Step[] {
+  const t = today()
+  if (all) return noRepeat(shuffle(ALL_CARDS).map((it, i) => ({ it, mode: i % 2 ? 'hear' : 'read' })))
+  const seen = ALL_CARDS.filter((x) => stats[x.key]?.seen)
+  const due = seen
+    .filter((x) => dueOf(stats[x.key]) <= t)
+    .sort((a, b) => boxOf(stats[a.key]) - boxOf(stats[b.key]) || dueOf(stats[a.key]).localeCompare(dueOf(stats[b.key])))
+    .slice(0, DUE_MAX)
+  // 积压太多时少带新卡
+  const nNew = due.length >= 40 ? 0 : due.length >= 20 ? 5 : NEW_PER_DAY
+  const fresh = ALL_CARDS.filter((x) => !stats[x.key]?.seen).slice(0, nNew)
+  // 一张都不到期、也没有新卡时，挑最久没见的 10 张复习
+  const extra = due.length || fresh.length ? [] : [...seen].sort((a, b) => (stats[a.key].at ?? 0) - (stats[b.key].at ?? 0)).slice(0, 10)
+  const quiz: Step[] = [
+    ...[...due, ...extra].map((it): Step => ({ it, mode: boxOf(stats[it.key]) % 2 ? 'hear' : 'read' })),
+    ...fresh.flatMap((it): Step[] => [{ it, mode: 'read' }, { it, mode: 'hear' }]),
+  ]
+  return [...fresh.map((it): Step => ({ it, intro: true, mode: 'read' })), ...noRepeat(shuffle(quiz))]
 }
 
-// 每天打开 App 时自动弹出一次
+// 每天第一次打开 App 自动弹出，做完才算今天做过
 const DAILY_KEY = 'alphabet-daily'
-const today = () => new Date().toLocaleDateString('sv')
 export async function dailyDue() {
   return (await db.settings.get(DAILY_KEY))?.value !== today()
 }
-export async function markDailyShown() {
+export async function markDailyDone() {
   await db.settings.put({ key: DAILY_KEY, value: today() })
 }
