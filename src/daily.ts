@@ -1,19 +1,22 @@
 import { db } from './db.ts'
-import { passages } from './content.ts'
-import { UNITS, shuffle, wordMap, type KC } from './course.ts'
+import { passages, syllableMap } from './content.ts'
+import { UNITS, partsOf, shuffle, wordMap, type KC } from './course.ts'
 import { dueKCs, getUnitStates, weakKCs } from './progress.ts'
 
-export type GameKind = 'flip' | 'quiz' | 'build' | 'words'
+export type GameKind = 'flip' | 'quiz' | 'build' | 'words' | 'root' | 'whack' | 'mix'
 
 export const GAMES: Record<GameKind, { name: string; desc: string; timed: boolean }> = {
   flip: { name: '翻牌配对', desc: '翻出藏文和对应的转写，配成一对', timed: false },
-  quiz: { name: '快问快答', desc: '60 秒判断对错，连对有连击', timed: true },
+  quiz: { name: '快问快答', desc: '15 秒判断对错，连对有连击', timed: true },
   build: { name: '拼音节', desc: '听读音，把字一个个拼成音节', timed: false },
   words: { name: '词义连连看', desc: '把藏文词和中文意思连起来', timed: false },
+  root: { name: '找基字连击', desc: '一个接一个点出基字，答错就结束', timed: false },
+  whack: { name: '听音打地鼠', desc: '听读音，抢在词缩回去之前点中它', timed: true },
+  mix: { name: '周日大杂烩', desc: '把这周答错过的内容再练一遍', timed: false },
 }
 
 // 星期一 … 星期日
-const WEEK: GameKind[] = ['flip', 'quiz', 'build', 'words', 'flip', 'quiz', 'build']
+const WEEK: GameKind[] = ['flip', 'quiz', 'build', 'words', 'root', 'whack', 'mix']
 
 export const dayKey = (d = new Date()) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
@@ -35,7 +38,12 @@ export async function learnedPool() {
   const next = UNITS.find((u) => states.find((s) => s.n === u.n)?.status === 'available')
   const preview = next?.kcs.find((k) => playable(k) && !learned.has(k))
   const words = [...learned].filter((k) => k.startsWith('W:'))
-  return { learned: [...learned], words, preview }
+  // 本周（从星期一起）答错过的
+  const monday = addDays(new Date(), -((new Date().getDay() + 6) % 7)).getTime()
+  const weekWrong = [...new Set((await db.attempts.where('at').aboveOrEqual(monday).toArray()).filter((a) => !a.ok).map((a) => a.kc))].filter(
+    (k) => learned.has(k),
+  )
+  return { learned: [...learned], words, preview, weekWrong }
 }
 
 /** 约 60% 取快到期和最近答错的，其余从已学池随机抽。 */
@@ -47,11 +55,17 @@ export async function chooseItems(pool: KC[], n: number) {
   return shuffle([...head, ...rest].slice(0, n))
 }
 
+/** 至少有两个部件、能问「哪个是基字」的音节 */
+export const rootable = (k: KC) => buildable(k) && partsOf(sylOf(k.slice(2))).length >= 2
+export const sylOf = (t: string) => syllableMap.get(t) ?? wordMap.get(t)!.syllables[0]
+
 export type TodayPlan = { game: GameKind; items: KC[]; tasting: boolean; preview?: KC }
 
 const enough = (g: GameKind, p: Awaited<ReturnType<typeof learnedPool>>) => {
   if (g === 'build') return p.learned.filter(buildable).length >= 4
-  if (g === 'words') return p.words.length >= 4
+  if (g === 'words' || g === 'whack') return p.words.length >= 4
+  if (g === 'root') return p.learned.filter(rootable).length >= 4
+  if (g === 'mix') return p.weekWrong.length >= 3
   return p.learned.length >= 4
 }
 
@@ -65,8 +79,12 @@ export async function planToday(date = new Date(), force?: GameKind): Promise<To
   const first = force ?? WEEK[(date.getDay() + 6) % 7]
   const order: GameKind[] = [first, 'flip', 'quiz']
   const game = order.find((g) => enough(g, p))!
-  const pool = game === 'words' ? p.words : game === 'build' ? p.learned.filter(buildable) : p.learned
-  const n = { flip: 6, quiz: 30, build: 6, words: 5 }[game]
+  const pool = {
+    words: p.words, whack: p.words, build: p.learned.filter(buildable), root: p.learned.filter(rootable), mix: p.weekWrong,
+    flip: p.learned, quiz: p.learned,
+  }[game]
+  const n = { flip: 6, quiz: 30, build: 6, words: 5, root: 40, whack: 12, mix: 10 }[game]
+  if (game === 'mix') return { game, items: shuffle(pool).slice(0, n), tasting: false }
   return { game, items: await chooseItems(pool, n), tasting: false, preview: game === 'flip' ? p.preview : undefined }
 }
 
@@ -81,6 +99,11 @@ export async function saveCheckin(game: GameKind, score: number, total: number) 
   if (!prev || score > prev.score) await db.checkins.put({ date, game, score, total, at: prev?.at ?? Date.now() })
   return !prev
 }
+
+/** 八吉祥：累计签到天数到达这些里程碑时点亮一个，纯装饰。 */
+export const AUSPICIOUS: [number, string][] = [
+  [3, '宝伞'], [7, '金鱼'], [14, '宝瓶'], [21, '莲花'], [30, '右旋海螺'], [49, '吉祥结'], [81, '胜利幢'], [108, '金轮'],
+]
 
 /** 连续天数：每个自然周（周一到周日）可以有 1 天没签，不算中断。 */
 export async function streakInfo(today = new Date()) {

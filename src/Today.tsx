@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { syllableMap } from './content.ts'
 import { db } from './db.ts'
 import { play } from './audio.ts'
-import { GAMES, availableGames, dayKey, learnedPool, lineOfDay, planToday, streakInfo, type GameKind } from './daily.ts'
+import { AUSPICIOUS, GAMES, availableGames, dayKey, learnedPool, lineOfDay, planToday, streakInfo, type GameKind } from './daily.ts'
 
 type Info = Awaited<ReturnType<typeof streakInfo>>
 
@@ -40,6 +40,18 @@ export default function Today({ onPlay }: { onPlay: (kind: GameKind | undefined,
         <div className={'seal' + (info?.today ? ' on' : '')}>{info?.today ? '已签' : '未签'}</div>
       </div>
       {showCal && info && <Calendar done={info.done} rest={info.rest} />}
+      {showCal && info && (
+        <div>
+          <div className="small muted">八吉祥 · 累计签到点亮</div>
+          <div className="badges">
+            {AUSPICIOUS.map(([n, name]) => (
+              <span key={n} className={'badge' + (info.total >= n ? ' on' : '')} title={`累计 ${n} 天`}>
+                {info.total >= n ? name : `${n} 天`}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="today-line">
         <div className="small muted">今日一句</div>

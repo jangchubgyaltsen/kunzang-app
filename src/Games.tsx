@@ -1,16 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { syllableMap } from './content.ts'
-import { LETTERS, LOOKALIKE, VOWELS, cvAudio, letterAudio, letterWylie, rootReason, shuffle, wordMap, words, type KC, type Word } from './course.ts'
-import { GAMES, planToday, saveCheckin, streakInfo, type GameKind, type TodayPlan } from './daily.ts'
+import { LETTERS, LOOKALIKE, VOWELS, cvAudio, letterAudio, letterWylie, partsOf, rootReason, shuffle, wordMap, words, type KC, } from './course.ts'
+import { GAMES, planToday, saveCheckin, streakInfo, sylOf, type GameKind, type TodayPlan } from './daily.ts'
+import { db } from './db.ts'
 import { recordAnswer } from './progress.ts'
 import { play } from './audio.ts'
 import './games.css'
 
 type Item = { kc: KC; tib: string; wylie: string; audio?: string; gloss?: string }
-type Syl = Word['syllables'][number]
 
 const pick = <T,>(a: T[], k: number) => shuffle(a).slice(0, k)
-const sylOf = (t: string): Syl => syllableMap.get(t) ?? wordMap.get(t)!.syllables[0]
 
 /** 把知识点变成可以显示的一项：藏文、转写、音频。 */
 function itemOf(kc: KC): Item {
@@ -109,6 +108,9 @@ export default function Game({ kind, daily, onExit }: { kind?: GameKind; daily: 
       {plan.game === 'quiz' && <Quiz items={items} onDone={finish} />}
       {plan.game === 'build' && <Build items={items} onDone={finish} />}
       {plan.game === 'words' && <Words items={items} onDone={finish} />}
+      {plan.game === 'root' && <Root items={items} onDone={finish} />}
+      {plan.game === 'whack' && <Whack items={items} onDone={finish} />}
+      {plan.game === 'mix' && <Mix items={items} onDone={finish} />}
     </section>
   )
 }
@@ -173,7 +175,7 @@ function wrongWylie(it: Item, all: Item[]) {
   return pick(pool.filter((w) => w !== it.wylie), 1)[0]
 }
 
-/** 快问快答：60 秒判断对错。限时，不记入掌握度。 */
+/** 快问快答：15 秒判断对错。限时，不记入掌握度。 */
 function Quiz({ items, onDone }: { items: Item[]; onDone: (r: Result) => void }) {
   const make = () => {
     const it = pick(items, 1)[0]
@@ -181,7 +183,7 @@ function Quiz({ items, onDone }: { items: Item[]; onDone: (r: Result) => void })
     return { it, claim: truth ? it.wylie : wrongWylie(it, items), truth }
   }
   const [q, setQ] = useState(make)
-  const [left, setLeft] = useState(60)
+  const [left, setLeft] = useState(15)
   const [score, setScore] = useState(0)
   const [count, setCount] = useState(0)
   const [combo, setCombo] = useState(0)
@@ -404,6 +406,202 @@ function Words({ items, onDone }: { items: Item[]; onDone: (r: Result) => void }
         </div>
       </div>
       <p className="small muted center">释义来自常用词表，尚未人工审校。</p>
+    </>
+  )
+}
+
+/** 找基字连击：答错就结束，挑战最高纪录。不限时，记入掌握度。 */
+function Root({ items, onDone }: { items: Item[]; onDone: (r: Result) => void }) {
+  const [i, setI] = useState(0)
+  const [wrong, setWrong] = useState<number | null>(null)
+  const [best, setBest] = useState(0)
+  useEffect(() => {
+    db.settings.get('best-root').then((r) => setBest(Number(r?.value ?? 0)))
+  }, [])
+  const it = items[i % items.length]
+  const s = sylOf(it.tib)
+  const parts = partsOf(s)
+
+  const tap = async (k: number) => {
+    if (wrong !== null) return
+    const ok = parts[k].role === '基字'
+    void recordAnswer(it.kc, ok, undefined, 'game')
+    if (it.audio) play(it.audio)
+    if (ok) return setI(i + 1)
+    setWrong(k)
+    if (i > best) await db.settings.put({ key: 'best-root', value: i })
+  }
+
+  const end = () =>
+    onDone({ score: i, total: i + 1, note: i > best ? `新纪录！之前最好 ${best} 连击` : `最高纪录 ${best} 连击`, missed: [it] })
+
+  return (
+    <>
+      <div className="quiz-top">
+        <span className="combo">连击 {i}</span>
+        <span className="small muted">最高 {Math.max(best, i)}</span>
+      </div>
+      <div className="prompt">
+        <div className="ask">基字是哪个？</div>
+        <div className="tib huge">{it.tib}</div>
+        <div className="latin">{it.wylie}</div>
+      </div>
+      <div className="options row">
+        {parts.map((p, k) => (
+          <button key={k} className={'opt tib' + (wrong === null ? '' : p.role === '基字' ? ' right' : k === wrong ? ' wrong' : ' dim')} onClick={() => tap(k)}>
+            {p.ch}
+          </button>
+        ))}
+      </div>
+      {wrong !== null && (
+        <div className="feedback bad">
+          <div className="fb-title">连击结束：{i}</div>
+          <div>{rootReason(s)}</div>
+          <button className="primary" onClick={end}>
+            看结果
+          </button>
+        </div>
+      )}
+    </>
+  )
+}
+
+/** 听音打地鼠：60 秒，听读音点中对应的词。限时，不记入掌握度。 */
+function Whack({ items, onDone }: { items: Item[]; onDone: (r: Result) => void }) {
+  const [left, setLeft] = useState(60)
+  const [round, setRound] = useState(0)
+  const [holes, setHoles] = useState<(Item | null)[]>(Array(9).fill(null))
+  const [target, setTarget] = useState<Item | null>(null)
+  const [score, setScore] = useState(0)
+  const [hit, setHit] = useState<number | null>(null)
+  const [miss, setMiss] = useState<number | null>(null)
+  const missed = useRef<Item[]>([])
+  const shots = useRef(0)
+  const ended = useRef(false)
+
+  // 每轮：随机 3–4 个洞冒出词，其中一个是要听的
+  useEffect(() => {
+    if (left <= 0) return
+    const t = pick(items, 1)[0]
+    const others = pick(items.filter((x) => x.kc !== t.kc), round < 5 ? 2 : 3)
+    const spots = pick([...Array(9).keys()], others.length + 1)
+    const h: (Item | null)[] = Array(9).fill(null)
+    ;[t, ...others].forEach((x, k) => (h[spots[k]] = x))
+    setHoles(h)
+    setTarget(t)
+    setHit(null)
+    setMiss(null)
+    if (t.audio) play(t.audio)
+    // 越往后缩回得越快
+    const stay = Math.max(2200, 4000 - round * 150)
+    const timer = setTimeout(() => {
+      shots.current++
+      missed.current.push(t)
+      setRound((r) => r + 1)
+    }, stay)
+    return () => clearTimeout(timer)
+  }, [round])
+
+  useEffect(() => {
+    if (left <= 0) {
+      if (!ended.current) {
+        ended.current = true
+        onDone({ score, total: shots.current, note: '听到读音就点', missed: [...new Map(missed.current.map((m) => [m.kc, m])).values()].slice(0, 8) })
+      }
+      return
+    }
+    const t = setTimeout(() => setLeft(left - 1), 1000)
+    return () => clearTimeout(t)
+  }, [left, score, onDone])
+
+  const tap = (k: number) => {
+    const x = holes[k]
+    if (!x || !target || hit !== null || left <= 0) return
+    if (x.kc === target.kc) {
+      setHit(k)
+      setScore(score + 1)
+      shots.current++
+      setTimeout(() => setRound((r) => r + 1), 350)
+    } else {
+      setMiss(k)
+      setTimeout(() => setMiss(null), 300)
+    }
+  }
+
+  return (
+    <>
+      <div className="quiz-top">
+        <span className={'timer' + (left <= 10 ? ' low' : '')}>{left}s</span>
+        <span>得分 {score}</span>
+        <button className="link" onClick={() => target?.audio && play(target.audio)}>
+          ▶ 再听
+        </button>
+      </div>
+      <div className="whack">
+        {holes.map((x, k) => (
+          <button key={k + '-' + round} className={'hole' + (x ? ' up' : '') + (hit === k ? ' hit' : '') + (miss === k ? ' wrong shake' : '')} onClick={() => tap(k)}>
+            {x && <span className="tib">{x.tib}</span>}
+          </button>
+        ))}
+      </div>
+    </>
+  )
+}
+
+/** 周日大杂烩：本周答错过的内容，每个出一道选择题。记入掌握度。 */
+function Mix({ items, onDone }: { items: Item[]; onDone: (r: Result) => void }) {
+  const [i, setI] = useState(0)
+  const [chosen, setChosen] = useState<string | null>(null)
+  const [score, setScore] = useState(0)
+  const missed = useRef<Item[]>([])
+  const it = items[i]
+  const isWord = it.kc.startsWith('W:')
+  const answer = isWord ? it.gloss! : it.wylie
+  const [options, setOptions] = useState<string[]>([])
+  useEffect(() => {
+    const pool = items.filter((x) => x.kc !== items[i].kc).map((x) => (items[i].kc.startsWith('W:') ? x.gloss ?? '' : x.wylie)).filter(Boolean)
+    const fill = items[i].kc.startsWith('W:') ? words.map((w) => w.gloss) : [...syllableMap.values()].map((s) => s.wylie)
+    const right = items[i].kc.startsWith('W:') ? items[i].gloss! : items[i].wylie
+    const wrong = [...new Set([...shuffle(pool), ...shuffle(fill)])].filter((x) => x !== right).slice(0, 3)
+    setOptions(shuffle([right, ...wrong]))
+    if (items[i].audio) play(items[i].audio!)
+  }, [i, items])
+
+  const choose = (o: string) => {
+    if (chosen) return
+    setChosen(o)
+    const ok = o === answer
+    if (ok) setScore(score + 1)
+    else missed.current.push(it)
+    void recordAnswer(it.kc, ok, undefined, 'game')
+  }
+  const next = () => {
+    setChosen(null)
+    if (i + 1 < items.length) setI(i + 1)
+    else onDone({ score, total: items.length, note: '这周的错题都过了一遍', missed: missed.current })
+  }
+
+  return (
+    <>
+      <div className="bar">
+        <div style={{ width: (i / items.length) * 100 + '%' }} />
+      </div>
+      <div className="prompt">
+        <div className="ask">{isWord ? '这个词是什么意思？' : '这个怎么读？'}</div>
+        <div className="tib huge">{it.tib}</div>
+      </div>
+      <div className="options">
+        {options.map((o) => (
+          <button key={o} className={'opt' + (isWord ? '' : ' latin') + (chosen === null ? '' : o === answer ? ' right' : o === chosen ? ' wrong' : ' dim')} onClick={() => choose(o)}>
+            {o}
+          </button>
+        ))}
+      </div>
+      {chosen && (
+        <button className="primary" onClick={next}>
+          继续
+        </button>
+      )}
     </>
   )
 }
