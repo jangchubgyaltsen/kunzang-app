@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type CSSProperties } from 'react'
 import { passages, passageTitles, syllableMap, units, type Syllable } from './content.ts'
 import { play } from './audio.ts'
 import { db, exportData, importData, importTranslationPack, type Flag } from './db.ts'
@@ -41,31 +41,29 @@ export default function App() {
 }
 
 function PathView({ onOpen }: { onOpen: (id: string) => void }) {
+  const current = units.find((u) => u.ready)?.n
   return (
     <section>
       <h1>今日路径</h1>
       <p className="muted">第一部分：拼读 → 开篇原文</p>
       <ol className="path">
-        {units.map((u) => (
-          <li key={u.n} className={u.ready ? 'ready' : 'locked'}>
-            <span className="node">{u.n}</span>
-            <div>
-              <div className="unit-title">{u.title}</div>
-              {u.examples.length > 0 && <div className="tib small">{u.examples.join('  ')}</div>}
-              {u.ready && u.target ? (
-                <button className="link" onClick={() => onOpen(u.target!)}>
-                  打开阅读器
-                </button>
-              ) : (
-                <div className="muted small">练习制作中</div>
-              )}
-            </div>
+        {units.map((u, i) => (
+          <li key={u.n} className={(u.ready ? 'ready' : 'locked') + (u.n === current ? ' current' : '')} style={{ '--x': ZIGZAG[i % ZIGZAG.length] } as CSSProperties}>
+            <button className="node" disabled={!u.ready || !u.target} onClick={() => u.target && onOpen(u.target)} aria-label={u.title}>
+              {u.ready ? u.n : '🔒'}
+            </button>
+            <div className="unit-title">{u.title}</div>
+            {u.examples.length > 0 && <div className="tib small">{u.examples.join('  ')}</div>}
+            {!u.ready && <div className="muted small">练习制作中</div>}
           </li>
         ))}
       </ol>
     </section>
   )
 }
+
+// 节点左右错落的偏移量（相对节点宽度）
+const ZIGZAG = [0, 0.8, 1.2, 0.8, 0, -0.8, -1.2, -0.8]
 
 function ReaderView({ passageId, onSelect }: { passageId: string; onSelect: (id: string) => void }) {
   const [showWylie, setShowWylie] = useState(true)
@@ -80,21 +78,23 @@ function ReaderView({ passageId, onSelect }: { passageId: string; onSelect: (id:
 
   return (
     <section>
-      <select className="picker" value={p.id} onChange={(e) => onSelect(e.target.value)}>
+      <div className="chips">
         {passages.map((x) => (
-          <option key={x.id} value={x.id}>
+          <button key={x.id} className={x.id === p.id ? 'on' : ''} onClick={() => onSelect(x.id)}>
             {passageTitles[x.id] ?? x.id}
-          </option>
+          </button>
         ))}
-      </select>
+      </div>
       <div className="toggles">
-        <label>
-          <input type="checkbox" checked={showWylie} onChange={(e) => setShowWylie(e.target.checked)} /> Wylie
-        </label>
-        <label>
-          <input type="checkbox" checked={showZh} onChange={(e) => setShowZh(e.target.checked)} /> 中文
-        </label>
-        <button onClick={() => play(p.audio)}>▶ 整段</button>
+        <button className={'pill' + (showWylie ? ' on' : '')} aria-pressed={showWylie} onClick={() => setShowWylie(!showWylie)}>
+          Wylie
+        </button>
+        <button className={'pill' + (showZh ? ' on' : '')} aria-pressed={showZh} onClick={() => setShowZh(!showZh)}>
+          中文
+        </button>
+        <button className="pill play-all" onClick={() => play(p.audio)}>
+          ▶ 整段
+        </button>
       </div>
       <div className="lines">
         {p.lines.map((l, i) => (
@@ -103,17 +103,18 @@ function ReaderView({ passageId, onSelect }: { passageId: string; onSelect: (id:
               <button className="play" onClick={() => play(l.audio)} aria-label="播放这一句">
                 ▶
               </button>
-              <div className="tib big">
+              <div className="syls">
                 {l.syllables.map((s, j) => (
                   <span key={j} className={'syl' + (picked?.tibetan === s ? ' on' : '')} onClick={() => setPicked(syllableMap.get(s) ?? null)}>
-                    {s}
-                    {j < l.syllables.length - 1 ? '་' : ''}
+                    <span className="tib big">
+                      {s}
+                      {j < l.syllables.length - 1 ? '་' : p.lines.length > 1 ? ' །' : ''}
+                    </span>
+                    {showWylie && <span className="syl-wylie">{syllableMap.get(s)?.wylie ?? ''}</span>}
                   </span>
                 ))}
-                {p.lines.length > 1 ? ' །' : ''}
               </div>
             </div>
-            {showWylie && <div className="wylie">{l.wylie}</div>}
             {showZh && chinese && p.lines.length === zhLines.length && <div className="zh">{zhLines[i]}</div>}
           </div>
         ))}
