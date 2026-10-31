@@ -14,6 +14,8 @@ import { CHECK_DAYS, dueChecks, dueKCs, ensureChecks, getPathState, type LevelSt
 import { PATH, unitByN, wordMap, type Level, type Track } from './course.ts'
 import { spotCheckSession, type Session } from './session.ts'
 import { linesOf, yitongOf, type Token } from './reading.ts'
+import { chapters } from './book.ts'
+import { BookChapter } from './BookReader.tsx'
 
 type Tab = 'path' | 'alphabet' | 'reader' | 'review' | 'settings'
 export default function App() {
@@ -32,8 +34,19 @@ export default function App() {
   }, [])
   const busy = session !== null || game !== null || drill !== 0
 
+  // 原文页看的是哪一章：'00' 是开篇（逐词版），其余是正文各章
+  const [chapterId, setChapterId] = useState('00')
+  useEffect(() => {
+    db.settings.get('reader-chapter').then((r) => r && setChapterId(String(r.value)))
+  }, [])
+  const pickChapter = (id: string) => {
+    setChapterId(id)
+    db.settings.put({ key: 'reader-chapter', value: id })
+  }
+
   const openPassage = (id: string) => {
     setPassageId(id)
+    pickChapter('00')
     setTab('reader')
   }
 
@@ -52,7 +65,7 @@ export default function App() {
         {!busy && tab === 'path' && (
           <PathView onOpen={openPassage} onStart={setSession} onReview={() => setTab('review')} onPlay={(kind, daily) => setGame({ kind, daily })} />
         )}
-        {!busy && tab === 'reader' && <ReaderView passageId={passageId} onSelect={setPassageId} />}
+        {!busy && tab === 'reader' && <ReaderView passageId={passageId} onSelect={setPassageId} chapterId={chapterId} onChapter={pickChapter} />}
         {!busy && tab === 'review' && <Review onStart={setSession} />}
         {!busy && tab === 'settings' && <SettingsView />}
       </main>
@@ -243,7 +256,28 @@ function UnitNote({ st, n, total }: { st?: UnitState; n: number; total: number }
 // 节点左右错落的偏移量（相对节点宽度）
 const ZIGZAG = [0, 0.8, 1.2, 0.8, 0, -0.8, -1.2, -0.8]
 
-function ReaderView({ passageId, onSelect }: { passageId: string; onSelect: (id: string) => void }) {
+function ReaderView({ passageId, onSelect, chapterId, onChapter }: { passageId: string; onSelect: (id: string) => void; chapterId: string; onChapter: (id: string) => void }) {
+  const info = chapters.find((c) => c.id === chapterId)
+  const [picked, setPicked] = useState<Syllable | null>(null)
+  return (
+    <section>
+      <div className="chips chapters">
+        <button className={!info ? 'on' : ''} onClick={() => onChapter('00')}>
+          开篇
+        </button>
+        {chapters.map((c) => (
+          <button key={c.id} className={info?.id === c.id ? 'on' : ''} onClick={() => onChapter(c.id)}>
+            {Number(c.id)} · {c.zh}
+          </button>
+        ))}
+      </div>
+      {info ? <BookChapter key={info.id} info={info} onPick={setPicked} /> : <OpeningReader passageId={passageId} onSelect={onSelect} />}
+      {picked && <SyllableCard s={picked} onClose={() => setPicked(null)} />}
+    </section>
+  )
+}
+
+function OpeningReader({ passageId, onSelect }: { passageId: string; onSelect: (id: string) => void }) {
   const [showWylie, setShowWylie] = useState(false)
   const [showPron, setShowPron] = useState(true)
   const [showZh, setShowZh] = useState(true)
@@ -258,7 +292,7 @@ function ReaderView({ passageId, onSelect }: { passageId: string; onSelect: (id:
   const zhLines = (chinese ?? '').split(/(?<=[，。！])/).filter(Boolean)
 
   return (
-    <section>
+    <>
       <div className="chips">
         {passages.map((x) => (
           <button key={x.id} className={x.id === p.id ? 'on' : ''} onClick={() => onSelect(x.id)}>
@@ -311,7 +345,7 @@ function ReaderView({ passageId, onSelect }: { passageId: string; onSelect: (id:
       </p>
       {word && !picked && <WordSheet w={word} onPick={setPicked} onClose={() => setWord(null)} />}
       {picked && <SyllableCard s={picked} onClose={() => setPicked(null)} />}
-    </section>
+    </>
   )
 }
 

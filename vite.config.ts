@@ -21,7 +21,22 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,woff2,m4a,mp3}'],
+        // 全书原文和音频太大，不预先缓存：打开哪一章、听哪一句才下载，下载过的存起来离线可用
+        globIgnores: ['book/**'],
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
+        runtimeCaching: [
+          {
+            urlPattern: ({ url }) => url.pathname.includes('/book/audio/'),
+            handler: 'CacheFirst',
+            options: { cacheName: 'book-audio', expiration: { maxEntries: 12000 }, cacheableResponse: { statuses: [200] } },
+          },
+          {
+            // 章节文本有改动时，下次打开就换成新的
+            urlPattern: ({ url }) => /\/book\/ch\d+\.json$/.test(url.pathname),
+            handler: 'StaleWhileRevalidate',
+            options: { cacheName: 'book-text', cacheableResponse: { statuses: [200] } },
+          },
+        ],
       },
     }),
   ],

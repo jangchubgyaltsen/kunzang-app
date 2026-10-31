@@ -105,3 +105,16 @@ button.link { border: none; background: none; color: var(--accent); padding: 4px
 .pron { font-size: 13px; color: #8f8478; line-height: 1.2; margin-top: -4px; }
 .pron.big-pron { font-size: 20px; margin: 0 0 6px; }
 .gloss-big { font-size: 20px; margin: 4px 0; }
+
+/* 全书原文 */
+.chips.chapters { margin-bottom: 8px; }
+.lines.book { padding: 4px 12px; }
+.para { padding: 6px 0 10px; border-bottom: 1px solid var(--line); }
+.para:last-child { border-bottom: none; }
+.para .line { padding: 4px 0; border-bottom: none; }
+.para-head { display: flex; align-items: center; gap: 10px; margin: 4px 0; }
+.small-pill { padding: 3px 12px; font-size: 13px; color: var(--accent); }
+.line.now { background: #fbf1e8; border-radius: 10px; }
+.para-zh { margin-top: 6px; color: #5d554c; }
+.resume { display: block; width: 100%; margin: 6px 0 10px; color: var(--accent); }
+.part:disabled { opacity: .55; }

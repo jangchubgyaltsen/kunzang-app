@@ -12,10 +12,23 @@ if (nav.audioSession) nav.audioSession.type = 'playback'
 const blobs = new Map<string, Promise<string>>()
 // 已经取好的 blob 地址，点击时可以直接同步播放
 const ready = new Map<string, string>()
-// 开篇逐词和整句的新音频在 op/ 下，是 mp3；其余是 m4a
-const urlOf = (id: string) => `./audio/${id}.${id.startsWith('op/') ? 'mp3' : 'm4a'}`
+// 开篇逐词和整句的新音频在 op/ 下，是 mp3；全书整句在 book/audio/ 下；其余是 m4a
+const urlOf = (id: string) =>
+  id.startsWith('book/') ? `./book/audio/${id.slice(5)}.m4a` : `./audio/${id}.${id.startsWith('op/') ? 'mp3' : 'm4a'}`
+// 全书有一万多句，只留最近听过的几十句的 blob，其余释放
+const recentBook: string[] = []
 function blobUrl(id: string) {
   let p = blobs.get(id)
+  if (!p && id.startsWith('book/')) {
+    recentBook.push(id)
+    if (recentBook.length > 40) {
+      const old = recentBook.shift()!
+      const u = ready.get(old)
+      if (u) URL.revokeObjectURL(u)
+      ready.delete(old)
+      blobs.delete(old)
+    }
+  }
   if (!p) {
     p = fetch(urlOf(id))
       .then((r) => {
@@ -70,20 +83,53 @@ for (const g of GESTURES) document.addEventListener(g, unlock, true)
 let latest = 0
 let queue: string[] = []
 let afterAll: (() => void) | undefined
-player.addEventListener('ended', () => {
-  if (player.src === SILENCE) return
+// 只播整句里的一段（点全书里的词）：from 秒开始，到 stopAt 秒停
+let stopAt = Infinity
+function finished() {
   const next = queue.shift()
   if (next) return start(next)
   const f = afterAll
   afterAll = undefined
+  current = null
+  notify()
   f?.()
+}
+player.addEventListener('ended', () => {
+  if (player.src === SILENCE) return
+  finished()
 })
+function watchStop() {
+  if (stopAt === Infinity) return
+  if (player.currentTime >= stopAt) {
+    player.pause()
+    stopAt = Infinity
+    finished()
+    return
+  }
+  requestAnimationFrame(watchStop)
+}
+
+// 正在播哪一段：原文页用来高亮正在读的句子
+let current: string | null = null
+const listeners = new Set<(id: string | null) => void>()
+const notify = () => listeners.forEach((f) => f(current))
+export function onTrack(f: (id: string | null) => void) {
+  listeners.add(f)
+  return () => void listeners.delete(f)
+}
 
 /** 播放一段音频；正在播的（包括连播队列）会被打断。onEnd 在正常播完时调用。 */
 export function play(id: string, onEnd?: () => void) {
   queue = []
   afterAll = onEnd
   start(id)
+}
+
+/** 播放一段音频里从 from 到 to 秒的部分。 */
+export function playRange(id: string, from: number, to: number) {
+  queue = []
+  afterAll = undefined
+  start(id, from, to)
 }
 
 /** 依次连播几段，例如整段原文一句接一句。 */
@@ -96,19 +142,26 @@ export function playSeq(ids: string[]) {
 export function stop() {
   queue = []
   afterAll = undefined
+  stopAt = Infinity
   ++latest
   player.pause()
+  current = null
+  notify()
 }
 
-function start(id: string) {
+function start(id: string, from = 0, to = Infinity) {
   const n = ++latest
   player.pause()
+  stopAt = Infinity
+  current = id
+  notify()
   const now = ready.get(id)
+  const retry = () => start(id, from, to)
   // 取好的直接同步播放，这样仍在用户点击之内，iOS 不会拦
-  if (now) return go(n, now, () => start(id))
+  if (now) return go(n, now, retry, from, to)
   blobUrl(id)
     .catch(() => urlOf(id))
-    .then((src) => go(n, src, () => start(id)))
+    .then((src) => go(n, src, retry, from, to))
 }
 
 /** 用同一个播放器放任意地址的声音，例如自己的录音。 */
@@ -120,11 +173,20 @@ export function playUrl(src: string, onEnd?: () => void) {
   go(n, src, () => playUrl(src, onEnd))
 }
 
-function go(n: number, src: string, retry: () => void) {
+function go(n: number, src: string, retry: () => void, from = 0, to = Infinity) {
   if (n !== latest) return
+  stopAt = Infinity
   player.src = src
-  player.currentTime = 0
-  player.play().then(markUnlocked, (e: unknown) => {
+  if (from > 0) {
+    // 要等元数据读出来才能跳到中间；play() 仍在手势里同步调用
+    player.addEventListener('loadedmetadata', () => n === latest && (player.currentTime = from), { once: true })
+  } else player.currentTime = 0
+  player.play().then(() => {
+    markUnlocked()
+    if (n !== latest || to === Infinity) return
+    stopAt = to
+    requestAnimationFrame(watchStop)
+  }, (e: unknown) => {
     // 还没解锁被 iOS 拦下：记住它，用户下一次触摸时补放
     if (n === latest && (e as Error)?.name === 'NotAllowedError') pending = retry
     else if ((e as Error)?.name !== 'AbortError') console.warn('play failed', src, e)
