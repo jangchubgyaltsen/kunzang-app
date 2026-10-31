@@ -27,3 +27,13 @@ button.primary:disabled { opacity: .4; }
 .review-box { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 20px; text-align: center; display: flex; flex-direction: column; gap: 8px; }
 .basics .parts { justify-content: flex-start; }
 .lesson, .review-box, .flags { font-family: system-ui, -apple-system, 'PingFang SC', 'Noto Sans SC', 'Noto Serif Tibetan', sans-serif; }
+.intro-card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 20px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.intro-label { font-size: 13px; font-weight: 700; color: var(--accent); letter-spacing: .05em; }
+.intro-note { margin: 4px 0 0; line-height: 1.6; }
+.latin-mid { font-family: ui-monospace, monospace; font-size: 22px; color: var(--muted); }
+.zh-big { font-size: 28px; padding: 20px 0; }
+.opt.gloss { font-size: 17px; }
+.intro-play { color: var(--accent); padding: 6px 16px; border-radius: 20px; }
+.intro-note.gloss-big { font-size: 22px; }
+.intro-card .parts { display: flex; gap: 8px; justify-content: center; }
+.intro-card, .zh-big { font-family: system-ui, -apple-system, 'PingFang SC', 'Noto Sans SC', 'Noto Serif Tibetan', sans-serif; }

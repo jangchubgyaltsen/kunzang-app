@@ -1,0 +1,2328 @@
+[
+ {
+  "id": "W-001",
+  "tibetan": "བླ་མ",
+  "wylie": "bla ma",
+  "gloss": "上师",
+  "audio": "W-001",
+  "syllables": [
+   {
+    "tibetan": "བླ",
+    "wylie": "bla",
+    "root": "བ",
+    "subscript": "ལ"
+   },
+   {
+    "tibetan": "མ",
+    "wylie": "ma",
+    "root": "མ"
+   }
+  ],
+  "kcs": [
+   "L:བ",
+   "L:མ",
+   "L:ལ",
+   "R:sub"
+  ]
+ },
+ {
+  "id": "W-002",
+  "tibetan": "ཆོས",
+  "wylie": "chos",
+  "gloss": "法",
+  "audio": "W-002",
+  "syllables": [
+   {
+    "tibetan": "ཆོས",
+    "wylie": "chos",
+    "root": "ཆ",
+    "vowel": "ོ",
+    "suffix": "ས"
+   }
+  ],
+  "kcs": [
+   "L:ཆ",
+   "L:ས",
+   "R:suf",
+   "V:ོ"
+  ]
+ },
+ {
+  "id": "W-003",
+  "tibetan": "ལམ",
+  "wylie": "lam",
+  "gloss": "道",
+  "audio": "W-003",
+  "syllables": [
+   {
+    "tibetan": "ལམ",
+    "wylie": "lam",
+    "root": "ལ",
+    "suffix": "མ"
+   }
+  ],
+  "kcs": [
+   "L:མ",
+   "L:ལ",
+   "R:suf"
+  ]
+ },
+ {
+  "id": "W-004",
+  "tibetan": "མི",
+  "wylie": "mi",
+  "gloss": "人",
+  "audio": "W-004",
+  "syllables": [
+   {
+    "tibetan": "མི",
+    "wylie": "mi",
+    "root": "མ",
+    "vowel": "ི"
+   }
+  ],
+  "kcs": [
+   "L:མ",
+   "V:ི"
+  ]
+ },
+ {
+  "id": "W-005",
+  "tibetan": "ལྷ",
+  "wylie": "lha",
+  "gloss": "本尊；天",
+  "audio": "W-005",
+  "syllables": [
+   {
+    "tibetan": "ལྷ",
+    "wylie": "lha",
+    "root": "ཧ",
+    "superscript": "ལ"
+   }
+  ],
+  "kcs": [
+   "L:ལ",
+   "L:ཧ",
+   "R:sup"
+  ]
+ },
+ {
+  "id": "W-006",
+  "tibetan": "ཞིང",
+  "wylie": "zhing",
+  "gloss": "刹土",
+  "audio": "W-006",
+  "syllables": [
+   {
+    "tibetan": "ཞིང",
+    "wylie": "zhing",
+    "root": "ཞ",
+    "vowel": "ི",
+    "suffix": "ང"
+   }
+  ],
+  "kcs": [
+   "L:ང",
+   "L:ཞ",
+   "R:suf",
+   "V:ི"
+  ]
+ },
+ {
+  "id": "W-007",
+  "tibetan": "ཚུལ",
+  "wylie": "tshul",
+  "gloss": "方式；形相",
+  "audio": "W-007",
+  "syllables": [
+   {
+    "tibetan": "ཚུལ",
+    "wylie": "tshul",
+    "root": "ཚ",
+    "vowel": "ུ",
+    "suffix": "ལ"
+   }
+  ],
+  "kcs": [
+   "L:ཚ",
+   "L:ལ",
+   "R:suf",
+   "V:ུ"
+  ]
+ },
+ {
+  "id": "W-008",
+  "tibetan": "དཔལ",
+  "wylie": "dpal",
+  "gloss": "吉祥；荣耀",
+  "audio": "W-008",
+  "syllables": [
+   {
+    "tibetan": "དཔལ",
+    "wylie": "dpal",
+    "root": "པ",
+    "prefix": "ད",
+    "suffix": "ལ"
+   }
+  ],
+  "kcs": [
+   "L:ད",
+   "L:པ",
+   "L:ལ",
+   "R:pre",
+   "R:suf"
+  ]
+ },
+ {
+  "id": "W-009",
+  "tibetan": "སྣང",
+  "wylie": "snang",
+  "gloss": "显现",
+  "audio": "W-009",
+  "syllables": [
+   {
+    "tibetan": "སྣང",
+    "wylie": "snang",
+    "root": "ན",
+    "superscript": "ས",
+    "suffix": "ང"
+   }
+  ],
+  "kcs": [
+   "L:ང",
+   "L:ན",
+   "L:ས",
+   "R:suf",
+   "R:sup"
+  ]
+ },
+ {
+  "id": "W-010",
+  "tibetan": "གསལ",
+  "wylie": "gsal",
+  "gloss": "明；清晰",
+  "audio": "W-010",
+  "syllables": [
+   {
+    "tibetan": "གསལ",
+    "wylie": "gsal",
+    "root": "ས",
+    "prefix": "ག",
+    "suffix": "ལ"
+   }
+  ],
+  "kcs": [
+   "L:ག",
+   "L:ལ",
+   "L:ས",
+   "R:pre",
+   "R:suf"
+  ]
+ },
+ {
+  "id": "W-011",
+  "tibetan": "ཟབ",
+  "wylie": "zab",
+  "gloss": "深",
+  "audio": "W-011",
+  "syllables": [
+   {
+    "tibetan": "ཟབ",
+    "wylie": "zab",
+    "root": "ཟ",
+    "suffix": "བ"
+   }
+  ],
+  "kcs": [
+   "L:བ",
+   "L:ཟ",
+   "R:suf"
+  ]
+ },
+ {
+  "id": "W-012",
+  "tibetan": "ཕྱི",
+  "wylie": "phyi",
+  "gloss": "外",
+  "audio": "W-012",
+  "syllables": [
+   {
+    "tibetan": "ཕྱི",
+    "wylie": "phyi",
+    "root": "ཕ",
+    "subscript": "ཡ",
+    "vowel": "ི"
+   }
+  ],
+  "kcs": [
+   "L:ཕ",
+   "L:ཡ",
+   "R:sub",
+   "V:ི"
+  ]
+ },
+ {
+  "id": "W-013",
+  "tibetan": "ནང",
+  "wylie": "nang",
+  "gloss": "内",
+  "audio": "W-013",
+  "syllables": [
+   {
+    "tibetan": "ནང",
+    "wylie": "nang",
+    "root": "ན",
+    "suffix": "ང"
+   }
+  ],
+  "kcs": [
+   "L:ང",
+   "L:ན",
+   "R:suf"
+  ]
+ },
+ {
+  "id": "W-014",
+  "tibetan": "བདག",
+  "wylie": "bdag",
+  "gloss": "我",
+  "audio": "W-014",
+  "syllables": [
+   {
+    "tibetan": "བདག",
+    "wylie": "bdag",
+    "root": "ད",
+    "prefix": "བ",
+    "suffix": "ག"
+   }
+  ],
+  "kcs": [
+   "L:ག",
+   "L:ད",
+   "L:བ",
+   "R:pre",
+   "R:suf"
+  ]
+ },
+ {
+  "id": "W-015",
+  "tibetan": "བརྒྱུད",
+  "wylie": "brgyud",
+  "gloss": "传承",
+  "audio": "W-015",
+  "syllables": [
+   {
+    "tibetan": "བརྒྱུད",
+    "wylie": "brgyud",
+    "root": "ག",
+    "superscript": "ར",
+    "subscript": "ཡ",
+    "vowel": "ུ",
+    "prefix": "བ",
+    "suffix": "ད"
+   }
+  ],
+  "kcs": [
+   "L:ག",
+   "L:ད",
+   "L:བ",
+   "L:ཡ",
+   "L:ར",
+   "R:pre",
+   "R:sub",
+   "R:suf",
+   "R:sup",
+   "V:ུ"
+  ]
+ },
+ {
+  "id": "W-016",
+  "tibetan": "རྒྱུད",
+  "wylie": "rgyud",
+  "gloss": "相续",
+  "audio": "W-016",
+  "syllables": [
+   {
+    "tibetan": "རྒྱུད",
+    "wylie": "rgyud",
+    "root": "ག",
+    "superscript": "ར",
+    "subscript": "ཡ",
+    "vowel": "ུ",
+    "suffix": "ད"
+   }
+  ],
+  "kcs": [
+   "L:ག",
+   "L:ད",
+   "L:ཡ",
+   "L:ར",
+   "R:sub",
+   "R:suf",
+   "R:sup",
+   "V:ུ"
+  ]
+ },
+ {
+  "id": "W-017",
+  "tibetan": "གསུང",
+  "wylie": "gsung",
+  "gloss": "语；说法",
+  "audio": "W-017",
+  "syllables": [
+   {
+    "tibetan": "གསུང",
+    "wylie": "gsung",
+    "root": "ས",
+    "vowel": "ུ",
+    "prefix": "ག",
+    "suffix": "ང"
+   }
+  ],
+  "kcs": [
+   "L:ག",
+   "L:ང",
+   "L:ས",
+   "R:pre",
+   "R:suf",
+   "V:ུ"
+  ]
+ },
+ {
+  "id": "W-018",
+  "tibetan": "ཆེན་པོ",
+  "wylie": "chen po",
+  "gloss": "大",
+  "audio": "W-018",
+  "syllables": [
+   {
+    "tibetan": "ཆེན",
+    "wylie": "chen",
+    "root": "ཆ",
+    "vowel": "ེ",
+    "suffix": "ན"
+   },
+   {
+    "tibetan": "པོ",
+    "wylie": "po",
+    "root": "པ",
+    "vowel": "ོ"
+   }
+  ],
+  "kcs": [
+   "L:ཆ",
+   "L:ན",
+   "L:པ",
+   "R:suf",
+   "V:ེ",
+   "V:ོ"
+  ]
+ },
+ {
+  "id": "W-019",
+  "tibetan": "རྒྱལ་བ",
+  "wylie": "rgyal ba",
+  "gloss": "佛；胜者",
+  "audio": "W-019",
+  "syllables": [
+   {
+    "tibetan": "རྒྱལ",
+    "wylie": "rgyal",
+    "root": "ག",
+    "superscript": "ར",
+    "subscript": "ཡ",
+    "suffix": "ལ"
+   },
+   {
+    "tibetan": "བ",
+    "wylie": "ba",
+    "root": "བ"
+   }
+  ],
+  "kcs": [
+   "L:ག",
+   "L:བ",
+   "L:ཡ",
+   "L:ར",
+   "L:ལ",
+   "R:sub",
+   "R:suf",
+   "R:sup"
+  ]
+ },
+ {
+  "id": "W-020",
+  "tibetan": "རྒྱལ་པོ",
+  "wylie": "rgyal po",
+  "gloss": "王",
+  "audio": "W-020",
+  "syllables": [
+   {
+    "tibetan": "རྒྱལ",
+    "wylie": "rgyal",
+    "root": "ག",
+    "superscript": "ར",
+    "subscript": "ཡ",
+    "suffix": "ལ"
+   },
+   {
+    "tibetan": "པོ",
+    "wylie": "po",
+    "root": "པ",
+    "vowel": "ོ"
+   }
+  ],
+  "kcs": [
+   "L:ག",
+   "L:པ",
+   "L:ཡ",
+   "L:ར",
+   "L:ལ",
+   "R:sub",
+   "R:suf",
+   "R:sup",
+   "V:ོ"
+  ]
+ },
+ {
+  "id": "W-021",
+  "tibetan": "སངས་རྒྱས",
+  "wylie": "sangs rgyas",
+  "gloss": "佛",
+  "audio": "W-021",
+  "syllables": [
+   {
+    "tibetan": "སངས",
+    "wylie": "sangs",
+    "root": "ས",
+    "suffix": "ང",
+    "postSuffix": "ས"
+   },
+   {
+    "tibetan": "རྒྱས",
+    "wylie": "rgyas",
+    "root": "ག",
+    "superscript": "ར",
+    "subscript": "ཡ",
+    "suffix": "ས"
+   }
+  ],
+  "kcs": [
+   "L:ག",
+   "L:ང",
+   "L:ཡ",
+   "L:ར",
+   "L:ས",
+   "R:post",
+   "R:sub",
+   "R:suf",
+   "R:sup"
+  ]
+ },
+ {
+  "id": "W-022",
+  "tibetan": "རྗེ་བཙུན",
+  "wylie": "rje btsun",
+  "gloss": "至尊",
+  "audio": "W-022",
+  "syllables": [
+   {
+    "tibetan": "རྗེ",
+    "wylie": "rje",
+    "root": "ཇ",
+    "superscript": "ར",
+    "vowel": "ེ"
+   },
+   {
+    "tibetan": "བཙུན",
+    "wylie": "btsun",
+    "root": "ཙ",
+    "vowel": "ུ",
+    "prefix": "བ",
+    "suffix": "ན"
+   }
+  ],
+  "kcs": [
+   "L:ཇ",
+   "L:ན",
+   "L:བ",
+   "L:ཙ",
+   "L:ར",
+   "R:pre",
+   "R:suf",
+   "R:sup",
+   "V:ུ",
+   "V:ེ"
+  ]
+ },
+ {
+  "id": "W-023",
+  "tibetan": "ཐུགས་རྗེ",
+  "wylie": "thugs rje",
+  "gloss": "悲心",
+  "audio": "W-023",
+  "syllables": [
+   {
+    "tibetan": "ཐུགས",
+    "wylie": "thugs",
+    "root": "ཐ",
+    "vowel": "ུ",
+    "suffix": "ག",
+    "postSuffix": "ས"
+   },
+   {
+    "tibetan": "རྗེ",
+    "wylie": "rje",
+    "root": "ཇ",
+    "superscript": "ར",
+    "vowel": "ེ"
+   }
+  ],
+  "kcs": [
+   "L:ག",
+   "L:ཇ",
+   "L:ཐ",
+   "L:ར",
+   "L:ས",
+   "R:post",
+   "R:suf",
+   "R:sup",
+   "V:ུ",
+   "V:ེ"
+  ]
+ },
+ {
+  "id": "W-024",
+  "tibetan": "ཐུགས་བརྩེ",
+  "wylie": "thugs brtse",
+  "gloss": "慈悲",
+  "audio": "W-024",
+  "syllables": [
+   {
+    "tibetan": "ཐུགས",
+    "wylie": "thugs",
+    "root": "ཐ",
+    "vowel": "ུ",
+    "suffix": "ག",
+    "postSuffix": "ས"
+   },
+   {
+    "tibetan": "བརྩེ",
+    "wylie": "brtse",
+    "root": "ཙ",
+    "superscript": "ར",
+    "vowel": "ེ",
+    "prefix": "བ"
+   }
+  ],
+  "kcs": [
+   "L:ག",
+   "L:ཐ",
+   "L:བ",
+   "L:ཙ",
+   "L:ར",
+   "L:ས",
+   "R:post",
+   "R:pre",
+   "R:suf",
+   "R:sup",
+   "V:ུ",
+   "V:ེ"
+  ]
+ },
+ {
+  "id": "W-025",
+  "tibetan": "ཕྱག་འཚལ",
+  "wylie": "phyag 'tshal",
+  "gloss": "顶礼",
+  "audio": "W-025",
+  "syllables": [
+   {
+    "tibetan": "ཕྱག",
+    "wylie": "phyag",
+    "root": "ཕ",
+    "subscript": "ཡ",
+    "suffix": "ག"
+   },
+   {
+    "tibetan": "འཚལ",
+    "wylie": "'tshal",
+    "root": "ཚ",
+    "prefix": "འ",
+    "suffix": "ལ"
+   }
+  ],
+  "kcs": [
+   "L:ག",
+   "L:ཕ",
+   "L:ཚ",
+   "L:འ",
+   "L:ཡ",
+   "L:ལ",
+   "R:pre",
+   "R:sub",
+   "R:suf"
+  ]
+ },
+ {
+  "id": "W-026",
+  "tibetan": "དགོངས་པ",
+  "wylie": "dgongs pa",
+  "gloss": "密意",
+  "audio": "W-026",
+  "syllables": [
+   {
+    "tibetan": "དགོངས",
+    "wylie": "dgongs",
+    "root": "ག",
+    "vowel": "ོ",
+    "prefix": "ད",
+    "suffix": "ང",
+    "postSuffix": "ས"
+   },
+   {
+    "tibetan": "པ",
+    "wylie": "pa",
+    "root": "པ"
+   }
+  ],
+  "kcs": [
+   "L:ག",
+   "L:ང",
+   "L:ད",
+   "L:པ",
+   "L:ས",
+   "R:post",
+   "R:pre",
+   "R:suf",
+   "V:ོ"
+  ]
+ },
+ {
+  "id": "W-027",
+  "tibetan": "རིག་འཛིན",
+  "wylie": "rig 'dzin",
+  "gloss": "持明",
+  "audio": "W-027",
+  "syllables": [
+   {
+    "tibetan": "རིག",
+    "wylie": "rig",
+    "root": "ར",
+    "vowel": "ི",
+    "suffix": "ག"
+   },
+   {
+    "tibetan": "འཛིན",
+    "wylie": "'dzin",
+    "root": "ཛ",
+    "vowel": "ི",
+    "prefix": "འ",
+    "suffix": "ན"
+   }
+  ],
+  "kcs": [
+   "L:ག",
+   "L:ན",
+   "L:ཛ",
+   "L:འ",
+   "L:ར",
+   "R:pre",
+   "R:suf",
+   "V:ི"
+  ]
+ },
+ {
+  "id": "W-028",
+  "tibetan": "གང་ཟག",
+  "wylie": "gang zag",
+  "gloss": "补特伽罗；人",
+  "audio": "W-028",
+  "syllables": [
+   {
+    "tibetan": "གང",
+    "wylie": "gang",
+    "root": "ག",
+    "suffix": "ང"
+   },
+   {
+    "tibetan": "ཟག",
+    "wylie": "zag",
+    "root": "ཟ",
+    "suffix": "ག"
+   }
+  ],
+  "kcs": [
+   "L:ག",
+   "L:ང",
+   "L:ཟ",
+   "R:suf"
+  ]
+ },
+ {
+  "id": "W-029",
+  "tibetan": "སྐལ་པ",
+  "wylie": "skal pa",
+  "gloss": "缘分",
+  "audio": "W-029",
+  "syllables": [
+   {
+    "tibetan": "སྐལ",
+    "wylie": "skal",
+    "root": "ཀ",
+    "superscript": "ས",
+    "suffix": "ལ"
+   },
+   {
+    "tibetan": "པ",
+    "wylie": "pa",
+    "root": "པ"
+   }
+  ],
+  "kcs": [
+   "L:ཀ",
+   "L:པ",
+   "L:ལ",
+   "L:ས",
+   "R:suf",
+   "R:sup"
+  ]
+ },
+ {
+  "id": "W-030",
+  "tibetan": "དམ་པ",
+  "wylie": "dam pa",
+  "gloss": "殊胜；圣者",
+  "audio": "W-030",
+  "syllables": [
+   {
+    "tibetan": "དམ",
+    "wylie": "dam",
+    "root": "ད",
+    "suffix": "མ"
+   },
+   {
+    "tibetan": "པ",
+    "wylie": "pa",
+    "root": "པ"
+   }
+  ],
+  "kcs": [
+   "L:ད",
+   "L:པ",
+   "L:མ",
+   "R:suf"
+  ]
+ },
+ {
+  "id": "W-031",
+  "tibetan": "དོན་གཉིས",
+  "wylie": "don gnyis",
+  "gloss": "二利",
+  "audio": "W-031",
+  "syllables": [
+   {
+    "tibetan": "དོན",
+    "wylie": "don",
+    "root": "ད",
+    "vowel": "ོ",
+    "suffix": "ན"
+   },
+   {
+    "tibetan": "གཉིས",
+    "wylie": "gnyis",
+    "root": "ཉ",
+    "vowel": "ི",
+    "prefix": "ག",
+    "suffix": "ས"
+   }
+  ],
+  "kcs": [
+   "L:ག",
+   "L:ཉ",
+   "L:ད",
+   "L:ན",
+   "L:ས",
+   "R:pre",
+   "R:suf",
+   "V:ི",
+   "V:ོ"
+  ]
+ },
+ {
+  "id": "W-032",
+  "tibetan": "ཆོས་སྐུ",
+  "wylie": "chos sku",
+  "gloss": "法身",
+  "audio": "W-032",
+  "syllables": [
+   {
+    "tibetan": "ཆོས",
+    "wylie": "chos",
+    "root": "ཆ",
+    "vowel": "ོ",
+    "suffix": "ས"
+   },
+   {
+    "tibetan": "སྐུ",
+    "wylie": "sku",
+    "root": "ཀ",
+    "superscript": "ས",
+    "vowel": "ུ"
+   }
+  ],
+  "kcs": [
+   "L:ཀ",
+   "L:ཆ",
+   "L:ས",
+   "R:suf",
+   "R:sup",
+   "V:ུ",
+   "V:ོ"
+  ]
+ },
+ {
+  "id": "W-033",
+  "tibetan": "ལོངས་སྐུ",
+  "wylie": "longs sku",
+  "gloss": "报身",
+  "audio": "W-033",
+  "syllables": [
+   {
+    "tibetan": "ལོངས",
+    "wylie": "longs",
+    "root": "ལ",
+    "vowel": "ོ",
+    "suffix": "ང",
+    "postSuffix": "ས"
+   },
+   {
+    "tibetan": "སྐུ",
+    "wylie": "sku",
+    "root": "ཀ",
+    "superscript": "ས",
+    "vowel": "ུ"
+   }
+  ],
+  "kcs": [
+   "L:ཀ",
+   "L:ང",
+   "L:ལ",
+   "L:ས",
+   "R:post",
+   "R:suf",
+   "R:sup",
+   "V:ུ",
+   "V:ོ"
+  ]
+ },
+ {
+  "id": "W-034",
+  "tibetan": "སྤྲུལ་སྐུ",
+  "wylie": "sprul sku",
+  "gloss": "化身",
+  "audio": "W-034",
+  "syllables": [
+   {
+    "tibetan": "སྤྲུལ",
+    "wylie": "sprul",
+    "root": "པ",
+    "superscript": "ས",
+    "subscript": "ར",
+    "vowel": "ུ",
+    "suffix": "ལ"
+   },
+   {
+    "tibetan": "སྐུ",
+    "wylie": "sku",
+    "root": "ཀ",
+    "superscript": "ས",
+    "vowel": "ུ"
+   }
+  ],
+  "kcs": [
+   "L:ཀ",
+   "L:པ",
+   "L:ར",
+   "L:ལ",
+   "L:ས",
+   "R:sub",
+   "R:suf",
+   "R:sup",
+   "V:ུ"
+  ]
+ },
+ {
+  "id": "W-035",
+  "tibetan": "ཀློང",
+  "wylie": "klong",
+  "gloss": "界；广界",
+  "audio": "W-035",
+  "syllables": [
+   {
+    "tibetan": "ཀློང",
+    "wylie": "klong",
+    "root": "ཀ",
+    "subscript": "ལ",
+    "vowel": "ོ",
+    "suffix": "ང"
+   }
+  ],
+  "kcs": [
+   "L:ཀ",
+   "L:ང",
+   "L:ལ",
+   "R:sub",
+   "R:suf",
+   "V:ོ"
+  ]
+ },
+ {
+  "id": "W-036",
+  "tibetan": "དབྱིངས",
+  "wylie": "dbyings",
+  "gloss": "法界",
+  "audio": "W-036",
+  "syllables": [
+   {
+    "tibetan": "དབྱིངས",
+    "wylie": "dbyings",
+    "root": "བ",
+    "subscript": "ཡ",
+    "vowel": "ི",
+    "prefix": "ད",
+    "suffix": "ང",
+    "postSuffix": "ས"
+   }
+  ],
+  "kcs": [
+   "L:ང",
+   "L:ད",
+   "L:བ",
+   "L:ཡ",
+   "L:ས",
+   "R:post",
+   "R:pre",
+   "R:sub",
+   "R:suf",
+   "V:ི"
+  ]
+ },
+ {
+  "id": "W-037",
+  "tibetan": "འོད་གསལ",
+  "wylie": "'od gsal",
+  "gloss": "光明",
+  "audio": "W-037",
+  "syllables": [
+   {
+    "tibetan": "འོད",
+    "wylie": "'od",
+    "root": "འ",
+    "vowel": "ོ",
+    "suffix": "ད"
+   },
+   {
+    "tibetan": "གསལ",
+    "wylie": "gsal",
+    "root": "ས",
+    "prefix": "ག",
+    "suffix": "ལ"
+   }
+  ],
+  "kcs": [
+   "L:ག",
+   "L:ད",
+   "L:འ",
+   "L:ལ",
+   "L:ས",
+   "R:pre",
+   "R:suf",
+   "V:ོ"
+  ]
+ },
+ {
+  "id": "W-038",
+  "tibetan": "འོད་ཟེར",
+  "wylie": "'od zer",
+  "gloss": "光芒",
+  "audio": "W-038",
+  "syllables": [
+   {
+    "tibetan": "འོད",
+    "wylie": "'od",
+    "root": "འ",
+    "vowel": "ོ",
+    "suffix": "ད"
+   },
+   {
+    "tibetan": "ཟེར",
+    "wylie": "zer",
+    "root": "ཟ",
+    "vowel": "ེ",
+    "suffix": "ར"
+   }
+  ],
+  "kcs": [
+   "L:ད",
+   "L:ཟ",
+   "L:འ",
+   "L:ར",
+   "R:suf",
+   "V:ེ",
+   "V:ོ"
+  ]
+ },
+ {
+  "id": "W-039",
+  "tibetan": "གདུལ་བྱ",
+  "wylie": "gdul bya",
+  "gloss": "所化众生",
+  "audio": "W-039",
+  "syllables": [
+   {
+    "tibetan": "གདུལ",
+    "wylie": "gdul",
+    "root": "ད",
+    "vowel": "ུ",
+    "prefix": "ག",
+    "suffix": "ལ"
+   },
+   {
+    "tibetan": "བྱ",
+    "wylie": "bya",
+    "root": "བ",
+    "subscript": "ཡ"
+   }
+  ],
+  "kcs": [
+   "L:ག",
+   "L:ད",
+   "L:བ",
+   "L:ཡ",
+   "L:ལ",
+   "R:pre",
+   "R:sub",
+   "R:suf",
+   "V:ུ"
+  ]
+ },
+ {
+  "id": "W-040",
+  "tibetan": "འགྲོ་དོན",
+  "wylie": "'gro don",
+  "gloss": "利益众生",
+  "audio": "W-040",
+  "syllables": [
+   {
+    "tibetan": "འགྲོ",
+    "wylie": "'gro",
+    "root": "ག",
+    "subscript": "ར",
+    "vowel": "ོ",
+    "prefix": "འ"
+   },
+   {
+    "tibetan": "དོན",
+    "wylie": "don",
+    "root": "ད",
+    "vowel": "ོ",
+    "suffix": "ན"
+   }
+  ],
+  "kcs": [
+   "L:ག",
+   "L:ད",
+   "L:ན",
+   "L:འ",
+   "L:ར",
+   "R:pre",
+   "R:sub",
+   "R:suf",
+   "V:ོ"
+  ]
+ },
+ {
+  "id": "W-041",
+  "tibetan": "ཀུན་མཁྱེན",
+  "wylie": "kun mkhyen",
+  "gloss": "遍知",
+  "audio": "W-041",
+  "syllables": [
+   {
+    "tibetan": "ཀུན",
+    "wylie": "kun",
+    "root": "ཀ",
+    "vowel": "ུ",
+    "suffix": "ན"
+   },
+   {
+    "tibetan": "མཁྱེན",
+    "wylie": "mkhyen",
+    "root": "ཁ",
+    "subscript": "ཡ",
+    "vowel": "ེ",
+    "prefix": "མ",
+    "suffix": "ན"
+   }
+  ],
+  "kcs": [
+   "L:ཀ",
+   "L:ཁ",
+   "L:ན",
+   "L:མ",
+   "L:ཡ",
+   "R:pre",
+   "R:sub",
+   "R:suf",
+   "V:ུ",
+   "V:ེ"
+  ]
+ },
+ {
+  "id": "W-042",
+  "tibetan": "ཤེས་བྱ",
+  "wylie": "shes bya",
+  "gloss": "所知",
+  "audio": "W-042",
+  "syllables": [
+   {
+    "tibetan": "ཤེས",
+    "wylie": "shes",
+    "root": "ཤ",
+    "vowel": "ེ",
+    "suffix": "ས"
+   },
+   {
+    "tibetan": "བྱ",
+    "wylie": "bya",
+    "root": "བ",
+    "subscript": "ཡ"
+   }
+  ],
+  "kcs": [
+   "L:བ",
+   "L:ཡ",
+   "L:ཤ",
+   "L:ས",
+   "R:sub",
+   "R:suf",
+   "V:ེ"
+  ]
+ },
+ {
+  "id": "W-043",
+  "tibetan": "ཟབ་ལམ",
+  "wylie": "zab lam",
+  "gloss": "深道",
+  "audio": "W-043",
+  "syllables": [
+   {
+    "tibetan": "ཟབ",
+    "wylie": "zab",
+    "root": "ཟ",
+    "suffix": "བ"
+   },
+   {
+    "tibetan": "ལམ",
+    "wylie": "lam",
+    "root": "ལ",
+    "suffix": "མ"
+   }
+  ],
+  "kcs": [
+   "L:བ",
+   "L:མ",
+   "L:ཟ",
+   "L:ལ",
+   "R:suf"
+  ]
+ },
+ {
+  "id": "W-044",
+  "tibetan": "ཐེག་རྩེ",
+  "wylie": "theg rtse",
+  "gloss": "顶乘",
+  "audio": "W-044",
+  "syllables": [
+   {
+    "tibetan": "ཐེག",
+    "wylie": "theg",
+    "root": "ཐ",
+    "vowel": "ེ",
+    "suffix": "ག"
+   },
+   {
+    "tibetan": "རྩེ",
+    "wylie": "rtse",
+    "root": "ཙ",
+    "superscript": "ར",
+    "vowel": "ེ"
+   }
+  ],
+  "kcs": [
+   "L:ག",
+   "L:ཐ",
+   "L:ཙ",
+   "L:ར",
+   "R:suf",
+   "R:sup",
+   "V:ེ"
+  ]
+ },
+ {
+  "id": "W-045",
+  "tibetan": "བསྟན་པ",
+  "wylie": "bstan pa",
+  "gloss": "教法",
+  "audio": "W-045",
+  "syllables": [
+   {
+    "tibetan": "བསྟན",
+    "wylie": "bstan",
+    "root": "ཏ",
+    "superscript": "ས",
+    "prefix": "བ",
+    "suffix": "ན"
+   },
+   {
+    "tibetan": "པ",
+    "wylie": "pa",
+    "root": "པ"
+   }
+  ],
+  "kcs": [
+   "L:ཏ",
+   "L:ན",
+   "L:པ",
+   "L:བ",
+   "L:ས",
+   "R:pre",
+   "R:suf",
+   "R:sup"
+  ]
+ },
+ {
+  "id": "W-046",
+  "tibetan": "སྤྱན་རས་གཟིགས",
+  "wylie": "spyan ras gzigs",
+  "gloss": "观世音",
+  "audio": "W-046",
+  "syllables": [
+   {
+    "tibetan": "སྤྱན",
+    "wylie": "spyan",
+    "root": "པ",
+    "superscript": "ས",
+    "subscript": "ཡ",
+    "suffix": "ན"
+   },
+   {
+    "tibetan": "རས",
+    "wylie": "ras",
+    "root": "ར",
+    "suffix": "ས"
+   },
+   {
+    "tibetan": "གཟིགས",
+    "wylie": "gzigs",
+    "root": "ཟ",
+    "vowel": "ི",
+    "prefix": "ག",
+    "suffix": "ག",
+    "postSuffix": "ས"
+   }
+  ],
+  "kcs": [
+   "L:ག",
+   "L:ན",
+   "L:པ",
+   "L:ཟ",
+   "L:ཡ",
+   "L:ར",
+   "L:ས",
+   "R:post",
+   "R:pre",
+   "R:sub",
+   "R:suf",
+   "R:sup",
+   "V:ི"
+  ]
+ },
+ {
+  "id": "W-047",
+  "tibetan": "བཤེས་གཉེན",
+  "wylie": "bshes gnyen",
+  "gloss": "善知识",
+  "audio": "W-047",
+  "syllables": [
+   {
+    "tibetan": "བཤེས",
+    "wylie": "bshes",
+    "root": "ཤ",
+    "vowel": "ེ",
+    "prefix": "བ",
+    "suffix": "ས"
+   },
+   {
+    "tibetan": "གཉེན",
+    "wylie": "gnyen",
+    "root": "ཉ",
+    "vowel": "ེ",
+    "prefix": "ག",
+    "suffix": "ན"
+   }
+  ],
+  "kcs": [
+   "L:ག",
+   "L:ཉ",
+   "L:ན",
+   "L:བ",
+   "L:ཤ",
+   "L:ས",
+   "R:pre",
+   "R:suf",
+   "V:ེ"
+  ]
+ },
+ {
+  "id": "W-048",
+  "tibetan": "ཐར་ལམ",
+  "wylie": "thar lam",
+  "gloss": "解脱道",
+  "audio": "W-048",
+  "syllables": [
+   {
+    "tibetan": "ཐར",
+    "wylie": "thar",
+    "root": "ཐ",
+    "suffix": "ར"
+   },
+   {
+    "tibetan": "ལམ",
+    "wylie": "lam",
+    "root": "ལ",
+    "suffix": "མ"
+   }
+  ],
+  "kcs": [
+   "L:ཐ",
+   "L:མ",
+   "L:ར",
+   "L:ལ",
+   "R:suf"
+  ]
+ },
+ {
+  "id": "W-049",
+  "tibetan": "དྲིན་ཆེན",
+  "wylie": "drin chen",
+  "gloss": "大恩",
+  "audio": "W-049",
+  "syllables": [
+   {
+    "tibetan": "དྲིན",
+    "wylie": "drin",
+    "root": "ད",
+    "subscript": "ར",
+    "vowel": "ི",
+    "suffix": "ན"
+   },
+   {
+    "tibetan": "ཆེན",
+    "wylie": "chen",
+    "root": "ཆ",
+    "vowel": "ེ",
+    "suffix": "ན"
+   }
+  ],
+  "kcs": [
+   "L:ཆ",
+   "L:ད",
+   "L:ན",
+   "L:ར",
+   "R:sub",
+   "R:suf",
+   "V:ི",
+   "V:ེ"
+  ]
+ },
+ {
+  "id": "W-050",
+  "tibetan": "རྩ་བ",
+  "wylie": "rtsa ba",
+  "gloss": "根本",
+  "audio": "W-050",
+  "syllables": [
+   {
+    "tibetan": "རྩ",
+    "wylie": "rtsa",
+    "root": "ཙ",
+    "superscript": "ར"
+   },
+   {
+    "tibetan": "བ",
+    "wylie": "ba",
+    "root": "བ"
+   }
+  ],
+  "kcs": [
+   "L:བ",
+   "L:ཙ",
+   "L:ར",
+   "R:sup"
+  ]
+ },
+ {
+  "id": "W-051",
+  "tibetan": "ཡོངས་རྫོགས",
+  "wylie": "yongs rdzogs",
+  "gloss": "圆满",
+  "audio": "W-051",
+  "syllables": [
+   {
+    "tibetan": "ཡོངས",
+    "wylie": "yongs",
+    "root": "ཡ",
+    "vowel": "ོ",
+    "suffix": "ང",
+    "postSuffix": "ས"
+   },
+   {
+    "tibetan": "རྫོགས",
+    "wylie": "rdzogs",
+    "root": "ཛ",
+    "superscript": "ར",
+    "vowel": "ོ",
+    "suffix": "ག",
+    "postSuffix": "ས"
+   }
+  ],
+  "kcs": [
+   "L:ག",
+   "L:ང",
+   "L:ཛ",
+   "L:ཡ",
+   "L:ར",
+   "L:ས",
+   "R:post",
+   "R:suf",
+   "R:sup",
+   "V:ོ"
+  ]
+ },
+ {
+  "id": "W-052",
+  "tibetan": "གཞུང",
+  "wylie": "gzhung",
+  "gloss": "论典",
+  "audio": "W-052",
+  "syllables": [
+   {
+    "tibetan": "གཞུང",
+    "wylie": "gzhung",
+    "root": "ཞ",
+    "vowel": "ུ",
+    "prefix": "ག",
+    "suffix": "ང"
+   }
+  ],
+  "kcs": [
+   "L:ག",
+   "L:ང",
+   "L:ཞ",
+   "R:pre",
+   "R:suf",
+   "V:ུ"
+  ]
+ },
+ {
+  "id": "W-053",
+  "tibetan": "མན་ངག",
+  "wylie": "man ngag",
+  "gloss": "窍诀",
+  "audio": "W-053",
+  "syllables": [
+   {
+    "tibetan": "མན",
+    "wylie": "man",
+    "root": "མ",
+    "suffix": "ན"
+   },
+   {
+    "tibetan": "ངག",
+    "wylie": "ngag",
+    "root": "ང",
+    "suffix": "ག"
+   }
+  ],
+  "kcs": [
+   "L:ག",
+   "L:ང",
+   "L:ན",
+   "L:མ",
+   "R:suf"
+  ]
+ },
+ {
+  "id": "W-054",
+  "tibetan": "སྙིང་པོ",
+  "wylie": "snying po",
+  "gloss": "精要",
+  "audio": "W-054",
+  "syllables": [
+   {
+    "tibetan": "སྙིང",
+    "wylie": "snying",
+    "root": "ཉ",
+    "superscript": "ས",
+    "vowel": "ི",
+    "suffix": "ང"
+   },
+   {
+    "tibetan": "པོ",
+    "wylie": "po",
+    "root": "པ",
+    "vowel": "ོ"
+   }
+  ],
+  "kcs": [
+   "L:ང",
+   "L:ཉ",
+   "L:པ",
+   "L:ས",
+   "R:suf",
+   "R:sup",
+   "V:ི",
+   "V:ོ"
+  ]
+ },
+ {
+  "id": "W-055",
+  "tibetan": "ཚེ་གཅིག",
+  "wylie": "tshe gcig",
+  "gloss": "一生；即生",
+  "audio": "W-055",
+  "syllables": [
+   {
+    "tibetan": "ཚེ",
+    "wylie": "tshe",
+    "root": "ཚ",
+    "vowel": "ེ"
+   },
+   {
+    "tibetan": "གཅིག",
+    "wylie": "gcig",
+    "root": "ཅ",
+    "vowel": "ི",
+    "prefix": "ག",
+    "suffix": "ག"
+   }
+  ],
+  "kcs": [
+   "L:ག",
+   "L:ཅ",
+   "L:ཚ",
+   "R:pre",
+   "R:suf",
+   "V:ི",
+   "V:ེ"
+  ]
+ },
+ {
+  "id": "W-056",
+  "tibetan": "ཐུན་མོང",
+  "wylie": "thun mong",
+  "gloss": "共同",
+  "audio": "W-056",
+  "syllables": [
+   {
+    "tibetan": "ཐུན",
+    "wylie": "thun",
+    "root": "ཐ",
+    "vowel": "ུ",
+    "suffix": "ན"
+   },
+   {
+    "tibetan": "མོང",
+    "wylie": "mong",
+    "root": "མ",
+    "vowel": "ོ",
+    "suffix": "ང"
+   }
+  ],
+  "kcs": [
+   "L:ང",
+   "L:ཐ",
+   "L:ན",
+   "L:མ",
+   "R:suf",
+   "V:ུ",
+   "V:ོ"
+  ]
+ },
+ {
+  "id": "W-057",
+  "tibetan": "གདམས་པ",
+  "wylie": "gdams pa",
+  "gloss": "教言",
+  "audio": "W-057",
+  "syllables": [
+   {
+    "tibetan": "གདམས",
+    "wylie": "gdams",
+    "root": "ད",
+    "prefix": "ག",
+    "suffix": "མ",
+    "postSuffix": "ས"
+   },
+   {
+    "tibetan": "པ",
+    "wylie": "pa",
+    "root": "པ"
+   }
+  ],
+  "kcs": [
+   "L:ག",
+   "L:ད",
+   "L:པ",
+   "L:མ",
+   "L:ས",
+   "R:post",
+   "R:pre",
+   "R:suf"
+  ]
+ },
+ {
+  "id": "W-058",
+  "tibetan": "ཉེ་ལམ",
+  "wylie": "nye lam",
+  "gloss": "捷径",
+  "audio": "W-058",
+  "syllables": [
+   {
+    "tibetan": "ཉེ",
+    "wylie": "nye",
+    "root": "ཉ",
+    "vowel": "ེ"
+   },
+   {
+    "tibetan": "ལམ",
+    "wylie": "lam",
+    "root": "ལ",
+    "suffix": "མ"
+   }
+  ],
+  "kcs": [
+   "L:ཉ",
+   "L:མ",
+   "L:ལ",
+   "R:suf",
+   "V:ེ"
+  ]
+ },
+ {
+  "id": "W-059",
+  "tibetan": "འཕོ་བ",
+  "wylie": "'pho ba",
+  "gloss": "迁识（往生法）",
+  "audio": "W-059",
+  "syllables": [
+   {
+    "tibetan": "འཕོ",
+    "wylie": "'pho",
+    "root": "ཕ",
+    "vowel": "ོ",
+    "prefix": "འ"
+   },
+   {
+    "tibetan": "བ",
+    "wylie": "ba",
+    "root": "བ"
+   }
+  ],
+  "kcs": [
+   "L:ཕ",
+   "L:བ",
+   "L:འ",
+   "R:pre",
+   "V:ོ"
+  ]
+ },
+ {
+  "id": "W-060",
+  "tibetan": "གོ་བདེ",
+  "wylie": "go bde",
+  "gloss": "易懂",
+  "audio": "W-060",
+  "syllables": [
+   {
+    "tibetan": "གོ",
+    "wylie": "go",
+    "root": "ག",
+    "vowel": "ོ"
+   },
+   {
+    "tibetan": "བདེ",
+    "wylie": "bde",
+    "root": "ད",
+    "vowel": "ེ",
+    "prefix": "བ"
+   }
+  ],
+  "kcs": [
+   "L:ག",
+   "L:ད",
+   "L:བ",
+   "R:pre",
+   "V:ེ",
+   "V:ོ"
+  ]
+ },
+ {
+  "id": "W-061",
+  "tibetan": "རྨད་དུ་བྱུང",
+  "wylie": "rmad du byung",
+  "gloss": "稀有",
+  "audio": "W-061",
+  "syllables": [
+   {
+    "tibetan": "རྨད",
+    "wylie": "rmad",
+    "root": "མ",
+    "superscript": "ར",
+    "suffix": "ད"
+   },
+   {
+    "tibetan": "དུ",
+    "wylie": "du",
+    "root": "ད",
+    "vowel": "ུ"
+   },
+   {
+    "tibetan": "བྱུང",
+    "wylie": "byung",
+    "root": "བ",
+    "subscript": "ཡ",
+    "vowel": "ུ",
+    "suffix": "ང"
+   }
+  ],
+  "kcs": [
+   "L:ང",
+   "L:ད",
+   "L:བ",
+   "L:མ",
+   "L:ཡ",
+   "L:ར",
+   "R:sub",
+   "R:suf",
+   "R:sup",
+   "V:ུ"
+  ]
+ },
+ {
+  "id": "W-062",
+  "tibetan": "མཚུངས་མེད",
+  "wylie": "mtshungs med",
+  "gloss": "无等",
+  "audio": "W-062",
+  "syllables": [
+   {
+    "tibetan": "མཚུངས",
+    "wylie": "mtshungs",
+    "root": "ཚ",
+    "vowel": "ུ",
+    "prefix": "མ",
+    "suffix": "ང",
+    "postSuffix": "ས"
+   },
+   {
+    "tibetan": "མེད",
+    "wylie": "med",
+    "root": "མ",
+    "vowel": "ེ",
+    "suffix": "ད"
+   }
+  ],
+  "kcs": [
+   "L:ང",
+   "L:ད",
+   "L:མ",
+   "L:ཚ",
+   "L:ས",
+   "R:post",
+   "R:pre",
+   "R:suf",
+   "V:ུ",
+   "V:ེ"
+  ]
+ },
+ {
+  "id": "W-063",
+  "tibetan": "བཀའ་ལུང",
+  "wylie": "bka' lung",
+  "gloss": "口传",
+  "audio": "W-063",
+  "syllables": [
+   {
+    "tibetan": "བཀའ",
+    "wylie": "bka'",
+    "root": "ཀ",
+    "prefix": "བ",
+    "suffix": "འ"
+   },
+   {
+    "tibetan": "ལུང",
+    "wylie": "lung",
+    "root": "ལ",
+    "vowel": "ུ",
+    "suffix": "ང"
+   }
+  ],
+  "kcs": [
+   "L:ཀ",
+   "L:ང",
+   "L:བ",
+   "L:འ",
+   "L:ལ",
+   "R:pre",
+   "R:suf",
+   "V:ུ"
+  ]
+ },
+ {
+  "id": "W-064",
+  "tibetan": "མ་ནོར་བ",
+  "wylie": "ma nor ba",
+  "gloss": "无误",
+  "audio": "W-064",
+  "syllables": [
+   {
+    "tibetan": "མ",
+    "wylie": "ma",
+    "root": "མ"
+   },
+   {
+    "tibetan": "ནོར",
+    "wylie": "nor",
+    "root": "ན",
+    "vowel": "ོ",
+    "suffix": "ར"
+   },
+   {
+    "tibetan": "བ",
+    "wylie": "ba",
+    "root": "བ"
+   }
+  ],
+  "kcs": [
+   "L:ན",
+   "L:བ",
+   "L:མ",
+   "L:ར",
+   "R:suf",
+   "V:ོ"
+  ]
+ },
+ {
+  "id": "W-065",
+  "tibetan": "རང་བློ",
+  "wylie": "rang blo",
+  "gloss": "自心",
+  "audio": "W-065",
+  "syllables": [
+   {
+    "tibetan": "རང",
+    "wylie": "rang",
+    "root": "ར",
+    "suffix": "ང"
+   },
+   {
+    "tibetan": "བློ",
+    "wylie": "blo",
+    "root": "བ",
+    "subscript": "ལ",
+    "vowel": "ོ"
+   }
+  ],
+  "kcs": [
+   "L:ང",
+   "L:བ",
+   "L:ར",
+   "L:ལ",
+   "R:sub",
+   "R:suf",
+   "V:ོ"
+  ]
+ },
+ {
+  "id": "W-066",
+  "tibetan": "བྱིན་གྱིས་རློབས",
+  "wylie": "byin gyis rlobs",
+  "gloss": "加持",
+  "audio": "W-066",
+  "syllables": [
+   {
+    "tibetan": "བྱིན",
+    "wylie": "byin",
+    "root": "བ",
+    "subscript": "ཡ",
+    "vowel": "ི",
+    "suffix": "ན"
+   },
+   {
+    "tibetan": "གྱིས",
+    "wylie": "gyis",
+    "root": "ག",
+    "subscript": "ཡ",
+    "vowel": "ི",
+    "suffix": "ས"
+   },
+   {
+    "tibetan": "རློབས",
+    "wylie": "rlobs",
+    "root": "ལ",
+    "superscript": "ར",
+    "vowel": "ོ",
+    "suffix": "བ",
+    "postSuffix": "ས"
+   }
+  ],
+  "kcs": [
+   "L:ག",
+   "L:ན",
+   "L:བ",
+   "L:ཡ",
+   "L:ར",
+   "L:ལ",
+   "L:ས",
+   "R:post",
+   "R:sub",
+   "R:suf",
+   "R:sup",
+   "V:ི",
+   "V:ོ"
+  ]
+ },
+ {
+  "id": "W-067",
+  "tibetan": "རྫོགས་པ་ཆེན་པོ",
+  "wylie": "rdzogs pa chen po",
+  "gloss": "大圆满",
+  "audio": "W-067",
+  "syllables": [
+   {
+    "tibetan": "རྫོགས",
+    "wylie": "rdzogs",
+    "root": "ཛ",
+    "superscript": "ར",
+    "vowel": "ོ",
+    "suffix": "ག",
+    "postSuffix": "ས"
+   },
+   {
+    "tibetan": "པ",
+    "wylie": "pa",
+    "root": "པ"
+   },
+   {
+    "tibetan": "ཆེན",
+    "wylie": "chen",
+    "root": "ཆ",
+    "vowel": "ེ",
+    "suffix": "ན"
+   },
+   {
+    "tibetan": "པོ",
+    "wylie": "po",
+    "root": "པ",
+    "vowel": "ོ"
+   }
+  ],
+  "kcs": [
+   "L:ག",
+   "L:ཆ",
+   "L:ན",
+   "L:པ",
+   "L:ཛ",
+   "L:ར",
+   "L:ས",
+   "R:post",
+   "R:suf",
+   "R:sup",
+   "V:ེ",
+   "V:ོ"
+  ]
+ },
+ {
+  "id": "W-068",
+  "tibetan": "སྙིང་ཏིག",
+  "wylie": "snying tig",
+  "gloss": "心髓（宁提）",
+  "audio": "W-068",
+  "syllables": [
+   {
+    "tibetan": "སྙིང",
+    "wylie": "snying",
+    "root": "ཉ",
+    "superscript": "ས",
+    "vowel": "ི",
+    "suffix": "ང"
+   },
+   {
+    "tibetan": "ཏིག",
+    "wylie": "tig",
+    "root": "ཏ",
+    "vowel": "ི",
+    "suffix": "ག"
+   }
+  ],
+  "kcs": [
+   "L:ག",
+   "L:ང",
+   "L:ཉ",
+   "L:ཏ",
+   "L:ས",
+   "R:suf",
+   "R:sup",
+   "V:ི"
+  ]
+ },
+ {
+  "id": "W-069",
+  "tibetan": "སྔོན་འགྲོ",
+  "wylie": "sngon 'gro",
+  "gloss": "前行",
+  "audio": "W-069",
+  "syllables": [
+   {
+    "tibetan": "སྔོན",
+    "wylie": "sngon",
+    "root": "ང",
+    "superscript": "ས",
+    "vowel": "ོ",
+    "suffix": "ན"
+   },
+   {
+    "tibetan": "འགྲོ",
+    "wylie": "'gro",
+    "root": "ག",
+    "subscript": "ར",
+    "vowel": "ོ",
+    "prefix": "འ"
+   }
+  ],
+  "kcs": [
+   "L:ག",
+   "L:ང",
+   "L:ན",
+   "L:འ",
+   "L:ར",
+   "L:ས",
+   "R:pre",
+   "R:sub",
+   "R:suf",
+   "R:sup",
+   "V:ོ"
+  ]
+ },
+ {
+  "id": "W-070",
+  "tibetan": "ཁྲིད་ཡིག",
+  "wylie": "khrid yig",
+  "gloss": "引导文",
+  "audio": "W-070",
+  "syllables": [
+   {
+    "tibetan": "ཁྲིད",
+    "wylie": "khrid",
+    "root": "ཁ",
+    "subscript": "ར",
+    "vowel": "ི",
+    "suffix": "ད"
+   },
+   {
+    "tibetan": "ཡིག",
+    "wylie": "yig",
+    "root": "ཡ",
+    "vowel": "ི",
+    "suffix": "ག"
+   }
+  ],
+  "kcs": [
+   "L:ཁ",
+   "L:ག",
+   "L:ད",
+   "L:ཡ",
+   "L:ར",
+   "R:sub",
+   "R:suf",
+   "V:ི"
+  ]
+ },
+ {
+  "id": "W-071",
+  "tibetan": "ཀུན་བཟང",
+  "wylie": "kun bzang",
+  "gloss": "普贤",
+  "audio": "W-071",
+  "syllables": [
+   {
+    "tibetan": "ཀུན",
+    "wylie": "kun",
+    "root": "ཀ",
+    "vowel": "ུ",
+    "suffix": "ན"
+   },
+   {
+    "tibetan": "བཟང",
+    "wylie": "bzang",
+    "root": "ཟ",
+    "prefix": "བ",
+    "suffix": "ང"
+   }
+  ],
+  "kcs": [
+   "L:ཀ",
+   "L:ང",
+   "L:ན",
+   "L:བ",
+   "L:ཟ",
+   "R:pre",
+   "R:suf",
+   "V:ུ"
+  ]
+ },
+ {
+  "id": "W-072",
+  "tibetan": "ཞལ་ལུང",
+  "wylie": "zhal lung",
+  "gloss": "言教",
+  "audio": "W-072",
+  "syllables": [
+   {
+    "tibetan": "ཞལ",
+    "wylie": "zhal",
+    "root": "ཞ",
+    "suffix": "ལ"
+   },
+   {
+    "tibetan": "ལུང",
+    "wylie": "lung",
+    "root": "ལ",
+    "vowel": "ུ",
+    "suffix": "ང"
+   }
+  ],
+  "kcs": [
+   "L:ང",
+   "L:ཞ",
+   "L:ལ",
+   "R:suf",
+   "V:ུ"
+  ]
+ },
+ {
+  "id": "W-073",
+  "tibetan": "དམིགས་པ་མེད་པ",
+  "wylie": "dmigs pa med pa",
+  "gloss": "无缘",
+  "audio": "W-073",
+  "syllables": [
+   {
+    "tibetan": "དམིགས",
+    "wylie": "dmigs",
+    "root": "མ",
+    "vowel": "ི",
+    "prefix": "ད",
+    "suffix": "ག",
+    "postSuffix": "ས"
+   },
+   {
+    "tibetan": "པ",
+    "wylie": "pa",
+    "root": "པ"
+   },
+   {
+    "tibetan": "མེད",
+    "wylie": "med",
+    "root": "མ",
+    "vowel": "ེ",
+    "suffix": "ད"
+   },
+   {
+    "tibetan": "པ",
+    "wylie": "pa",
+    "root": "པ"
+   }
+  ],
+  "kcs": [
+   "L:ག",
+   "L:ད",
+   "L:པ",
+   "L:མ",
+   "L:ས",
+   "R:post",
+   "R:pre",
+   "R:suf",
+   "V:ི",
+   "V:ེ"
+  ]
+ },
+ {
+  "id": "W-074",
+  "tibetan": "འཇིགས་མེད་གླིང་པ",
+  "wylie": "'jigs med gling pa",
+  "gloss": "无畏洲（晋美林巴）",
+  "audio": "W-074",
+  "syllables": [
+   {
+    "tibetan": "འཇིགས",
+    "wylie": "'jigs",
+    "root": "ཇ",
+    "vowel": "ི",
+    "prefix": "འ",
+    "suffix": "ག",
+    "postSuffix": "ས"
+   },
+   {
+    "tibetan": "མེད",
+    "wylie": "med",
+    "root": "མ",
+    "vowel": "ེ",
+    "suffix": "ད"
+   },
+   {
+    "tibetan": "གླིང",
+    "wylie": "gling",
+    "root": "ག",
+    "subscript": "ལ",
+    "vowel": "ི",
+    "suffix": "ང"
+   },
+   {
+    "tibetan": "པ",
+    "wylie": "pa",
+    "root": "པ"
+   }
+  ],
+  "kcs": [
+   "L:ག",
+   "L:ང",
+   "L:ཇ",
+   "L:ད",
+   "L:པ",
+   "L:མ",
+   "L:འ",
+   "L:ལ",
+   "L:ས",
+   "R:post",
+   "R:pre",
+   "R:sub",
+   "R:suf",
+   "V:ི",
+   "V:ེ"
+  ]
+ }
+]
