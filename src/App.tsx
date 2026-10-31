@@ -7,7 +7,8 @@ import Lesson from './Lesson.tsx'
 import Review from './Review.tsx'
 import Game from './Games.tsx'
 import Today from './Today.tsx'
-import { AlphabetView, Drill, type DrillSpec } from './Alphabet.tsx'
+import { AlphabetView, Drill } from './Alphabet.tsx'
+import { dailyDue, markDailyShown } from './alphabet.ts'
 import type { GameKind } from './daily.ts'
 import { CHECK_DAYS, dueChecks, dueKCs, ensureChecks, getPathState, type LevelState, type UnitState } from './progress.ts'
 import { PATH, unitByN, wordMap, type Level, type Track } from './course.ts'
@@ -20,8 +21,16 @@ export default function App() {
   const [passageId, setPassageId] = useState('title')
   const [session, setSession] = useState<Session | null>(null)
   const [game, setGame] = useState<{ kind?: GameKind; daily: boolean } | null>(null)
-  const [drill, setDrill] = useState<DrillSpec | null>(null)
-  const busy = session !== null || game !== null || drill !== null
+  // 每日认字：每天第一次打开 App 自动弹出
+  const [drill, setDrill] = useState(0)
+  useEffect(() => {
+    dailyDue().then((due) => {
+      if (!due) return
+      markDailyShown()
+      setDrill((n) => n || 1)
+    })
+  }, [])
+  const busy = session !== null || game !== null || drill !== 0
 
   const openPassage = (id: string) => {
     setPassageId(id)
@@ -38,8 +47,8 @@ export default function App() {
             <Lesson questions={session.questions} title={session.title} onFinish={session.onFinish} onExit={() => setSession(null)} />
           ))}
         {game !== null && <Game kind={game.kind} daily={game.daily} onExit={() => setGame(null)} />}
-        {drill !== null && <Drill key={JSON.stringify(drill)} spec={drill} onExit={() => setDrill(null)} />}
-        {!busy && tab === 'alphabet' && <AlphabetView onStart={setDrill} />}
+        {drill !== 0 && <Drill key={drill} onExit={() => setDrill(0)} />}
+        {!busy && tab === 'alphabet' && <AlphabetView key={drill} onStart={() => setDrill(Date.now())} />}
         {!busy && tab === 'path' && (
           <PathView onOpen={openPassage} onStart={setSession} onReview={() => setTab('review')} onPlay={(kind, daily) => setGame({ kind, daily })} />
         )}

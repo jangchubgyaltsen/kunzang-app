@@ -81,15 +81,6 @@ export const cvItem = ([s, pron]: [string, string]): DrillItem => ({
   key: 'CV:' + s, tib: s, pron, wylie: wylieOf.get(s[0])!.replace(/a$/, '') + vowelLatin.get(s[1]), audio: cvAudioOf(s), base: s[0],
 })
 
-export type Scope = { kind: 'rows'; rows: number[] } | { kind: 'shape' } | { kind: 'cv' }
-export type DrillMode = 'choose' | 'say'
-
-export function scopeItems(s: Scope): DrillItem[] {
-  if (s.kind === 'cv') return BOOK_CV.map(cvItem)
-  if (s.kind === 'shape') return shapeLetters.map(letterItem)
-  return s.rows.flatMap((r) => ROWS[r]).map(letterItem)
-}
-
 /** 四个选项：答案 + 形近字 + 同行的字 + 其他。选项按转写区分，注音相同的也能分开。 */
 export function optionsFor(it: DrillItem, pool: DrillItem[]): DrillItem[] {
   const all = it.key.startsWith('CV:') ? BOOK_CV.map(cvItem) : LETTERS.map((l) => letterItem(l[0]))
@@ -117,7 +108,7 @@ export const isLookalike = (a: string, b: string) => !!partners.get(a)?.has(b)
 
 export const FAST_MS = 3000
 export const FLUENT_AT = 3
-export type Stat = { fast: number; seen: number; ok: number; lastMs?: number }
+export type Stat = { fast: number; seen: number; ok: number; lastMs?: number; at?: number }
 const KEY = 'alphabet-stats'
 
 export async function loadStats(): Promise<Record<string, Stat>> {
@@ -134,26 +125,46 @@ export function record(stats: Record<string, Stat>, key: string, ok: boolean, ms
   if (ok) s.ok++
   s.fast = ok && ms <= FAST_MS ? s.fast + 1 : 0
   s.lastMs = ms
+  s.at = Date.now()
   stats[key] = s
 }
 
-/** 一轮 20 题：还不熟的字多出几次 */
-export function buildRound(items: DrillItem[], stats: Record<string, Stat>, n = 20): DrillItem[] {
-  const weight = (it: DrillItem) => (isFluent(stats[it.key]) ? 1 : (stats[it.key]?.seen ?? 0) === 0 ? 2 : 3)
-  const bag = items.flatMap((it) => Array(weight(it)).fill(it) as DrillItem[])
-  const out: DrillItem[] = []
-  // 先保证每个字至少出现一次
-  for (const it of shuffle(items)) if (out.length < n) out.push(it)
-  for (const it of shuffle(bag)) {
-    if (out.length >= n) break
-    out.push(it)
-  }
-  // 避免同一个字连着出现
-  const res = shuffle(out)
-  for (let i = 1; i < res.length; i++)
-    if (res[i].key === res[i - 1].key) {
-      const j = res.findIndex((x, k) => k > i && x.key !== res[i].key && x.key !== res[i - 1].key)
-      if (j > 0) [res[i], res[j]] = [res[j], res[i]]
+/** 每日练习里的一步：新字先认识一下，再考 */
+export type Step = { it: DrillItem; intro?: boolean }
+
+/**
+ * 每天自动出的一组：
+ * - 还没一眼认出的字，每个考两次；
+ * - 按字母表顺序带进几个新字，先看一遍再考；
+ * - 已经熟的字挑最久没见的几个复习；
+ * - 字母大部分熟了以后，书上的拼读例子也按同样办法加进来。
+ */
+export function buildDaily(stats: Record<string, Stat>): Step[] {
+  const letters = LETTERS.map((l) => letterItem(l[0]))
+  const fluentLetters = letters.filter((x) => isFluent(stats[x.key])).length
+  const all = fluentLetters >= 20 ? [...letters, ...BOOK_CV.map(cvItem)] : letters
+  const seen = (x: DrillItem) => (stats[x.key]?.seen ?? 0) > 0
+  const weak = all.filter((x) => seen(x) && !isFluent(stats[x.key])).sort((a, b) => stats[a.key].fast - stats[b.key].fast).slice(0, 10)
+  const fresh = all.filter((x) => !seen(x)).slice(0, weak.length >= 8 ? 2 : weak.length >= 4 ? 4 : 6)
+  const review = all
+    .filter((x) => isFluent(stats[x.key]))
+    .sort((a, b) => (stats[a.key].at ?? 0) - (stats[b.key].at ?? 0))
+    .slice(0, weak.length + fresh.length < 6 ? 8 : 4)
+  const quiz = shuffle([...weak, ...weak, ...fresh, ...fresh, ...review])
+  for (let i = 1; i < quiz.length; i++)
+    if (quiz[i].key === quiz[i - 1].key) {
+      const j = quiz.findIndex((x, k) => k > i && x.key !== quiz[i].key && x.key !== quiz[i - 1].key)
+      if (j > 0) [quiz[i], quiz[j]] = [quiz[j], quiz[i]]
     }
-  return res
+  return [...fresh.map((it) => ({ it, intro: true })), ...quiz.map((it) => ({ it }))]
+}
+
+// 每天打开 App 时自动弹出一次
+const DAILY_KEY = 'alphabet-daily'
+const today = () => new Date().toLocaleDateString('sv')
+export async function dailyDue() {
+  return (await db.settings.get(DAILY_KEY))?.value !== today()
+}
+export async function markDailyShown() {
+  await db.settings.put({ key: DAILY_KEY, value: today() })
 }
