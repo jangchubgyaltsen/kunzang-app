@@ -1,13 +1,17 @@
 import { useEffect, useState, type CSSProperties } from 'react'
 import { passages, passageTitles, syllableMap, units, type Syllable } from './content.ts'
 import { play } from './audio.ts'
-import { db, exportData, importData, importTranslationPack, type Flag } from './db.ts'
+import { db, exportData, importData, importTranslationPack } from './db.ts'
+import Lesson from './Lesson.tsx'
+import Review from './Review.tsx'
+import { getUnitStates, type UnitState } from './progress.ts'
 
 type Tab = 'path' | 'reader' | 'review' | 'settings'
 
 export default function App() {
   const [tab, setTab] = useState<Tab>('path')
   const [passageId, setPassageId] = useState('title')
+  const [lesson, setLesson] = useState<number | null>(null)
 
   const openPassage = (id: string) => {
     setPassageId(id)
@@ -17,11 +21,13 @@ export default function App() {
   return (
     <div className="app">
       <main>
-        {tab === 'path' && <PathView onOpen={openPassage} />}
-        {tab === 'reader' && <ReaderView passageId={passageId} onSelect={setPassageId} />}
-        {tab === 'review' && <ReviewView />}
-        {tab === 'settings' && <SettingsView />}
+        {lesson !== null && <Lesson unit={lesson} onExit={() => setLesson(null)} />}
+        {lesson === null && tab === 'path' && <PathView onOpen={openPassage} onStartLesson={setLesson} />}
+        {lesson === null && tab === 'reader' && <ReaderView passageId={passageId} onSelect={setPassageId} />}
+        {lesson === null && tab === 'review' && <Review />}
+        {lesson === null && tab === 'settings' && <SettingsView />}
       </main>
+      {lesson === null && (
       <nav className="tabs">
         {(
           [
@@ -36,30 +42,53 @@ export default function App() {
           </button>
         ))}
       </nav>
+      )}
     </div>
   )
 }
 
-function PathView({ onOpen }: { onOpen: (id: string) => void }) {
-  const current = units.find((u) => u.ready)?.n
+function PathView({ onOpen, onStartLesson }: { onOpen: (id: string) => void; onStartLesson: (n: number) => void }) {
+  const [states, setStates] = useState<Map<number, UnitState>>(new Map())
+  useEffect(() => {
+    getUnitStates().then((xs) => setStates(new Map(xs.map((x) => [x.n, x]))))
+  }, [])
+  // 原文单元（有 target）的阅读器随时可以打开；拼读单元按掌握度解锁
+  const open = (n: number, target?: string) => (target ? true : states.get(n)?.status !== 'locked' && states.size > 0)
+  const current = units.find((u) => !u.target && states.get(u.n)?.status === 'available')?.n
   return (
     <section>
       <h1>今日路径</h1>
       <p className="muted">第一部分：拼读 → 开篇原文</p>
       <ol className="path">
         {units.map((u, i) => (
-          <li key={u.n} className={(u.ready ? 'ready' : 'locked') + (u.n === current ? ' current' : '')} style={{ '--x': ZIGZAG[i % ZIGZAG.length] } as CSSProperties}>
-            <button className="node" disabled={!u.ready || !u.target} onClick={() => u.target && onOpen(u.target)} aria-label={u.title}>
-              {u.ready ? u.n : '🔒'}
+          <li key={u.n} className={statusClass(u.target ? undefined : states.get(u.n)?.status, open(u.n, u.target)) + (u.n === current ? ' current' : '')} style={{ '--x': ZIGZAG[i % ZIGZAG.length] } as CSSProperties}>
+            <button className="node" disabled={!open(u.n, u.target)} onClick={() => (u.target ? onOpen(u.target) : onStartLesson(u.n))} aria-label={u.title}>
+              {open(u.n, u.target) ? u.n : '🔒'}
             </button>
             <div className="unit-title">{u.title}</div>
             {u.examples.length > 0 && <div className="tib small">{u.examples.join('  ')}</div>}
-            {!u.ready && <div className="muted small">练习制作中</div>}
+            {!u.target && <UnitNote st={states.get(u.n)} />}
           </li>
         ))}
       </ol>
     </section>
   )
+}
+
+function statusClass(st: UnitState['status'] | undefined, open: boolean) {
+  if (!st) return open ? 'ready' : 'locked'
+  return { locked: 'locked', available: 'ready', passed: 'ready passed', mastered: 'ready mastered' }[st]
+}
+
+function UnitNote({ st }: { st?: UnitState }) {
+  if (!st) return null
+  const text = {
+    locked: '完成上一单元后解锁',
+    available: '点圆圈开始练习',
+    passed: `已通过 · 最好 ${Math.round((st.accuracy ?? 0) * 100)}%`,
+    mastered: '已掌握',
+  }[st.status]
+  return <div className="muted small">{text}</div>
 }
 
 // 节点左右错落的偏移量（相对节点宽度）
@@ -173,38 +202,6 @@ function SyllableCard({ s, onClose }: { s: Syllable; onClose: () => void }) {
         </div>
       </div>
     </div>
-  )
-}
-
-function ReviewView() {
-  const [flags, setFlags] = useState<Flag[]>([])
-  const load = () => db.flags.orderBy('id').reverse().toArray().then(setFlags)
-  useEffect(() => {
-    load()
-  }, [])
-  return (
-    <section>
-      <h1>复习</h1>
-      <p className="muted">间隔复习会在练习题做好后开启。这里先列出你标记过的问题，方便统一修改。</p>
-      {flags.length === 0 && <p className="muted">还没有标记。</p>}
-      <ul className="flags">
-        {flags.map((f) => (
-          <li key={f.id}>
-            <span className="tib">{f.ref}</span>
-            <span className="small">{f.note || '（未填写说明）'}</span>
-            <button
-              className="link"
-              onClick={async () => {
-                await db.flags.delete(f.id!)
-                load()
-              }}
-            >
-              删除
-            </button>
-          </li>
-        ))}
-      </ul>
-    </section>
   )
 }
 
