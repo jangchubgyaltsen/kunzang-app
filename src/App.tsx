@@ -7,19 +7,21 @@ import Lesson from './Lesson.tsx'
 import Review from './Review.tsx'
 import Game from './Games.tsx'
 import Today from './Today.tsx'
+import { AlphabetView, Drill, type DrillSpec } from './Alphabet.tsx'
 import type { GameKind } from './daily.ts'
 import { CHECK_DAYS, dueChecks, dueKCs, ensureChecks, getPathState, type LevelState, type UnitState } from './progress.ts'
 import { PATH, unitByN, wordMap, type Level, type Track } from './course.ts'
 import { spotCheckSession, type Session } from './session.ts'
 import { linesOf, yitongOf, type Token } from './reading.ts'
 
-type Tab = 'path' | 'reader' | 'review' | 'settings'
+type Tab = 'path' | 'alphabet' | 'reader' | 'review' | 'settings'
 export default function App() {
   const [tab, setTab] = useState<Tab>('path')
   const [passageId, setPassageId] = useState('title')
   const [session, setSession] = useState<Session | null>(null)
   const [game, setGame] = useState<{ kind?: GameKind; daily: boolean } | null>(null)
-  const busy = session !== null || game !== null
+  const [drill, setDrill] = useState<DrillSpec | null>(null)
+  const busy = session !== null || game !== null || drill !== null
 
   const openPassage = (id: string) => {
     setPassageId(id)
@@ -36,6 +38,8 @@ export default function App() {
             <Lesson questions={session.questions} title={session.title} onFinish={session.onFinish} onExit={() => setSession(null)} />
           ))}
         {game !== null && <Game kind={game.kind} daily={game.daily} onExit={() => setGame(null)} />}
+        {drill !== null && <Drill key={JSON.stringify(drill)} spec={drill} onExit={() => setDrill(null)} />}
+        {!busy && tab === 'alphabet' && <AlphabetView onStart={setDrill} />}
         {!busy && tab === 'path' && (
           <PathView onOpen={openPassage} onStart={setSession} onReview={() => setTab('review')} onPlay={(kind, daily) => setGame({ kind, daily })} />
         )}
@@ -48,6 +52,7 @@ export default function App() {
           {(
             [
               ['path', '路径'],
+              ['alphabet', '字母'],
               ['reader', '原文'],
               ['review', '复习'],
               ['settings', '设置'],
