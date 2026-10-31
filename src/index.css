@@ -80,4 +80,28 @@ button.link { border: none; background: none; color: var(--accent); padding: 4px
 .path li.mastered .node { background: #c9a227; box-shadow: 0 5px 0 #8a6d12; color: #fff; }
 .tap { cursor: pointer; -webkit-tap-highlight-color: transparent; }
 .tap:active { opacity: .6; }
-.path .example + .example { margin-left: .6em; }
+.example + .example { margin-left: .6em; }
+
+/* 关卡路径 */
+.track-tabs { margin-top: 18px; }
+.track-tabs button { font-size: 15px; padding: 8px 18px; }
+.unit-block { margin: 18px 0 8px; }
+.unit-head { display: flex; justify-content: space-between; gap: 12px; background: var(--card); border: 1px solid var(--line); border-left: 5px solid var(--accent); border-radius: 12px; padding: 10px 14px; }
+.unit-block.locked .unit-head { border-left-color: var(--line); opacity: .75; }
+.unit-actions { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex: none; }
+.unit-block .path { margin: 18px 0 8px; gap: 16px; }
+.path .node-label { margin-top: 2px; color: var(--accent); font-weight: 600; white-space: nowrap; }
+.path li.test .node { width: 76px; height: 76px; border-radius: 22px; }
+.path li.passed.test .node, .path li.passed .node { background: #b8862b; box-shadow: 0 5px 0 #7d5a17; color: #fff; }
+.due-box { background: #fff8ec; border: 1px solid #ecd9b5; border-radius: 14px; padding: 12px 14px; margin-top: 14px; display: flex; flex-direction: column; gap: 8px; }
+.due-go { display: flex; flex-direction: column; gap: 2px; text-align: left; }
+.due-go .small { font-weight: 400; opacity: .9; }
+.checks { list-style: none; padding: 0; margin: 8px 0; }
+.checks li { display: flex; gap: 12px; padding: 6px 0; border-bottom: 1px solid var(--line); align-items: baseline; }
+
+/* 原文按词显示 */
+.word { display: inline-flex; flex-direction: column; align-items: flex-start; border-radius: 6px; cursor: pointer; padding: 0 2px 2px; margin-right: 2px; }
+.word.on { background: #f3d9c9; }
+.pron { font-size: 13px; color: #8f8478; line-height: 1.2; margin-top: -4px; }
+.pron.big-pron { font-size: 20px; margin: 0 0 6px; }
+.gloss-big { font-size: 20px; margin: 4px 0; }

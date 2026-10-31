@@ -1,10 +1,12 @@
 import { syllables } from './content.ts'
 import { LETTERS, VOWELS, cvAudio, letterAudio, letterWylie, words } from './course.ts'
 import { play } from './audio.ts'
+import { tokenMap } from './reading.ts'
 
 // 藏文、Wylie 或中文释义 → 音频编号，用于“点什么就读什么”
 const byText = new Map<string, string>()
 for (const s of syllables) byText.set(s.tibetan, s.audio).set(s.wylie, s.audio)
+for (const t of tokenMap.values()) byText.set(t.tibetan, t.audio)
 for (const w of words) byText.set(w.tibetan, w.audio).set(w.wylie, w.audio).set(w.gloss, w.audio)
 for (const [l, wy] of LETTERS) {
   byText.set(l, letterAudio(l)).set(wy, letterAudio(l))

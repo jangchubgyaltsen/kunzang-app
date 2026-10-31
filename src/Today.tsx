@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { syllableMap } from './content.ts'
+import { linesOf } from './reading.ts'
 import { db } from './db.ts'
 import { play } from './audio.ts'
 import { AUSPICIOUS, GAMES, availableGames, dayKey, learnedPool, lineOfDay, planToday, streakInfo, type GameKind } from './daily.ts'
@@ -60,13 +60,13 @@ export default function Today({ onPlay }: { onPlay: (kind: GameKind | undefined,
             ▶
           </button>
           <div className="syls">
-            {line.syllables.map((s, j) => (
-              <span key={j} className="syl" onClick={() => syllableMap.get(s) && play(syllableMap.get(s)!.audio)}>
+            {(linesOf(passage.id)[i]?.words ?? []).map((w, j, ws) => (
+              <span key={w.id} className="word" onClick={() => play(w.audio)}>
                 <span className="tib">
-                  {s}
-                  {j < line.syllables.length - 1 ? '་' : ''}
+                  {w.tibetan}
+                  {j < ws.length - 1 ? '་' : ''}
                 </span>
-                <span className="syl-wylie">{syllableMap.get(s)?.wylie ?? ''}</span>
+                <span className="pron">{w.yitong}</span>
               </span>
             ))}
           </div>

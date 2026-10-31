@@ -1,0 +1,144 @@
+word_id	line_id	pos	tibetan	yitong_guess
+title-1-w01	title-1	1	རྫོགས་པ་ཆེན་པོ	zu ba qian bu
+title-1-w02	title-1	2	ཀློང་ཆེན	long qian
+title-1-w03	title-1	3	སྙིང་ཏིག	niang de
+title-1-w04	title-1	4	གི	ge
+title-1-w05	title-1	5	སྔོན་འགྲོའི	ngun zhuoi
+title-1-w06	title-1	6	ཁྲིད་ཡིག	chi ye
+title-1-w07	title-1	7	ཀུན་བཟང	gun sang
+title-1-w08	title-1	8	བླ་མའི	la mai
+title-1-w09	title-1	9	ཞལ་ལུང	xie long
+title-1-w10	title-1	10	ཞེས་བྱ་བ	xei cha wa
+title-1-w11	title-1	11	བཞུགས་སོ	xou suo
+homage-1-w01	homage-1	1	རྗེ་བཙུན	jie zun
+homage-1-w02	homage-1	2	བླ་མ	la ma
+homage-1-w03	homage-1	3	དམིགས་པ	me ba
+homage-1-w04	homage-1	4	མེད་པའི	mai bai
+homage-1-w05	homage-1	5	ཐུགས་རྗེ	tou jie
+homage-1-w06	homage-1	6	ཆེན་པོ	qian bu
+homage-1-w07	homage-1	7	དང	dang
+homage-1-w08	homage-1	8	ལྡན་པ	dan ba
+homage-1-w09	homage-1	9	རྣམས	nam
+homage-1-w10	homage-1	10	ལ	la
+homage-1-w11	homage-1	11	ཕྱག་འཚལ་ལོ	qia cai luo
+verse-1-1-w01	verse-1-1	1	རྒྱལ་བའི	jie wai
+verse-1-1-w02	verse-1-1	2	དགོངས་པ	gong ba
+verse-1-1-w03	verse-1-1	3	རིག་འཛིན	re zin
+verse-1-1-w04	verse-1-1	4	བརྡའ	da
+verse-1-1-w05	verse-1-1	5	ཡིས	yi
+verse-1-1-w06	verse-1-1	6	བརྒྱུད	ji
+verse-1-2-w01	verse-1-2	1	གང་ཟག	gang sa
+verse-1-2-w02	verse-1-2	2	མི	me
+verse-1-2-w03	verse-1-2	3	ལས	lei
+verse-1-2-w04	verse-1-2	4	སྐལ་པ	gai ba
+verse-1-2-w05	verse-1-2	5	རབ	raf
+verse-1-2-w06	verse-1-2	6	གྱུར་པས	jur bei
+verse-1-3-w01	verse-1-3	1	དམ་པའི	dam bai
+verse-1-3-w02	verse-1-3	2	རྗེས་ཟིན	jei sin
+verse-1-3-w03	verse-1-3	3	དོན་གཉིས	dun ni
+verse-1-3-w04	verse-1-3	4	མཐར་ཕྱིན་པ	tar qin ba
+verse-1-4-w01	verse-1-4	1	བརྒྱུད་གསུམ	ji sum
+verse-1-4-w02	verse-1-4	2	བླ་མ	la ma
+verse-1-4-w03	verse-1-4	3	རྣམས	nam
+verse-1-4-w04	verse-1-4	4	ལ	la
+verse-1-4-w05	verse-1-4	5	ཕྱག་འཚལ་ལོ	qia cai luo
+verse-2-1-w01	verse-2-1	1	ཆོས་ཟད	qei sai
+verse-2-1-w02	verse-2-1	2	ཀློང་དུ	long de
+verse-2-1-w03	verse-2-1	3	ཆོས་སྐུའི	qei gei
+verse-2-1-w04	verse-2-1	4	དགོངས་པ	gong ba
+verse-2-1-w05	verse-2-1	5	བརྙེས	nyei
+verse-2-2-w01	verse-2-2	1	འོད་གསལ	ao sai
+verse-2-2-w02	verse-2-2	2	དབྱིངས་སུ	yang se
+verse-2-2-w03	verse-2-2	3	ལོངས་སྐུའི	long gei
+verse-2-2-w04	verse-2-2	4	ཞིང་སྣང	xiang nang
+verse-2-2-w05	verse-2-2	5	གཟིགས	se
+verse-2-3-w01	verse-2-3	1	གདུལ་བྱའི	dai chai
+verse-2-3-w02	verse-2-3	2	སྣང་ངོར	nang ngor
+verse-2-3-w03	verse-2-3	3	སྤྲུལ་སྐུའི	zhai gei
+verse-2-3-w04	verse-2-3	4	འགྲོ་དོན	zhuo dun
+verse-2-3-w05	verse-2-3	5	མཛད	zai
+verse-2-4-w01	verse-2-4	1	ཀུན་མཁྱེན	gun qian
+verse-2-4-w02	verse-2-4	2	ཆོས་ཀྱི	qei ji
+verse-2-4-w03	verse-2-4	3	རྒྱལ་པོ	jie bu
+verse-2-4-w04	verse-2-4	4	ལ	la
+verse-2-4-w05	verse-2-4	5	ཕྱག་འཚལ	qia cai
+verse-3-1-w01	verse-3-1	1	མཁྱེན་པས	qian bei
+verse-3-1-w02	verse-3-1	2	ཤེས་བྱ	xei cha
+verse-3-1-w03	verse-3-1	3	ཀུན་གྱི	gun ji
+verse-3-1-w04	verse-3-1	4	དེ་ཉིད	di ni
+verse-3-1-w05	verse-3-1	5	གཟིགས	se
+verse-3-2-w01	verse-3-2	1	ཐུགས་བརྩེའི	tou zei
+verse-3-2-w02	verse-3-2	2	འོད་ཟེར	ao ser
+verse-3-2-w03	verse-3-2	3	གདུལ་བྱའི	dai chai
+verse-3-2-w04	verse-3-2	4	དཔལ་དུ	huai de
+verse-3-2-w05	verse-3-2	5	ཤར	xiar
+verse-3-3-w01	verse-3-3	1	ཟབ་ལམ	saf lam
+verse-3-3-w02	verse-3-3	2	ཐེག་རྩེའི	tai zei
+verse-3-3-w03	verse-3-3	3	བསྟན་པ	dan ba
+verse-3-3-w04	verse-3-3	4	གསལ	sai
+verse-3-3-w05	verse-3-3	5	མཛད་པ	zai ba
+verse-3-4-w01	verse-3-4	1	རིག་འཛིན	re zin
+verse-3-4-w02	verse-3-4	2	འཇིགས་མེད	je mai
+verse-3-4-w03	verse-3-4	3	གླིང་པ	lang ba
+verse-3-4-w04	verse-3-4	4	ལ	la
+verse-3-4-w05	verse-3-4	5	ཕྱག་འཚལ	qia cai
+verse-4-1-w01	verse-4-1	1	སྤྱན་རས་གཟིགས	jian rei se
+verse-4-1-w02	verse-4-1	2	དབང	huang
+verse-4-1-w03	verse-4-1	3	བཤེས་གཉེན	xei nian
+verse-4-1-w04	verse-4-1	4	ཚུལ	cai
+verse-4-1-w05	verse-4-1	5	བཟུང་ནས	song nei
+verse-4-2-w01	verse-4-2	1	གསུང་གི	song ge
+verse-4-2-w02	verse-4-2	2	སྣང་བས	nang wei
+verse-4-2-w03	verse-4-2	3	འབྲེལ་ཚད	zhai cai
+verse-4-2-w04	verse-4-2	4	ཐར་ལམ	tar lam
+verse-4-2-w05	verse-4-2	5	དགོད	gao
+verse-4-3-w01	verse-4-3	1	གང་ལ	gang la
+verse-4-3-w02	verse-4-3	2	གང་འདུལ	gang dai
+verse-4-3-w03	verse-4-3	3	མཛད་པ	zai ba
+verse-4-3-w04	verse-4-3	4	མཐའ་ཡས་པ	ta yei ba
+verse-4-4-w01	verse-4-4	1	དྲིན་ཆེན	zhin qian
+verse-4-4-w02	verse-4-4	2	རྩ་བའི	za wai
+verse-4-4-w03	verse-4-4	3	བླ་མ	la ma
+verse-4-4-w04	verse-4-4	4	ལ	la
+verse-4-4-w05	verse-4-4	5	ཕྱག་འཚལ	qia cai
+verse-5-1-w01	verse-5-1	1	བསྟན་པ	dan ba
+verse-5-1-w02	verse-5-1	2	ཡོངས་རྫོགས	yong zu
+verse-5-1-w03	verse-5-1	3	ཀུན་མཁྱེན	gun qian
+verse-5-1-w04	verse-5-1	4	བརྒྱུད་པའི	ji bai
+verse-5-1-w05	verse-5-1	5	གཞུང	xong
+verse-5-2-w01	verse-5-2	1	མན་ངག	man nga
+verse-5-2-w02	verse-5-2	2	སྙིང་པོ	niang bu
+verse-5-2-w03	verse-5-2	3	ཚེ་གཅིག	cei je
+verse-5-2-w04	verse-5-2	4	སངས་རྒྱས	sang jei
+verse-5-2-w05	verse-5-2	5	ཆོས	qei
+verse-5-3-w01	verse-5-3	1	ལམ་གྱི	lam ji
+verse-5-3-w02	verse-5-3	2	སྔོན་འགྲོ	ngun zhuo
+verse-5-3-w03	verse-5-3	3	ཐུན་མོང	tun mong
+verse-5-3-w04	verse-5-3	4	ཕྱི	qi
+verse-5-3-w05	verse-5-3	5	དང	dang
+verse-5-3-w06	verse-5-3	6	ནང	nang
+verse-5-4-w01	verse-5-4	1	གདམས་པའི	dam bai
+verse-5-4-w02	verse-5-4	2	ཆ་ལག	qia la
+verse-5-4-w03	verse-5-4	3	ཉེ་ལམ	nie lam
+verse-5-4-w04	verse-5-4	4	འཕོ་བར	pu war
+verse-5-4-w05	verse-5-4	5	བཅས	jei
+verse-6-1-w01	verse-6-1	1	གསལ་ལ	sai la
+verse-6-1-w02	verse-6-1	2	གོ་བདེ	gu di
+verse-6-1-w03	verse-6-1	3	དོན་ཟབ	dun saf
+verse-6-1-w04	verse-6-1	4	རྨད་དུ	mai de
+verse-6-1-w05	verse-6-1	5	བྱུང	chong
+verse-6-2-w01	verse-6-2	1	མཚུངས་མེད	cong mai
+verse-6-2-w02	verse-6-2	2	བླ་མའི	la mai
+verse-6-2-w03	verse-6-2	3	བཀའ་ལུང	gua long
+verse-6-2-w04	verse-6-2	4	མ་ནོར་བ	ma nor wa
+verse-6-3-w01	verse-6-3	1	རང་བློར	rang lor
+verse-6-3-w02	verse-6-3	2	ཇི་བཞིན	ji xin
+verse-6-3-w03	verse-6-3	3	ངེས་བཞིན	ngei xin
+verse-6-3-w04	verse-6-3	4	འདིར	dir
+verse-6-3-w05	verse-6-3	5	བཤད་ཀྱིས	xie ji
+verse-6-4-w01	verse-6-4	1	ལྷ	la
+verse-6-4-w02	verse-6-4	2	དང	dang
+verse-6-4-w03	verse-6-4	3	བླ་མས	la mei
+verse-6-4-w04	verse-6-4	4	བདག་རྒྱུད	da ji
+verse-6-4-w05	verse-6-4	5	བྱིན་གྱིས	chin ji
+verse-6-4-w06	verse-6-4	6	རློབས	luf

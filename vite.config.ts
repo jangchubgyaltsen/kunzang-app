@@ -20,7 +20,7 @@ export default defineConfig({
         icons: [{ src: 'icon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any maskable' }],
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,svg,woff2,m4a}'],
+        globPatterns: ['**/*.{js,css,html,svg,woff2,m4a,mp3}'],
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
       },
     }),
