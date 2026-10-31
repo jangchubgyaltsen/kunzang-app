@@ -5,7 +5,7 @@ import { finishLevel, recordAnswer, seenKCs, weakKCs } from './progress.ts'
 import { play } from './audio.ts'
 import { say } from './sound.ts'
 import ShadowCard from './Shadow.tsx'
-import { cvPron } from './alphabet.ts'
+import { cvPron, PRON } from './alphabet.ts'
 import './lesson.css'
 
 type Result = { passed: boolean; unitDone?: boolean }
@@ -141,7 +141,7 @@ function labelOf(q: Scored, a: string | number) {
 /** 自评题：自己先念，点开听答案，再说念对没有 */
 function SayIt({ q, chosen, onChoose }: { q: Extract<Scored, { kind: 'sayit' }>; chosen: string | number | null; onChoose: (c: string) => void }) {
   const [heard, setHeard] = useState(false)
-  const pron = cvPron(q.prompt)
+  const pron = PRON[q.prompt]?.[0] ?? cvPron(q.prompt)
   return (
     <div className="sayit">
       <button

@@ -13,6 +13,35 @@ export const LETTERS: [string, string][] = [
   ['ཧ', 'ha'], ['ཨ', 'a'],
 ]
 export const letterWylie = new Map(LETTERS)
+
+// 注音和汉字近音照《安多藏语一本通》第一章抄录（见 content/安多读音对照表-v0.md 第 1、2 节）。
+// 书上 ཀ/ག、ཏ/ད 这类清浊字注音相同，实际读音不同，以音频为准。
+/** 字母 → [一本通注音, 汉字近音] */
+export const PRON: Record<string, [string, string]> = {
+  ཀ: ['ga', '嘎'], ཁ: ['ka', '咔'], ག: ['ga', '嘎'], ང: ['nga', '那'],
+  ཅ: ['jia', '佳'], ཆ: ['qia', '恰'], ཇ: ['jia', '贾'], ཉ: ['nya', '尼啊'],
+  ཏ: ['da', '达'], ཐ: ['ta', '塔'], ད: ['da', '搭'], ན: ['na', '那'],
+  པ: ['ba', '吧'], ཕ: ['pa', '帕'], བ: ['wa', '哇'], མ: ['ma', '玛'],
+  ཙ: ['za', '杂'], ཚ: ['ca', '嚓'], ཛ: ['za', '杂'], ཝ: ['wa', '哇'],
+  ཞ: ['xia', '夏'], ཟ: ['sa', '萨'], འ: ['a', '阿'], ཡ: ['ya', '呀'],
+  ར: ['ra', '日啊'], ལ: ['la', '拉'], ཤ: ['xia', '夏'], ས: ['sa', '萨'],
+  ཧ: ['ha', '哈'], ཨ: ['a', '阿'],
+}
+
+/** 和直觉不一样、要特别留意的字 */
+export const LETTER_NOTE: Record<string, string> = {
+  ཀ: '注 ga，但和 ག 读音不同',
+  ག: '注音同 ཀ，实际是浊音',
+  ཇ: '注音同 ཅ，实际是浊音',
+  ད: '注音同 ཏ，实际是浊音',
+  བ: '安多话读 wa，不读 ba',
+  ཛ: '注音同 ཙ，实际是浊音',
+  ཞ: '读 x，不读 zh',
+  ཟ: '读 s，不读 z',
+  ཤ: '注音同 ཞ',
+  ས: '注音同 ཟ',
+}
+
 const letterNo = (l: string) => String(LETTERS.findIndex((x) => x[0] === l) + 1).padStart(2, '0')
 export const letterAudio = (l: string) => 'L-' + letterNo(l)
 
@@ -209,8 +238,10 @@ export function introFor(kc: KC): Intro {
   if (type === 'L') {
     const g = letterGroup(val)
     return {
-      kind: 'intro', kc, label: '新字母', big: val, sub: letterWylie.get(val), audio: letterAudio(val),
-      note: g.length ? `注意和 ${g.join(' ')} 区分。` : undefined,
+      kind: 'intro', kc, label: '新字母', big: val, sub: '转写 ' + letterWylie.get(val), pron: `${PRON[val][0]}（${PRON[val][1]}）`, audio: letterAudio(val),
+      note: [`不加元音时自带 a，单独就读 ${PRON[val][0]}。先跟着音频念几遍。`, LETTER_NOTE[val] && LETTER_NOTE[val] + '。', g.length ? `注意和 ${g.join(' ')} 区分。` : '']
+        .filter(Boolean)
+        .join(''),
     }
   }
   if (type === 'V') {
@@ -225,7 +256,7 @@ export function introFor(kc: KC): Intro {
     const name = VOWELS.find((x) => x[0] === m)![2]
     return {
       kind: 'intro', kc, label: '拼读', big: val, sub: cvWylie(l, m), audio: cvAudio(l, m),
-      note: `${l}（${letterWylieOf(l)}）加上 ${name} ◌${m}。先自己念一遍，再点上面的字听。`,
+      note: `${l} 单独读 ${PRON[l][0]}（自带 a），加上 ${name} ◌${m}，a 就换掉了。先自己念一遍，再点上面的字听。`,
     }
   }
   if (type === 'R') {
@@ -274,15 +305,23 @@ export function questionFor(kc: KC, variant?: number, known: Set<KC> = ALL): Sco
     const w = letterWylie.get(val)!
     const group = letterGroup(val)
     const glyphPool = (knownLetters.length >= 4 ? knownLetters : LETTERS).map((l) => l[0])
-    const explain = group.length ? `${val} 读 ${w}；容易混的是 ${group.join(' ')}。` : `${val} 读 ${w}。`
-    if (v % 3 === 0)
-      return {
-        kind: 'glyph2wylie', kc, prompt: val, answer: w, audio: letterAudio(val), explain,
-        options: optionsWith(w, glyphPool.map((g) => letterWylie.get(g)!), group.map((g) => letterWylie.get(g)!)),
-      }
-    if (v % 3 === 1)
-      return { kind: 'listen', kc, audio: letterAudio(val), answer: val, options: optionsWith(val, glyphPool, group), explain }
-    return { kind: 'wylie2glyph', kc, prompt: w, answer: val, audio: letterAudio(val), options: optionsWith(val, glyphPool, group), explain }
+    const [py, hz] = PRON[val]
+    const explain = `${val} 转写 ${w}，单独读 ${py}（${hz}）` + (group.length ? `；容易混的是 ${group.join(' ')}。` : '。')
+    // 听音题不放注音相同、只靠清浊区分的字
+    const audible = (xs: string[]) => xs.filter((x) => !soundsLike(x, val) || x === val)
+    switch (v % 4) {
+      case 0:
+        return { kind: 'sayit', kc, prompt: val, audio: letterAudio(val), options: ['念对了', '没念对'], answer: '念对了', explain }
+      case 1:
+        return { kind: 'listen', kc, audio: letterAudio(val), answer: val, options: optionsWith(val, audible(glyphPool), audible(group)), explain }
+      case 2:
+        return {
+          kind: 'glyph2wylie', kc, prompt: val, answer: w, audio: letterAudio(val), explain,
+          options: optionsWith(w, glyphPool.map((g) => letterWylie.get(g)!), group.map((g) => letterWylie.get(g)!)),
+        }
+      default:
+        return { kind: 'wylie2glyph', kc, prompt: w, answer: val, audio: letterAudio(val), options: optionsWith(val, glyphPool, group), explain }
+    }
   }
 
   if (type === 'V') {
@@ -311,14 +350,14 @@ export function questionFor(kc: KC, variant?: number, known: Set<KC> = ALL): Sco
   if (type === 'C') {
     const [l, m] = [val[0], val[1]]
     const wy = cvWylie(l, m)
-    const explain = `${val} = ${l} + ◌${m}，转写 ${wy}。`
+    const explain = `${val} = ${l}（单独读 ${PRON[l][0]}）+ ◌${m}，转写 ${wy}。`
     // 第一次先自己念再听（自评），之后听音选字、看字选转写
     const knownMarks = VOWELS.map((x) => x[0]).filter((x) => known.has('V:' + x))
     if (v % 3 === 1) {
       // 听音选字：干扰项是同一个元音、读音不同的字母，再加同一个字母、读音不混的元音
       const others = LETTERS.map((x) => x[0]).filter((x) => !soundsLike(x, l))
       const sameVowel = others.filter((x) => known.has('L:' + x)).map((x) => x + m)
-      const sameBase = knownMarks.filter((x) => !vowelsClash(x, m)).map((x) => l + x)
+      const sameBase = [l, ...knownMarks.filter((x) => !vowelsClash(x, m)).map((x) => l + x)]
       return { kind: 'listen', kc, audio: cvAudio(l, m), answer: val, explain, options: optionsWith(val, others.map((x) => x + m), [...sameBase, ...shuffle(sameVowel)]) }
     }
     if (v % 3 === 2)
