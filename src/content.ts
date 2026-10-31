@@ -46,16 +46,16 @@ export const passageTitles: Record<string, string> = {
 export type Unit = { n: number; title: string; examples: string[]; ready: boolean; target?: string }
 
 export const units: Unit[] = [
-  { n: 1, title: '辅音字母（一）：ཀ 到 ཏ 行', examples: ['ཀུན', 'ཆོས', 'ཉིད'], ready: false },
-  { n: 2, title: '辅音字母（二）与形近字', examples: ['པ', 'མ', 'ལ'], ready: false },
-  { n: 3, title: '四个元音', examples: ['མི', 'དུ', 'དེ', 'པོ'], ready: false },
-  { n: 4, title: '后加字', examples: ['དང', 'ཆེན', 'ཐུགས'], ready: false },
-  { n: 5, title: '再后加字 ས', examples: ['གཟིགས', 'རྣམས', 'དགོངས'], ready: false },
-  { n: 6, title: '上加字 ར ལ ས', examples: ['རྗེ', 'ལྷ', 'སྣང'], ready: false },
-  { n: 7, title: '下加字 ཡ ར ལ', examples: ['ཕྱག', 'འགྲོ', 'བླ'], ready: false },
-  { n: 8, title: '叠加字综合', examples: ['བརྒྱུད', 'སྤྲུལ', 'རྒྱལ'], ready: false },
-  { n: 9, title: '前加字', examples: ['བཙུན', 'མཐར', 'འཛིན'], ready: false },
-  { n: 10, title: '找基字综合 · འི 等结尾', examples: ['བླ', 'མའི', 'སྐུའི'], ready: false },
+  { n: 1, title: '5 个字母 · 后加字', examples: ['ལམ', 'ནང', 'མན་ངག'], ready: true },
+  { n: 2, title: '元音 ི · 5 个字母', examples: ['མི', 'ཟབ', 'ཐར་ལམ'], ready: true },
+  { n: 3, title: '元音 ུ · 3 个字母', examples: ['ཞིང', 'དམ་པ', 'ཞལ་ལུང'], ready: true },
+  { n: 4, title: '元音 ེ ོ', examples: ['ཆོས', 'ཆེན་པོ', 'འོད་ཟེར'], ready: true },
+  { n: 5, title: '前加字', examples: ['བདག', 'གསལ', 'ཀུན་བཟང'], ready: true },
+  { n: 6, title: '上加字', examples: ['སྣང', 'སྙིང་པོ', 'རྩ་བ'], ready: true },
+  { n: 7, title: '下加字', examples: ['བླ་མ', 'ཕྱག་འཚལ', 'རྒྱལ་བ'], ready: true },
+  { n: 8, title: '再后加字 ས', examples: ['སངས་རྒྱས', 'རིག་འཛིན', 'ཐུགས་རྗེ'], ready: true },
+  { n: 9, title: '最后 4 个字母', examples: ['ལྷ', 'ཚེ་གཅིག'], ready: true },
+  { n: 10, title: '综合：开篇全部音节和词', examples: ['བླ', 'མའི', 'སྐུའི'], ready: true },
   { n: 11, title: '原文：书名与顶礼句', examples: [], ready: true, target: 'title' },
   { n: 12, title: '原文：顶礼偈', examples: [], ready: true, target: 'verse-1' },
 ]

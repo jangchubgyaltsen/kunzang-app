@@ -8,7 +8,6 @@ const DAY = 24 * 3600 * 1000
 export type UnitStatus = 'locked' | 'available' | 'passed' | 'mastered'
 export type UnitState = { n: number; status: UnitStatus; accuracy?: number }
 
-// 通过单元：一关正确率 ≥ 80%，且本单元每个练到的知识点都至少答对过一次。
 export const PASS_ACCURACY = 0.8
 
 /** 掌握：最近 5 次至少答对 4 次，且至少有一次答对发生在第一次作答一天以后（间隔回忆）。 */
@@ -35,15 +34,30 @@ function reviveCard(c: unknown): Card {
   return { ...x, due: new Date(x.due), last_review: x.last_review ? new Date(x.last_review) : undefined }
 }
 
+/** 已经练过（有复习卡片）的知识点 */
+export async function seenKCs(): Promise<Set<KC>> {
+  return new Set((await db.cards.toCollection().primaryKeys()) as KC[])
+}
+
+/** 本单元还没练过的新内容数 */
+export async function unitRemaining(n: number) {
+  const u = UNITS.find((x) => x.n === n)
+  if (!u) return 0
+  const seen = await seenKCs()
+  return u.kcs.filter((k) => !seen.has(k)).length
+}
+
+// 通过：一节课正确率 ≥ 80%，并且本单元的新字母、规则和新词都已经学过。
 export async function finishUnit(n: number, accuracy: number) {
   const prev = await db.units.get(n)
-  const passed = accuracy >= PASS_ACCURACY
+  const remaining = await unitRemaining(n)
+  const passed = accuracy >= PASS_ACCURACY && remaining === 0
   await db.units.put({
     n,
     best: Math.max(prev?.best ?? 0, accuracy),
     passedAt: prev?.passedAt ?? (passed ? Date.now() : undefined),
   })
-  return passed
+  return { passed, remaining }
 }
 
 export async function getUnitStates(): Promise<UnitState[]> {
@@ -54,7 +68,7 @@ export async function getUnitStates(): Promise<UnitState[]> {
     const r = rows.get(u.n)
     let status: UnitStatus = 'locked'
     if (r?.passedAt) {
-      const practiced = (await db.cards.where('kc').anyOf(u.kcs).primaryKeys()) as KC[]
+      const practiced = (await db.cards.where('kc').anyOf(u.kcs.length ? u.kcs : u.extra).primaryKeys()) as KC[]
       const m = await Promise.all(practiced.map(kcMastered))
       status = practiced.length > 0 && m.every(Boolean) ? 'mastered' : 'passed'
     } else if (prevPassed) status = 'available'

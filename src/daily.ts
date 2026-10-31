@@ -1,7 +1,6 @@
 import { db } from './db.ts'
-import { syllableMap, passages } from './content.ts'
-import { LETTERS, UNITS, shuffle, type KC } from './course.ts'
-import { WORDS } from './words.ts'
+import { passages } from './content.ts'
+import { UNITS, shuffle, wordMap, type KC } from './course.ts'
 import { dueKCs, getUnitStates, weakKCs } from './progress.ts'
 
 export type GameKind = 'flip' | 'quiz' | 'build' | 'words'
@@ -22,19 +21,20 @@ export const dayKey = (d = new Date()) =>
 const addDays = (d: Date, n: number) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n)
 const weekOf = (d: Date) => dayKey(addDays(d, -((d.getDay() + 6) % 7))) // 该周星期一
 
-/** 词的每个音节都在开篇里出现过，才能显示转写和播放音频。 */
-export const usableWords = WORDS.filter(([w]) => w.split('་').every((x) => syllableMap.has(x)))
+// 规则（R:）没法单独出现在游戏里
+const playable = (k: KC) => !k.startsWith('R:')
+/** 单音节的东西才能拿来拼：开篇音节，或者只有一个音节的词 */
+export const buildable = (k: KC) => k.startsWith('S:') || (k.startsWith('W:') && wordMap.get(k.slice(2))?.syllables.length === 1)
 
 /** 已学池：复习队列里已有卡片的知识点 + 已通过单元的全部知识点。 */
 export async function learnedPool() {
   const carded = (await db.cards.toCollection().primaryKeys()) as KC[]
   const states = await getUnitStates()
   const passed = UNITS.filter((u) => ['passed', 'mastered'].includes(states.find((s) => s.n === u.n)?.status ?? ''))
-  const learned = new Set([...carded.filter((k) => !k.startsWith('W:')), ...passed.flatMap((u) => u.kcs)])
+  const learned = new Set([...carded, ...passed.flatMap((u) => [...u.kcs, ...u.extra])].filter(playable))
   const next = UNITS.find((u) => states.find((s) => s.n === u.n)?.status === 'available')
-  const preview = next?.kcs.find((k) => !learned.has(k))
-  const sylLearned = new Set([...learned].filter((k) => k.startsWith('S:')).map((k) => k.slice(2)))
-  const words = usableWords.filter(([w]) => w.split('་').every((x) => sylLearned.has(x))).map(([w]) => 'W:' + w)
+  const preview = next?.kcs.find((k) => playable(k) && !learned.has(k))
+  const words = [...learned].filter((k) => k.startsWith('W:'))
   return { learned: [...learned], words, preview }
 }
 
@@ -50,8 +50,7 @@ export async function chooseItems(pool: KC[], n: number) {
 export type TodayPlan = { game: GameKind; items: KC[]; tasting: boolean; preview?: KC }
 
 const enough = (g: GameKind, p: Awaited<ReturnType<typeof learnedPool>>) => {
-  const syl = p.learned.filter((k) => k.startsWith('S:'))
-  if (g === 'build') return syl.length >= 4
+  if (g === 'build') return p.learned.filter(buildable).length >= 4
   if (g === 'words') return p.words.length >= 4
   return p.learned.length >= 4
 }
@@ -60,13 +59,13 @@ const enough = (g: GameKind, p: Awaited<ReturnType<typeof learnedPool>>) => {
 export async function planToday(date = new Date(), force?: GameKind): Promise<TodayPlan> {
   const p = await learnedPool()
   if (p.learned.length < 4) {
-    // 新用户尝鲜：第 1 单元前 6 个字母，不记分
-    return { game: 'flip', items: LETTERS.slice(0, 6).map(([l]) => 'L:' + l), tasting: true }
+    // 新用户尝鲜：第 1 单元的字母，不记分
+    return { game: 'flip', items: UNITS[0].kcs.filter((k) => k.startsWith('L:')).slice(0, 6), tasting: true }
   }
   const first = force ?? WEEK[(date.getDay() + 6) % 7]
   const order: GameKind[] = [first, 'flip', 'quiz']
   const game = order.find((g) => enough(g, p))!
-  const pool = game === 'words' ? p.words : game === 'build' ? p.learned.filter((k) => k.startsWith('S:')) : p.learned
+  const pool = game === 'words' ? p.words : game === 'build' ? p.learned.filter(buildable) : p.learned
   const n = { flip: 6, quiz: 30, build: 6, words: 5 }[game]
   return { game, items: await chooseItems(pool, n), tasting: false, preview: game === 'flip' ? p.preview : undefined }
 }

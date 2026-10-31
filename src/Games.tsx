@@ -1,26 +1,32 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { syllableMap } from './content.ts'
-import { LETTERS, LOOKALIKE, VOWELS, letterWylie, pick, rootReason, shuffle, wordMeaning, wordWylie, type KC } from './course.ts'
+import { LETTERS, LOOKALIKE, VOWELS, cvAudio, letterAudio, letterWylie, rootReason, shuffle, wordMap, words, type KC, type Word } from './course.ts'
 import { GAMES, planToday, saveCheckin, streakInfo, type GameKind, type TodayPlan } from './daily.ts'
 import { recordAnswer } from './progress.ts'
 import { play } from './audio.ts'
 import './games.css'
 
-type Item = { kc: KC; tib: string; wylie: string; audio?: string }
+type Item = { kc: KC; tib: string; wylie: string; audio?: string; gloss?: string }
+type Syl = Word['syllables'][number]
+
+const pick = <T,>(a: T[], k: number) => shuffle(a).slice(0, k)
+const sylOf = (t: string): Syl => syllableMap.get(t) ?? wordMap.get(t)!.syllables[0]
 
 /** 把知识点变成可以显示的一项：藏文、转写、音频。 */
 function itemOf(kc: KC): Item {
   const v = kc.slice(2)
   switch (kc[0]) {
     case 'L':
-      return { kc, tib: v, wylie: letterWylie.get(v)! }
+      return { kc, tib: v, wylie: letterWylie.get(v)!, audio: letterAudio(v) }
     case 'V': {
       const [mark, vw] = VOWELS.find((x) => x[0] === v)!
       const [base, bw] = pick(LETTERS.filter((l) => !['འ', 'ཨ'].includes(l[0])), 1)[0]
-      return { kc, tib: base + mark, wylie: bw.slice(0, -1) + vw }
+      return { kc, tib: base + mark, wylie: bw.slice(0, -1) + vw, audio: cvAudio(base, mark) }
     }
-    case 'W':
-      return { kc, tib: v, wylie: wordWylie(v) }
+    case 'W': {
+      const w = wordMap.get(v)!
+      return { kc, tib: w.tibetan, wylie: w.wylie, audio: w.audio, gloss: w.gloss }
+    }
     default: {
       const s = syllableMap.get(v)!
       return { kc, tib: s.tibetan, wylie: s.wylie, audio: s.audio }
@@ -75,7 +81,7 @@ export default function Game({ kind, daily, onExit }: { kind?: GameKind; daily: 
               {result.missed.map((m, i) => (
                 <button key={i} onClick={() => m.audio && play(m.audio)}>
                   <span className="tib">{m.tib}</span>
-                  <span className="small muted">{m.kc.startsWith('W:') ? wordMeaning.get(m.tib) : m.wylie}</span>
+                  <span className="small muted">{m.gloss ?? m.wylie}</span>
                 </button>
               ))}
             </div>
@@ -163,7 +169,8 @@ function wrongWylie(it: Item, all: Item[]) {
   }
   const others = all.filter((x) => x.wylie !== it.wylie && x.kc[0] === it.kc[0]).map((x) => x.wylie)
   if (others.length) return pick(others, 1)[0]
-  return pick([...syllableMap.values()].map((s) => s.wylie).filter((w) => w !== it.wylie), 1)[0]
+  const pool = it.kc.startsWith('W:') ? words.map((w) => w.wylie) : [...syllableMap.values()].map((s) => s.wylie)
+  return pick(pool.filter((w) => w !== it.wylie), 1)[0]
 }
 
 /** 快问快答：60 秒判断对错。限时，不记入掌握度。 */
@@ -239,7 +246,7 @@ function Quiz({ items, onDone }: { items: Item[]; onDone: (r: Result) => void })
 
 /** 按书写顺序列出音节的组成部分（含元音）。 */
 function partsOfSyl(tib: string) {
-  const s = syllableMap.get(tib)!
+  const s = sylOf(tib)
   const out: { ch: string; role: string }[] = []
   if (s.prefix) out.push({ ch: s.prefix, role: '前加字' })
   if (s.superscript) out.push({ ch: s.superscript, role: '上加字' })
@@ -336,7 +343,7 @@ function Build({ items, onDone }: { items: Item[]; onDone: (r: Result) => void }
       {complete && (
         <div className={'feedback ' + (erred ? 'bad' : 'ok')}>
           <div className="tib huge">{it.tib}</div>
-          <div>{rootReason(syllableMap.get(it.tib)!)}</div>
+          <div>{rootReason(sylOf(it.tib))}</div>
           <button className="primary" onClick={next}>
             继续
           </button>
@@ -348,7 +355,7 @@ function Build({ items, onDone }: { items: Item[]; onDone: (r: Result) => void }
 
 /** 词义连连看：左边藏文词，右边中文。记入掌握度。 */
 function Words({ items, onDone }: { items: Item[]; onDone: (r: Result) => void }) {
-  const [right] = useState(() => shuffle(items.map((it) => wordMeaning.get(it.tib)!)))
+  const [right] = useState(() => shuffle(items.map((it) => it.gloss!)))
   const [sel, setSel] = useState<number | null>(null)
   const [done, setDone] = useState<Set<number>>(new Set())
   const [bad, setBad] = useState<string | null>(null)
@@ -357,7 +364,7 @@ function Words({ items, onDone }: { items: Item[]; onDone: (r: Result) => void }
   const pickZh = (zh: string) => {
     if (sel === null) return
     const it = items[sel]
-    if (wordMeaning.get(it.tib) === zh) {
+    if (it.gloss === zh) {
       const d = new Set(done).add(sel)
       setDone(d)
       setSel(null)
@@ -387,7 +394,7 @@ function Words({ items, onDone }: { items: Item[]; onDone: (r: Result) => void }
         </div>
         <div className="col">
           {right.map((zh) => {
-            const isDone = items.some((it, k) => done.has(k) && wordMeaning.get(it.tib) === zh)
+            const isDone = items.some((it, k) => done.has(k) && it.gloss === zh)
             return (
               <button key={zh} className={'opt' + (isDone ? ' right' : bad === zh ? ' wrong shake' : '')} disabled={isDone} onClick={() => pickZh(zh)}>
                 {zh}

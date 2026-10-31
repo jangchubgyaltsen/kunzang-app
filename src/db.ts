@@ -21,7 +21,9 @@ class AppDB extends Dexie {
     this.version(1).stores({ flags: '++id, kind, ref', settings: 'key' })
     this.version(2).stores({ translations: 'id' })
     this.version(3).stores({ attempts: '++id, kc, at', cards: 'kc, due', units: 'n' })
-    this.version(4).stores({ checkins: 'date' })
+    // 课程改成字母和词混合练习后，单元编号的含义变了，旧的通关记录作废。
+    this.version(4).stores({}).upgrade((tx) => tx.table('units').clear())
+    this.version(5).stores({ checkins: 'date' })
   }
 }
 
