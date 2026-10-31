@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { passages, passageTitles, syllableMap, type Syllable } from './content.ts'
-import { play, playSeq } from './audio.ts'
+import { audioStatus, play, playSeq } from './audio.ts'
 import { say } from './sound.ts'
 import { db, exportData, importData, importTranslationPack, type SpotCheck } from './db.ts'
 import Lesson from './Lesson.tsx'
@@ -11,7 +11,7 @@ import { AlphabetView, Drill } from './Alphabet.tsx'
 import { dailyDue, markDailyShown } from './alphabet.ts'
 import type { GameKind } from './daily.ts'
 import { CHECK_DAYS, dueChecks, dueKCs, ensureChecks, getPathState, type LevelState, type UnitState } from './progress.ts'
-import { PATH, unitByN, wordMap, type Level, type Track } from './course.ts'
+import { PATH, letterAudio, unitByN, wordMap, type Level, type Track } from './course.ts'
 import { spotCheckSession, type Session } from './session.ts'
 import { linesOf, yitongOf, type Token } from './reading.ts'
 import { chapters } from './book.ts'
@@ -429,6 +429,24 @@ function SyllableCard({ s, onClose }: { s: Syllable; onClose: () => void }) {
   )
 }
 
+// 没声音时用来排查：确认是不是新版本、点一下能不能出声、失败的原因
+function SoundCheck() {
+  const [res, setRes] = useState('')
+  const test = () => {
+    setRes('正在播放…')
+    play(letterAudio('ཀ'), () => setRes(audioStatus()))
+    setTimeout(() => setRes(audioStatus()), 1500)
+  }
+  return (
+    <>
+      <h2>声音</h2>
+      <p className="small muted">版本 {__BUILD__}。听不到声音时，先确认侧面静音键没打开、音量不是 0，再点下面的按钮。</p>
+      <button onClick={test}>声音测试：读 ཀ</button>
+      {res && <p className="small">{res}</p>}
+    </>
+  )
+}
+
 function SettingsView() {
   const [persisted, setPersisted] = useState<boolean | null>(null)
   const [msg, setMsg] = useState('')
@@ -466,6 +484,7 @@ function SettingsView() {
         </label>
       </div>
       {msg && <p>{msg}</p>}
+      <SoundCheck />
       <h2>中文译文</h2>
       <p className="small muted">中文译文有版权，不随网站发布。导入一次后只保存在这台设备上。</p>
       <label className="button">

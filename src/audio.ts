@@ -36,7 +36,9 @@ function blobUrl(id: string) {
         return r.blob()
       })
       .then((b) => {
-        const u = URL.createObjectURL(b)
+        // 明确标上类型：Safari 播 blob 地址时不看扩展名，类型为空就可能放不出来
+        const type = urlOf(id).endsWith('.mp3') ? 'audio/mpeg' : 'audio/mp4'
+        const u = URL.createObjectURL(b.type === type ? b : new Blob([b], { type }))
         ready.set(id, u)
         return u
       })
@@ -158,10 +160,10 @@ function start(id: string, from = 0, to = Infinity) {
   const now = ready.get(id)
   const retry = () => start(id, from, to)
   // 取好的直接同步播放，这样仍在用户点击之内，iOS 不会拦
-  if (now) return go(n, now, retry, from, to)
+  if (now) return go(n, now, retry, from, to, urlOf(id))
   blobUrl(id)
     .catch(() => urlOf(id))
-    .then((src) => go(n, src, retry, from, to))
+    .then((src) => go(n, src, retry, from, to, urlOf(id)))
 }
 
 /** 用同一个播放器放任意地址的声音，例如自己的录音。 */
@@ -173,7 +175,11 @@ export function playUrl(src: string, onEnd?: () => void) {
   go(n, src, () => playUrl(src, onEnd))
 }
 
-function go(n: number, src: string, retry: () => void, from = 0, to = Infinity) {
+// 最近一次播放的结果，设置页的“声音测试”显示它，方便排查
+let status = '还没有播放过'
+export const audioStatus = () => `${status}；${unlocked ? '已解锁' : '未解锁'}`
+
+function go(n: number, src: string, retry: () => void, from = 0, to = Infinity, direct?: string) {
   if (n !== latest) return
   stopAt = Infinity
   player.src = src
@@ -182,13 +188,18 @@ function go(n: number, src: string, retry: () => void, from = 0, to = Infinity) 
     player.addEventListener('loadedmetadata', () => n === latest && (player.currentTime = from), { once: true })
   } else player.currentTime = 0
   player.play().then(() => {
+    status = '播放成功'
     markUnlocked()
     if (n !== latest || to === Infinity) return
     stopAt = to
     requestAnimationFrame(watchStop)
   }, (e: unknown) => {
+    const name = (e as Error)?.name
+    if (name !== 'AbortError') status = `播放失败（${name}）`
     // 还没解锁被 iOS 拦下：记住它，用户下一次触摸时补放
-    if (n === latest && (e as Error)?.name === 'NotAllowedError') pending = retry
-    else if ((e as Error)?.name !== 'AbortError') console.warn('play failed', src, e)
+    if (n === latest && name === 'NotAllowedError') pending = retry
+    // blob 放不了就直接用原地址再试一次
+    else if (n === latest && name !== 'AbortError' && direct && src.startsWith('blob:')) go(n, direct, retry, from, to)
+    else if (name !== 'AbortError') console.warn('play failed', src, e)
   })
 }
