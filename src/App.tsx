@@ -11,7 +11,7 @@ import { AlphabetView, Drill } from './Alphabet.tsx'
 import { dailyDue, markDailyShown } from './alphabet.ts'
 import type { GameKind } from './daily.ts'
 import { CHECK_DAYS, dueChecks, dueKCs, ensureChecks, getPathState, type LevelState, type UnitState } from './progress.ts'
-import { PATH, letterAudio, unitByN, wordMap, type Level, type Track } from './course.ts'
+import { PATH, TALK_BASE, letterAudio, unitByN, wordMap, type Level, type Track } from './course.ts'
 import { spotCheckSession, type Session } from './session.ts'
 import { linesOf, yitongOf, type Token } from './reading.ts'
 import { chapters } from './book.ts'
@@ -77,7 +77,7 @@ export default function App() {
             [
               ['path', '路径'],
               ['alphabet', '字母'],
-              ['amdo', '会话'],
+              ['amdo', '资料库'],
               ['reader', '原文'],
               ['review', '复习'],
               ['settings', '设置'],
@@ -97,6 +97,7 @@ type PathState = Awaited<ReturnType<typeof getPathState>>
 const TRACKS: [Track, string][] = [
   ['spell', '拼读'],
   ['read', '诵读开篇'],
+  ['talk', '安多会话'],
 ]
 
 function PathView({
@@ -134,7 +135,9 @@ function PathView({
 
   const units = PATH.filter((u) => u.track === track)
   const unitState = new Map(st?.units.map((u) => [u.n, u]))
-  const current = st && units.flatMap((u) => u.levels).find((l) => st.levels.get(l.id)?.status === 'available')
+  // 当前关：优先主线上的下一关；补课关（单元已通过后才加进来的）排在后面
+  const open = st ? units.flatMap((u) => u.levels).filter((l) => st.levels.get(l.id)?.status === 'available') : []
+  const current = open.find((l) => !st?.levels.get(l.id)?.optional) ?? open[0]
 
   return (
     <section>
@@ -163,7 +166,11 @@ function PathView({
         ))}
       </div>
       <p className="muted small">
-        {track === 'spell' ? '字母、元音和加字，一关只学两三个新东西。' : '开篇原文一句一关：词卡用从整句里切出来的读音，最后听整句连读并跟读。可以和拼读同时学。'}
+        {track === 'spell'
+          ? '字母、元音和加字，一关只学两三个新东西。每个单元还有安多教材的口语词和拼读表，都是真人录音。'
+          : track === 'read'
+            ? '开篇原文一句一关：词卡用从整句里切出来的读音，最后听整句连读并跟读。可以和拼读同时学。'
+            : '安多话日常会话，真人录音，15 句一个单元。先听懂，再认读，最后自己排出整句。从第一天就能学，和拼读同时进行。'}
       </p>
       {units.map((u) => {
         const us = unitState.get(u.n)
@@ -173,7 +180,7 @@ function PathView({
           <div key={u.n} className={'unit-block' + (us?.status === 'locked' ? ' locked' : '')}>
             <div className="unit-head">
               <div>
-                <div className="small">单元 {u.n}</div>
+                <div className="small">{u.track === 'talk' ? `第 ${u.n - TALK_BASE + 1} 组` : `单元 ${u.n}`}</div>
                 <div className="unit-title">{u.title}</div>
                 {u.examples.length > 0 && (
                   <div className="tib small">
@@ -222,7 +229,9 @@ function PathView({
                       <button className="node" disabled={!ls || ls.status === 'locked'} onClick={() => onStart({ level: l.id })} aria-label={l.title}>
                         {ls?.status === 'locked' ? '🔒' : nodeIcon(l, i)}
                       </button>
-                      {(isCur || l.kind === 'test') && <div className="small node-label">{isCur ? `开始：${l.title}` : l.title}</div>}
+                      {(isCur || l.kind === 'test' || ls?.optional) && (
+                        <div className="small node-label">{isCur ? `开始：${l.title}` : ls?.optional ? `补课：${l.title}` : l.title}</div>
+                      )}
                     </li>
                   )
                 })}
@@ -235,8 +244,11 @@ function PathView({
   )
 }
 
-const ICON: Record<Level['kind'], string> = { learn: '', practice: '↻', read: '读', line: '句', test: '测' }
+const ICON: Record<Level['kind'], string> = { learn: '', practice: '↻', read: '读', line: '句', test: '测', talk: '' }
+const STAGE_ICON = { hear: '听', read: '认', say: '说' }
 function nodeIcon(l: Level, i: number) {
+  if (l.kind === 'talk') return STAGE_ICON[l.stage ?? 'hear']
+  if (l.title.endsWith('真人录音')) return l.kind === 'learn' ? '词' : '听'
   return l.kind === 'learn' ? String(i + 1) : ICON[l.kind]
 }
 

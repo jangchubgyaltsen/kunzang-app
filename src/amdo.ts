@@ -3,8 +3,8 @@
 import raw from './amdo.json'
 
 export type AmdoSentence = { id: string; n: number; tib: string; zh: string; audio: string }
-export type AmdoWord = { id: string; page: number; tib: string; zh: string; audio: string }
-export type AmdoCell = { tib: string; audio: string; all?: boolean }
+export type AmdoWord = { id: string; page: number; tib: string; zh: string; audio: string; kcs: string[] | null }
+export type AmdoCell = { tib: string; audio: string; all?: boolean; id?: string; kcs?: string[] | null }
 export type AmdoTable = { part: string; rows: AmdoCell[][] }
 export type AmdoLesson = { n: number; topic: string; page: number; segs: { img: string; audio: string }[] }
 
@@ -46,3 +46,7 @@ for (const s of amdoSentences) amdoAudioByText.set(s.tib.replace(/[་།\s]+$/,
 
 /** 把句子按音节切开（排词序用） */
 export const sylsOf = (t: string) => t.replace(/[།\s]+/g, '་').split('་').filter(Boolean)
+
+/** 拼读表里的单个格子（P:编号），连同它所在的表和行 */
+export const cellById = new Map<string, { cell: AmdoCell; part: string; row: AmdoCell[] }>()
+for (const t of amdoTables) for (const row of t.rows) for (const c of row) if (c.id) cellById.set(c.id, { cell: c, part: t.part, row })

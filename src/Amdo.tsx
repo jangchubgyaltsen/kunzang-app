@@ -19,15 +19,15 @@ function practice(kcs: string[], title: string): Session {
   return { questions: qs.slice(0, 20), title }
 }
 
-/** 安多会话：《安多方言会话教材》里的会话、单词、拼读表和课文，全部是真人录音 */
+/** 资料库：《安多方言会话教材》里的会话、单词、拼读表和课文，全部是真人录音；主线在路径里，这里用来单独强化 */
 export default function AmdoView({ onStart }: { onStart: (s: Session) => void }) {
   const [part, setPart] = useState<Part>(() => (localStorage.getItem('amdo-part') as Part) ?? 'talk')
   useEffect(() => localStorage.setItem('amdo-part', part), [part])
   useEffect(() => () => stop(), [])
   return (
     <section className="amdo">
-      <h1>安多会话</h1>
-      <p className="muted small">来自阿坝《安多方言会话教材》，每一段都是安多话的真人录音。点藏文就能听。</p>
+      <h1>资料库</h1>
+      <p className="muted small">阿坝《安多方言会话教材》的全部内容，每一段都是安多话真人录音。路径里会按进度学到这些，这里用来单独翻看、强化。</p>
       <div className="chips">
         {PARTS.map(([k, label]) => (
           <button key={k} className={part === k ? 'on' : ''} onClick={() => setPart(k)}>
