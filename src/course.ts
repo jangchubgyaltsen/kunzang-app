@@ -1,4 +1,4 @@
-import { passages, passageTitles, syllables, syllableMap, type Syllable } from './content.ts'
+import { passages, passageTitles, realAudioOf, syllables, syllableMap, type Syllable } from './content.ts'
 import { lineById, linesOf, readLines, tokenMap, yitongOf, type ReadLine } from './reading.ts'
 import wordsRaw from './words.json'
 
@@ -33,7 +33,7 @@ export const LOOKALIKE: string[][] = [
 type WordSyl = Omit<Syllable, 'count' | 'reviewStatus' | 'audio' | 'audioStatus'>
 export type Word = { id: string; tibetan: string; wylie: string; gloss: string; audio: string; syllables: WordSyl[]; kcs: string[]; yitong?: string }
 // 词卡读音：原文里出现过的词用切分版（从整句连读里切出来的），其余保留原来的单词音频
-export const words = (wordsRaw as Word[]).map((w) => ({ ...w, audio: tokenMap.get(w.tibetan)?.audio ?? w.audio, yitong: yitongOf(w.tibetan) }))
+export const words = (wordsRaw as Word[]).map((w) => ({ ...w, audio: realAudioOf(w.tibetan) ?? tokenMap.get(w.tibetan)?.audio ?? w.audio, yitong: yitongOf(w.tibetan) }))
 export const wordMap = new Map(words.map((w) => [w.tibetan, w]))
 
 type Rule = { name: string; intro: string; example: string; has: (s: WordSyl) => boolean }

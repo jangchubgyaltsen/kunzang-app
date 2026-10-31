@@ -5,7 +5,9 @@
 ## 内容来源
 
 - 藏文原文：华智仁波切《普贤上师言教》。
-- 读音：Meta MMS 安多藏语 TTS（`facebook/mms-tts-adx`，CC BY-NC 4.0）自动生成，尚未经人工校对。
+- 读音：
+  - 字母、元音组合（L-、CV-）和能对上的音节卡、词卡（`public/audio/real/`）用的是《安多方言会话教材》Flash 课件里的真人录音，由 `scripts/build_real_audio.py` 生成，每段的出处见 `scripts/data/amdo-real.tsv`，藏文 → 音频编号见 `src/real-audio.json`。
+  - 文章部分（开篇整句、开篇逐词、全书原文）和教材里没有录音的音节、词，仍是 Meta MMS 安多藏语 TTS（`facebook/mms-tts-adx`，CC BY-NC 4.0）自动生成，尚未经人工校对。
 - 中文译文有版权，**不在本仓库中**。需要时在 App 的“设置”里导入本地的译文包。
 
 ## 课程结构
