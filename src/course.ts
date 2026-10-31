@@ -1,4 +1,5 @@
 import { syllables, syllableMap, type Syllable } from './content.ts'
+import { WORDS } from './words.ts'
 
 export const LETTERS: [string, string][] = [
   ['ཀ', 'ka'], ['ཁ', 'kha'], ['ག', 'ga'], ['ང', 'nga'],
@@ -20,22 +21,23 @@ export const VOWELS: [string, string, string][] = [
 ]
 
 // 形近字：出题时优先用作干扰项
-const LOOKALIKE: string[][] = [
+export const LOOKALIKE: string[][] = [
   ['ཅ', 'ཙ'], ['ཆ', 'ཚ'], ['ཇ', 'ཛ'], ['པ', 'བ', 'ཕ'], ['ད', 'ཏ', 'ང', 'ཉ'],
   ['ཁ', 'ཤ', 'ག'], ['ཞ', 'ཟ'], ['ར', 'ཪ', 'ཡ'], ['ལ', 'ཨ'], ['མ', 'ས', 'ཕ'], ['ན', 'ཏ'], ['ཝ', 'འ', 'ཨ'],
 ]
 
-export type KC = string // L:ཀ  V:ི  S:བླ
+export type KC = string // L:ཀ  V:ི  S:བླ  W:བླ་མ
 
 export type Question =
   | { kind: 'glyph2wylie'; kc: KC; prompt: string; options: string[]; answer: string; audio?: string; explain: string }
   | { kind: 'wylie2glyph'; kc: KC; prompt: string; options: string[]; answer: string; explain: string }
   | { kind: 'findRoot'; kc: KC; prompt: string; parts: string[]; answer: number; audio?: string; explain: string }
   | { kind: 'listen'; kc: KC; audio: string; options: string[]; answer: string; explain: string }
+  | { kind: 'meaning'; kc: KC; prompt: string; options: string[]; answer: string; explain: string }
 
 export type UnitDef = { n: number; kcs: KC[]; intro: string }
 
-const shuffle = <T,>(a: T[]) => {
+export const shuffle = <T,>(a: T[]) => {
   const b = [...a]
   for (let i = b.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1))
@@ -43,9 +45,9 @@ const shuffle = <T,>(a: T[]) => {
   }
   return b
 }
-const pick = <T,>(a: T[], k: number) => shuffle(a).slice(0, k)
+export const pick = <T,>(a: T[], k: number) => shuffle(a).slice(0, k)
 
-function optionsWith(answer: string, pool: string[], preferred: string[] = [], k = 4) {
+export function optionsWith(answer: string, pool: string[], preferred: string[] = [], k = 4) {
   const others = [...new Set([...shuffle(preferred), ...shuffle(pool)])].filter((x) => x !== answer)
   return shuffle([answer, ...others.slice(0, k - 1)])
 }
@@ -122,6 +124,14 @@ export function questionFor(kc: KC, variant?: number): Question {
       explain: `${mark} 叫 ${name}，读 ${vw}，所以 ${shown} 读 ${answer}。`,
     }
   }
+  if (type === 'W') {
+    const zh = wordMeaning.get(val)!
+    return {
+      kind: 'meaning', kc, prompt: val, answer: zh,
+      options: optionsWith(zh, WORDS.map((w) => w[1])),
+      explain: `${val}（${wordWylie(val)}）意思是「${zh}」。`,
+    }
+  }
   const s = syllableMap.get(val)!
   const kind = v % 3
   if (kind === 0) {
@@ -144,6 +154,9 @@ export function questionFor(kc: KC, variant?: number): Question {
     explain: `刚才读的是 ${s.tibetan}（${s.wylie}）。`,
   }
 }
+
+export const wordMeaning = new Map(WORDS)
+export const wordWylie = (w: string) => w.split('་').map((x) => syllableMap.get(x)?.wylie ?? '?').join(' ')
 
 function similarWylie(s: Syllable) {
   const w = s.wylie

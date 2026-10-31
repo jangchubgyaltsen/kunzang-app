@@ -106,6 +106,13 @@ function Prompt({ q }: { q: Question }) {
           <div className="tib huge">{q.prompt}</div>
         </div>
       )
+    case 'meaning':
+      return (
+        <div className="prompt">
+          <div className="ask">这个词是什么意思？</div>
+          <div className="tib huge">{q.prompt}</div>
+        </div>
+      )
     case 'listen':
       return (
         <div className="prompt">
@@ -124,7 +131,7 @@ function Options({ q, chosen, onChoose }: { q: Question; chosen: string | number
   return (
     <div className={'options' + (q.kind === 'findRoot' ? ' row' : '')}>
       {items.map((c) => (
-        <button key={String(c)} className={'opt' + (tib ? ' tib' : ' latin') + cls(c)} onClick={() => onChoose(c)}>
+        <button key={String(c)} className={'opt' + (tib ? ' tib' : q.kind === 'meaning' ? '' : ' latin') + cls(c)} onClick={() => onChoose(c)}>
           {labelOf(q, c)}
         </button>
       ))}
@@ -153,7 +160,7 @@ function Basics({ q }: { q: Question }) {
 }
 
 function Summary({ unit, done, firstTry, onExit }: { unit?: number; done: { accuracy: number; passed: boolean }; firstTry: Map<string, boolean>; onExit: () => void }) {
-  const wrong = useMemo(() => [...firstTry.entries()].filter(([, ok]) => !ok).map(([k]) => k.replace(/^[LVS]:/, '').replace(/(glyph2wylie|wylie2glyph|findRoot|listen)$/, '')), [firstTry])
+  const wrong = useMemo(() => [...firstTry.entries()].filter(([, ok]) => !ok).map(([k]) => k.replace(/^[LVSW]:/, '').replace(/(glyph2wylie|wylie2glyph|findRoot|listen|meaning)$/, '')), [firstTry])
   const u = UNITS.find((x) => x.n === unit)
   return (
     <section className="lesson summary">
