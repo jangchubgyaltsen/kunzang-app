@@ -1,5 +1,9 @@
 import raw from './opening.json'
 import { tokenMap } from './reading.ts'
+import realAudio from './real-audio.json'
+
+// 教材里有真人录音（安多方言会话教材）的音节、词：用真人录音，不用 TTS
+export const realAudioOf = (t: string) => (realAudio as Record<string, string>)[t]
 
 export type Syllable = {
   tibetan: string
@@ -38,6 +42,11 @@ for (const p of passages) p.lines.forEach((l, i) => (l.audio = `op/${p.id}-${i +
 for (const s of syllables) {
   const t = tokenMap.get(s.tibetan)
   if (t) s.audio = t.audio
+  const r = realAudioOf(s.tibetan)
+  if (r) {
+    s.audio = r
+    s.audioStatus = 'human'
+  }
 }
 export const syllableMap = new Map(syllables.map((s) => [s.tibetan, s]))
 
