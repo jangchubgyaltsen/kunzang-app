@@ -3,6 +3,7 @@ import { buildLesson, kcLabel, partsOf, questionFor, UNITS, type Intro, type KC,
 import { syllableMap } from './content.ts'
 import { finishUnit, recordAnswer, seenKCs, weakKCs } from './progress.ts'
 import { play } from './audio.ts'
+import { chime, say } from './sound.ts'
 import './lesson.css'
 
 type Props = { unit?: number; questions?: Question[]; title?: string; onExit: () => void }
@@ -69,7 +70,10 @@ export default function Lesson({ unit, questions, title, onExit }: Props) {
     if (answered) return
     setChosen(c)
     const ok = isRight(c)
-    if (ok && 'audio' in q && q.audio && q.kind !== 'listen') play(q.audio)
+    chime(ok)
+    // 答对读题目本身，答错读你选的那个，让耳朵也记住区别
+    if (ok && q.audio) play(q.audio)
+    else say(labelOf(q, c))
     await recordAnswer(q.kc, ok, unit)
     if (!firstTry.has(q.kc + q.kind)) setFirstTry(new Map(firstTry).set(q.kc + q.kind, ok))
     if (!ok) {
@@ -107,13 +111,13 @@ function IntroCard({ q }: { q: Intro }) {
   return (
     <div className="intro-card">
       <div className="intro-label">{q.label}</div>
-      <div className="tib huge">{q.big}</div>
+      <div className="tib huge tap" onClick={() => (q.audio ? play(q.audio) : say(q.big))}>{q.big}</div>
       {q.sub && <div className="latin-mid">{q.sub}</div>}
       {q.audio && <button className="intro-play" onClick={() => play(q.audio!)}>▶ 听一遍</button>}
       {q.parts && (
         <div className="parts">
           {q.parts.map((p, k) => (
-            <div key={k} className={'part' + (p.role === '基字' ? ' root' : '')}>
+            <div key={k} className={'part tap' + (p.role === '基字' ? ' root' : '')} onClick={() => say(p.ch)}>
               <div className="tib">{p.ch}</div>
               <div className="small">{p.role}</div>
             </div>
@@ -131,21 +135,21 @@ function Prompt({ q }: { q: Scored }) {
       return (
         <div className="prompt">
           <div className="ask">这个怎么转写？</div>
-          <div className="tib huge">{q.prompt}</div>
+          <div className="tib huge tap" onClick={() => (q.audio ? play(q.audio) : say(q.prompt))}>{q.prompt}</div>
         </div>
       )
     case 'wylie2glyph':
       return (
         <div className="prompt">
           <div className="ask">哪个字母是</div>
-          <div className="latin-big">{q.prompt}</div>
+          <div className="latin-big tap" onClick={() => say(q.prompt)}>{q.prompt}</div>
         </div>
       )
     case 'findRoot':
       return (
         <div className="prompt">
           <div className="ask">这个音节的基字是哪个？</div>
-          <div className="tib huge">{q.prompt}</div>
+          <div className="tib huge tap" onClick={() => (q.audio ? play(q.audio) : say(q.prompt))}>{q.prompt}</div>
         </div>
       )
     case 'listen':
@@ -159,7 +163,7 @@ function Prompt({ q }: { q: Scored }) {
       return (
         <div className="prompt">
           <div className="ask">这个词是什么意思？</div>
-          <div className="tib huge">{q.prompt}</div>
+          <div className="tib huge tap" onClick={() => (q.audio ? play(q.audio) : say(q.prompt))}>{q.prompt}</div>
         </div>
       )
     case 'meaning2word':
@@ -199,7 +203,7 @@ function Basics({ q }: { q: Scored }) {
       <div className="small muted">拆开来看：</div>
       <div className="parts">
         {parts.map((p, k) => (
-          <div key={k} className={'part' + (p.role === '基字' ? ' root' : '')}>
+          <div key={k} className={'part tap' + (p.role === '基字' ? ' root' : '')} onClick={() => say(p.ch)}>
             <div className="tib">{p.ch}</div>
             <div className="small">{p.role}</div>
           </div>
@@ -225,7 +229,13 @@ function Summary({ unit, done, firstTry, onExit }: { unit?: number; done: Done; 
       {wrong.length > 0 && (
         <>
           <p>需要加强：</p>
-          <div className="tib wrong-list">{wrong.join('  ')}</div>
+          <div className="tib wrong-list">
+            {wrong.map((w) => (
+              <span key={w} className="tap" onClick={() => say(w)}>
+                {w}{'  '}
+              </span>
+            ))}
+          </div>
           <p className="small muted">这些已加入复习队列。</p>
         </>
       )}

@@ -5,6 +5,7 @@ import { GAMES, planToday, saveCheckin, streakInfo, sylOf, type GameKind, type T
 import { db } from './db.ts'
 import { recordAnswer } from './progress.ts'
 import { play } from './audio.ts'
+import { chime, say } from './sound.ts'
 import './games.css'
 
 type Item = { kc: KC; tib: string; wylie: string; audio?: string; gloss?: string }
@@ -129,9 +130,11 @@ function Flip({ items, preview, onDone }: { items: Item[]; preview?: Item; onDon
     if (open.length === 2 || open.includes(i) || matched.has(cards[i].pair)) return
     const now = [...open, i]
     setOpen(now)
+    say(cards[i].face)
     if (now.length < 2) return
     setMoves(moves + 1)
     const [a, b] = now.map((k) => cards[k])
+    chime(a.pair === b.pair)
     if (a.pair === b.pair) {
       const it = pairs[a.pair]
       if (it.audio) play(it.audio)
@@ -207,6 +210,7 @@ function Quiz({ items, onDone }: { items: Item[]; onDone: (r: Result) => void })
   const answer = (yes: boolean) => {
     if (left <= 0) return
     const ok = yes === q.truth
+    chime(ok)
     setCount(count + 1)
     setFlash(ok ? 'ok' : 'bad')
     setTimeout(() => setFlash(null), 250)
@@ -229,7 +233,7 @@ function Quiz({ items, onDone }: { items: Item[]; onDone: (r: Result) => void })
         {combo >= 3 && <span className="combo">连击 ×{combo}</span>}
       </div>
       <div className={'quiz-card' + (flash ? ' ' + flash : '')}>
-        <div className="tib huge">{q.it.tib}</div>
+        <div className="tib huge tap" onClick={() => q.it.audio && play(q.it.audio)}>{q.it.tib}</div>
         <div className="ask">读作</div>
         <div className="latin-big">{q.claim}</div>
         <div className="ask">吗？</div>
@@ -291,17 +295,20 @@ function Build({ items, onDone }: { items: Item[]; onDone: (r: Result) => void }
 
   const tap = (k: number) => {
     if (complete || used.has(k)) return
+    say(tiles[k])
     if (tiles[k] === parts[filled].ch) {
       setUsed(new Set(used).add(k))
       const f = filled + 1
       setFilled(f)
       if (f === parts.length) {
+        chime(!erred)
         if (it.audio) play(it.audio)
         if (!erred) setScore(score + 1)
         else missed.current.push(it)
         void recordAnswer(it.kc, !erred, undefined, 'game')
       }
     } else {
+      chime(false)
       setErred(true)
       setShake(k)
       setTimeout(() => setShake(null), 400)
@@ -323,7 +330,7 @@ function Build({ items, onDone }: { items: Item[]; onDone: (r: Result) => void }
         <button className="play-big small-play" onClick={() => it.audio && play(it.audio)}>
           ▶
         </button>
-        <div className="latin-big">{it.wylie}</div>
+        <div className="latin-big tap" onClick={() => it.audio && play(it.audio)}>{it.wylie}</div>
       </div>
       <div className="slots">
         {parts.map((p, k) => (
@@ -344,7 +351,7 @@ function Build({ items, onDone }: { items: Item[]; onDone: (r: Result) => void }
       )}
       {complete && (
         <div className={'feedback ' + (erred ? 'bad' : 'ok')}>
-          <div className="tib huge">{it.tib}</div>
+          <div className="tib huge tap" onClick={() => it.audio && play(it.audio)}>{it.tib}</div>
           <div>{rootReason(sylOf(it.tib))}</div>
           <button className="primary" onClick={next}>
             继续
@@ -366,6 +373,7 @@ function Words({ items, onDone }: { items: Item[]; onDone: (r: Result) => void }
   const pickZh = (zh: string) => {
     if (sel === null) return
     const it = items[sel]
+    chime(it.gloss === zh)
     if (it.gloss === zh) {
       const d = new Set(done).add(sel)
       setDone(d)
@@ -388,7 +396,10 @@ function Words({ items, onDone }: { items: Item[]; onDone: (r: Result) => void }
       <div className="match">
         <div className="col">
           {items.map((it, k) => (
-            <button key={k} className={'opt' + (done.has(k) ? ' right' : sel === k ? ' sel' : '')} disabled={done.has(k)} onClick={() => setSel(k)}>
+            <button key={k} className={'opt' + (done.has(k) ? ' right' : sel === k ? ' sel' : '')} disabled={done.has(k)} onClick={() => {
+                setSel(k)
+                if (it.audio) play(it.audio)
+              }}>
               <span className="tib">{it.tib}</span>
               <span className="w small muted">{it.wylie}</span>
             </button>
@@ -425,6 +436,7 @@ function Root({ items, onDone }: { items: Item[]; onDone: (r: Result) => void })
   const tap = async (k: number) => {
     if (wrong !== null) return
     const ok = parts[k].role === '基字'
+    chime(ok)
     void recordAnswer(it.kc, ok, undefined, 'game')
     if (it.audio) play(it.audio)
     if (ok) return setI(i + 1)
@@ -443,7 +455,7 @@ function Root({ items, onDone }: { items: Item[]; onDone: (r: Result) => void })
       </div>
       <div className="prompt">
         <div className="ask">基字是哪个？</div>
-        <div className="tib huge">{it.tib}</div>
+        <div className="tib huge tap" onClick={() => it.audio && play(it.audio)}>{it.tib}</div>
         <div className="latin">{it.wylie}</div>
       </div>
       <div className="options row">
@@ -517,12 +529,14 @@ function Whack({ items, onDone }: { items: Item[]; onDone: (r: Result) => void }
   const tap = (k: number) => {
     const x = holes[k]
     if (!x || !target || hit !== null || left <= 0) return
+    chime(x.kc === target.kc)
     if (x.kc === target.kc) {
       setHit(k)
       setScore(score + 1)
       shots.current++
       setTimeout(() => setRound((r) => r + 1), 350)
     } else {
+      if (x.audio) play(x.audio)
       setMiss(k)
       setTimeout(() => setMiss(null), 300)
     }
@@ -571,6 +585,9 @@ function Mix({ items, onDone }: { items: Item[]; onDone: (r: Result) => void }) 
     if (chosen) return
     setChosen(o)
     const ok = o === answer
+    chime(ok)
+    if (ok && it.audio) play(it.audio)
+    else say(o)
     if (ok) setScore(score + 1)
     else missed.current.push(it)
     void recordAnswer(it.kc, ok, undefined, 'game')
@@ -588,7 +605,7 @@ function Mix({ items, onDone }: { items: Item[]; onDone: (r: Result) => void }) 
       </div>
       <div className="prompt">
         <div className="ask">{isWord ? '这个词是什么意思？' : '这个怎么读？'}</div>
-        <div className="tib huge">{it.tib}</div>
+        <div className="tib huge tap" onClick={() => it.audio && play(it.audio)}>{it.tib}</div>
       </div>
       <div className="options">
         {options.map((o) => (
