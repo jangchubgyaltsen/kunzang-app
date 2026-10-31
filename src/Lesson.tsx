@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { TALK_BASE, buildLevel, kcLabel, levelById, partsOf, questionFor, unitByN, type Intro, type KC, type Question, type Scored, type Shadow } from './course.ts'
 import { syllableMap } from './content.ts'
 import { finishLevel, recordAnswer, seenKCs, weakKCs } from './progress.ts'
-import { play } from './audio.ts'
+import { play, playSeq } from './audio.ts'
 import { say } from './sound.ts'
 import ShadowCard from './Shadow.tsx'
 import './lesson.css'
@@ -92,7 +92,8 @@ export default function Lesson({ level, questions, title, onExit, onFinish }: Pr
     setChosen(c)
     const ok = isRight(c)
     // 答对读题目本身，答错读你选的那个，让耳朵也记住区别
-    if (ok && q.audio) play(q.audio)
+    if (ok && q.kind === 'glyph2wylie' && q.seq) playSeq(q.seq)
+    else if (ok && q.audio) play(q.audio)
     else say(labelOf(q, c))
     await recordAnswer(q.kc, ok, unit)
     if (!firstTry.has(q.kc + q.kind)) setFirstTry(new Map(firstTry).set(q.kc + q.kind, ok))
@@ -162,15 +163,15 @@ function Prompt({ q }: { q: Scored }) {
     case 'glyph2wylie':
       return (
         <div className="prompt">
-          <div className="ask">这个怎么转写？</div>
-          <div className="tib huge tap" onClick={() => (q.audio ? play(q.audio) : say(q.prompt))}>{q.prompt}</div>
+          <div className="ask">{q.ask ?? '这个怎么转写？'}</div>
+          <div className={'tib tap ' + (q.seq ? 'big center' : 'huge')} onClick={() => (q.seq ? playSeq(q.seq) : q.audio ? play(q.audio) : say(q.prompt))}>{q.prompt}</div>
         </div>
       )
     case 'wylie2glyph':
       return (
         <div className="prompt">
-          <div className="ask">哪个字母是</div>
-          <div className="latin-big tap" onClick={() => say(q.prompt)}>{q.prompt}</div>
+          <div className="ask">{q.ask ?? '哪个字母是'}</div>
+          <div className="latin-big tap" onClick={() => (q.audio ? play(q.audio) : say(q.prompt))}>{q.prompt}</div>
         </div>
       )
     case 'findRoot':
@@ -190,7 +191,7 @@ function Prompt({ q }: { q: Scored }) {
     case 'listen':
       return (
         <div className="prompt">
-          <div className="ask">{q.zh ? '听这句话，选出意思' : q.kc.startsWith('A:') ? '听这句话，选出藏文' : '听音选字'}</div>
+          <div className="ask">{q.ask ?? (q.zh ? '听这句话，选出意思' : q.kc.startsWith('A:') ? '听这句话，选出藏文' : '听音选字')}</div>
           <button className="play-big" onClick={() => play(q.audio)}>▶</button>
         </div>
       )

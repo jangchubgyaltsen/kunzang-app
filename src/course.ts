@@ -1,6 +1,7 @@
 import { passages, passageTitles, realAudioOf, syllables, syllableMap, type Syllable } from './content.ts'
 import { lineById, linesOf, readLines, tokenMap, yitongOf, type ReadLine } from './reading.ts'
 import wordsRaw from './words.json'
+import { CV_PRON, CV_SOURCE, PRON, shapeMates, soundMates } from './pron.ts'
 import { amdoSentences, amdoSets, amdoTables, amdoWordById, amdoWords, cellById, sentenceById, sylsOf } from './amdo.ts'
 
 export const LETTERS: [string, string][] = [
@@ -76,11 +77,12 @@ export type Question =
   | Intro
   | Shadow
   | { kind: 'order'; kc: KC; audio: string; pieces: string[]; answer: string; explain: string }
-  | { kind: 'glyph2wylie'; kc: KC; prompt: string; options: string[]; answer: string; audio?: string; explain: string }
-  | { kind: 'wylie2glyph'; kc: KC; prompt: string; options: string[]; answer: string; audio?: string; explain: string }
+  /** ask：题目上方的提示语（不给就用默认的）；seq：认读一行字时依次播放的录音 */
+  | { kind: 'glyph2wylie'; kc: KC; prompt: string; options: string[]; answer: string; audio?: string; explain: string; ask?: string; seq?: string[] }
+  | { kind: 'wylie2glyph'; kc: KC; prompt: string; options: string[]; answer: string; audio?: string; explain: string; ask?: string }
   | { kind: 'findRoot'; kc: KC; prompt: string; parts: string[]; answer: number; audio?: string; explain: string }
   /** zh：选项是中文意思（听会话选意思） */
-  | { kind: 'listen'; kc: KC; audio: string; options: string[]; answer: string; explain: string; zh?: boolean }
+  | { kind: 'listen'; kc: KC; audio: string; options: string[]; answer: string; explain: string; zh?: boolean; ask?: string }
   | { kind: 'meaning'; kc: KC; prompt: string; options: string[]; answer: string; audio?: string; explain: string }
   | { kind: 'meaning2word'; kc: KC; prompt: string; options: string[]; answer: string; audio?: string; explain: string }
 export type Scored = Exclude<Question, Intro | Shadow>
@@ -214,23 +216,32 @@ export function kcLabel(kc: KC) {
   return kc.slice(2)
 }
 
-const letterGroup = (l: string) => (LOOKALIKE.find((g) => g.includes(l)) ?? []).filter((g) => g !== l && letterWylie.has(g))
+/** 《一本通》第 12–16 页：元音和字母拼起来以后的读法 */
+const VOWEL_RULE: Record<string, string> = {
+  'ི': '写在上面。安多话里 ི 常常读得像 e：མི me、ཀི ge；在 ཅ ཆ ཇ ཞ ཡ 后面读 i（ཞི xi）。',
+  'ུ': '写在下面。安多话里 ུ 也常读得像 e：ཀུ ge、སུ se，所以 ཀི 和 ཀུ 听起来差不多；ཕུ pu 保留 u。',
+  'ེ': '写在上面。多读 ei：མེ mei；在 ཅ ཆ ཇ ཞ 后面读 ie（ཆེ qie），ཏ ད 后面读 i（དེ di）。',
+  'ོ': '写在上面。多读 u：མོ mu、གོ gu；ཟ ས ལ 后面读 uo（ལོ luo），འོ 读 ao。',
+}
+const pronLabel = (l: string) => `${PRON[l][0]} ${PRON[l][1]}`
 
 /** 第一次遇到某个知识点时的介绍卡 */
 export function introFor(kc: KC): Intro {
   const [type, val] = [kc.slice(0, 1), kc.slice(2)]
   if (type === 'L') {
-    const g = letterGroup(val)
-    return {
-      kind: 'intro', kc, label: '新字母', big: val, sub: letterWylie.get(val), audio: letterAudio(val),
-      note: g.length ? `注意和 ${g.join(' ')} 区分。` : undefined,
-    }
+    const shape = [...(shapeMates.get(val) ?? [])], sound = [...(soundMates.get(val) ?? [])]
+    const note = [
+      `转写 ${letterWylie.get(val)}。`,
+      sound.length ? `书上让和 ${sound.join(' ')} 比较发音。` : '',
+      shape.length ? `形近字：${shape.join(' ')}。` : '',
+    ].join('')
+    return { kind: 'intro', kc, label: '新字母', big: val, sub: `${PRON[val][0]} ${PRON[val][1]}`, audio: letterAudio(val), note }
   }
   if (type === 'V') {
-    const [mark, vw, name] = VOWELS.find((x) => x[0] === val)!
+    const [mark, , name] = VOWELS.find((x) => x[0] === val)!
     return {
-      kind: 'intro', kc, label: '新元音', big: 'མ' + mark, sub: 'm' + vw, audio: cvAudio('མ', mark),
-      note: `${mark} 叫 ${name}，读 ${vw}。加在任何字母上，a 都换成 ${vw}。`,
+      kind: 'intro', kc, label: '新元音', big: 'མ' + mark, sub: CV_PRON['མ' + mark][0], audio: cvAudio('མ', mark),
+      note: `${mark} 叫 ${name}。${VOWEL_RULE[mark]}`,
     }
   }
   if (type === 'R') {
@@ -287,37 +298,76 @@ export function questionFor(kc: KC, variant?: number, known: Set<KC> = ALL): Sco
   const knownLetters = LETTERS.filter(([l]) => known.has('L:' + l))
   const knownWords = words.filter((w) => known.has('W:' + w.tibetan))
 
+  // 字母：照《一本通》第一、二课的练习出题——认读注音、比较成对字母的发音、比较形体差异、认读一行字母
   if (type === 'L') {
-    const w = letterWylie.get(val)!
-    const group = letterGroup(val)
-    const glyphPool = (knownLetters.length >= 4 ? knownLetters : LETTERS).map((l) => l[0])
-    const explain = group.length ? `${val} 读 ${w}；容易混的是 ${group.join(' ')}。` : `${val} 读 ${w}。`
-    if (v % 3 === 0)
-      return {
-        kind: 'glyph2wylie', kc, prompt: val, answer: w, audio: letterAudio(val), explain,
-        options: optionsWith(w, glyphPool.map((g) => letterWylie.get(g)!), group.map((g) => letterWylie.get(g)!)),
+    const [p, hz] = PRON[val]
+    const pool = (knownLetters.length >= 4 ? knownLetters : LETTERS).map((l) => l[0])
+    // 书上成对比较的字，只用已经学过的（还没学到的不拿来当干扰项）
+    const inPool = (l: string) => pool.includes(l)
+    const shape = [...(shapeMates.get(val) ?? [])].filter(inPool)
+    const sound = [...(soundMates.get(val) ?? [])].filter(inPool)
+    // 注音一样的字（ཀ ག 都注 ga）放在“看字选注音”的选项里分不出来
+    const diffPron = (l: string) => PRON[l][0] !== p
+    const explain =
+      `${val} 读 ${p}（${hz}），转写 ${letterWylie.get(val)}。` +
+      (sound.length ? `书上让和 ${sound.join(' ')} 比较发音${sound.some((x) => !diffPron(x)) ? '，注音一样，读音不同，听录音分辨' : ''}。` : '') +
+      (shape.length ? `形近字：${shape.join(' ')}。` : '')
+    switch (v % 4) {
+      case 0:
+        return {
+          kind: 'glyph2wylie', kc, ask: '这个字母怎么读？', prompt: val, answer: pronLabel(val), audio: letterAudio(val), explain,
+          options: optionsWith(pronLabel(val), pool.filter(diffPron).map(pronLabel), [...shape, ...sound].filter(diffPron).map(pronLabel)),
+        }
+      case 1:
+        if (sound.length)
+          return { kind: 'listen', kc, ask: '比较发音：听录音，是哪一个？', audio: letterAudio(val), answer: val, explain, options: shuffle([val, ...sound, ...shape.slice(0, 1)]) }
+        return { kind: 'listen', kc, audio: letterAudio(val), answer: val, explain, options: optionsWith(val, pool, shape) }
+      case 2:
+        return {
+          kind: 'wylie2glyph', kc, ask: '比较字形：哪个字母读', prompt: pronLabel(val), answer: val, audio: letterAudio(val), explain,
+          options: optionsWith(val, pool.filter(diffPron), shape.filter(diffPron)),
+        }
+      default: {
+        // 认读：一行四个字母，像书上的 ཀ་ཅ་ད་པ；错的选项把其中一个换成形近字或别的字的读音
+        const row = shuffle([val, ...shuffle(pool.filter((l) => l !== val)).slice(0, 3)])
+        const read = (r: string[]) => r.map((l) => PRON[l][0]).join(' ')
+        const answer = read(row)
+        const wrong = new Set<string>()
+        for (let k = 0; k < 40 && wrong.size < 3; k++) {
+          const j = k % row.length
+          const near = [...(shapeMates.get(row[j]) ?? []), ...(soundMates.get(row[j]) ?? [])].filter((x) => inPool(x) && PRON[x][0] !== PRON[row[j]][0])
+          const sub = k < 12 && near.length ? pick(near) : pick(pool)
+          const alt = read(row.map((l, m) => (m === j ? sub : l)))
+          if (alt !== answer) wrong.add(alt)
+        }
+        return {
+          kind: 'glyph2wylie', kc, ask: '认读：这一行怎么读？', prompt: row.join('་'), answer, seq: row.map(letterAudio), explain,
+          options: shuffle([answer, ...wrong]),
+        }
       }
-    if (v % 3 === 1)
-      return { kind: 'listen', kc, audio: letterAudio(val), answer: val, options: optionsWith(val, glyphPool, group), explain }
-    return { kind: 'wylie2glyph', kc, prompt: w, answer: val, audio: letterAudio(val), options: optionsWith(val, glyphPool, group), explain }
+    }
   }
 
+  // 元音：看组合选注音，或听录音选组合。注音照《一本通》，书上没有的按规律推
   if (type === 'V') {
-    const [mark, vw, name] = VOWELS.find((x) => x[0] === val)!
+    const [mark, , name] = VOWELS.find((x) => x[0] === val)!
     const bases = (knownLetters.length ? knownLetters : LETTERS).filter((l) => !['འ', 'ཨ'].includes(l[0]))
-    const [base, bw] = pick(bases)
+    const [base] = pick(bases)
     const shown = base + mark
-    const stem = bw.slice(0, -1)
-    const knownMarks = VOWELS.filter((x) => known.has('V:' + x[0]))
-    const explain = `${mark} 叫 ${name}，读 ${vw}，所以 ${shown} 读 ${stem + vw}。`
+    const [p, src] = CV_PRON[shown]
+    const siblings = VOWELS.filter((x) => x[0] === mark || known.has('V:' + x[0])).map((x) => base + x[0])
+    const knownCV = VOWELS.filter((x) => known.has('V:' + x[0])).flatMap((x) => bases.map((l) => l[0] + x[0]))
+    const explain = `${mark} 叫 ${name}。${shown} 读 ${p}（${CV_SOURCE[src]}）。${VOWEL_RULE[mark]}`
     if (v % 2 === 0)
       return {
-        kind: 'glyph2wylie', kc, prompt: shown, answer: stem + vw, audio: cvAudio(base, mark), explain,
-        options: optionsWith(stem + vw, VOWELS.map((x) => stem + x[1]).concat(bw), knownMarks.map((x) => stem + x[1]).concat(bw)),
+        kind: 'glyph2wylie', kc, ask: '这个怎么读？', prompt: shown, answer: p, audio: cvAudio(base, mark), explain,
+        options: optionsWith(p, Object.values(CV_PRON).map((x) => x[0]), [PRON[base][0], ...siblings.map((x) => CV_PRON[x][0]), ...knownCV.map((x) => CV_PRON[x][0])]),
       }
+    // 听音选字：读音和答案一样的组合（ཀི ཀུ 都是 ge）不能当干扰项
+    const ok = (x: string) => x === shown || CV_PRON[x][0] !== p
     return {
       kind: 'listen', kc, audio: cvAudio(base, mark), answer: shown, explain,
-      options: optionsWith(shown, VOWELS.map((x) => base + x[0]).concat(base), knownMarks.map((x) => base + x[0]).concat(base)),
+      options: optionsWith(shown, knownCV.filter(ok), [...siblings.filter(ok), base]),
     }
   }
 
@@ -646,7 +696,8 @@ export function buildLevel(levelId: string, seen: Set<KC>, weak: KC[] = []): { q
     const items = lv.kcs.filter((k) => !k.startsWith('X:'))
     const fresh = items.filter((k) => !seen.has(k))
     const first = withIntros(items, seen, known, true)
-    const second = shuffle([...items.map((k) => questionFor(k, 1, known)), ...review(Math.max(4, 10 - fresh.length * 2))])
+    // 第二轮每个知识点换一种考法，不要一关里同一种题连着出
+    const second = shuffle([...items.map((k, j) => questionFor(k, 1 + (j % 3), known)), ...review(Math.max(4, 10 - fresh.length * 2))])
     const qs: Question[] = [...first, ...second]
     if (lv.line && lv.kcs.includes('X:' + lv.line)) {
       const x = 'X:' + lv.line

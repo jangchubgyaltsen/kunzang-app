@@ -52,3 +52,8 @@
 .cv-pron { font-family: ui-monospace, monospace; font-size: 12px; color: var(--muted); line-height: 1.2; }
 .cv-cell.base { background: #f6f1e7; }
 .cv-cell.fluent { border-color: #c9a227; background: #fbf3dc; }
+/* 组合注音的来源：书上 · 书上例词 · 按规律推 */
+.cv-pron.src0 { color: var(--ink); }
+.cv-pron.src1 { color: var(--accent); }
+.cv-pron.src2 { font-style: italic; opacity: .75; }
+.drill-opt.tib-opt .tib { font-size: 30px; line-height: 1.4; }
