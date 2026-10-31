@@ -5,10 +5,12 @@ player.preload = 'auto'
 // 而预缓存只返回完整的 200 响应，Safari 就不播放。所以先整个取回来，
 // 转成 blob 地址再交给播放器。
 const blobs = new Map<string, Promise<string>>()
+// 开篇逐词和整句的新音频在 op/ 下，是 mp3；其余是 m4a
+const urlOf = (id: string) => `./audio/${id}.${id.startsWith('op/') ? 'mp3' : 'm4a'}`
 function blobUrl(id: string) {
   let p = blobs.get(id)
   if (!p) {
-    p = fetch(`./audio/${id}.m4a`)
+    p = fetch(urlOf(id))
       .then((r) => {
         if (!r.ok) throw new Error(`audio ${id}: ${r.status}`)
         return r.blob()
@@ -34,11 +36,42 @@ document.addEventListener('pointerdown', unlock, true)
 document.addEventListener('touchend', unlock, true)
 
 let latest = 0
-export function play(id: string) {
+let queue: string[] = []
+let afterAll: (() => void) | undefined
+player.addEventListener('ended', () => {
+  const next = queue.shift()
+  if (next) return start(next)
+  const f = afterAll
+  afterAll = undefined
+  f?.()
+})
+
+/** 播放一段音频；正在播的（包括连播队列）会被打断。onEnd 在正常播完时调用。 */
+export function play(id: string, onEnd?: () => void) {
+  queue = []
+  afterAll = onEnd
+  start(id)
+}
+
+/** 依次连播几段，例如整段原文一句接一句。 */
+export function playSeq(ids: string[]) {
+  queue = ids.slice(1)
+  afterAll = undefined
+  if (ids[0]) start(ids[0])
+}
+
+export function stop() {
+  queue = []
+  afterAll = undefined
+  ++latest
+  player.pause()
+}
+
+function start(id: string) {
   const n = ++latest
   player.pause()
   blobUrl(id)
-    .catch(() => `./audio/${id}.m4a`)
+    .catch(() => urlOf(id))
     .then((src) => {
       if (n !== latest) return
       player.src = src

@@ -37,3 +37,17 @@ button.primary:disabled { opacity: .4; }
 .intro-note.gloss-big { font-size: 22px; }
 .intro-card .parts { display: flex; gap: 8px; justify-content: center; }
 .intro-card, .zh-big { font-family: system-ui, -apple-system, 'PingFang SC', 'Noto Sans SC', 'Noto Serif Tibetan', sans-serif; }
+.explain { white-space: pre-line; }
+.intro-card .pron { font-size: 18px; margin: 0; }
+.order { display: flex; flex-direction: column; gap: 14px; }
+.order-line { min-height: 72px; border-bottom: 2px solid var(--line); display: flex; flex-wrap: wrap; gap: 6px; align-items: flex-end; padding-bottom: 6px; }
+.order-line.right { border-color: #2e7d32; }
+.order-line.wrong { border-color: #c62828; }
+.order-bank { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+.piece { font-size: 24px; line-height: 1.5; padding: 2px 10px; font-family: 'Noto Serif Tibetan', 'Jomolhari', serif; }
+.piece.used { visibility: hidden; }
+.shadow-words { display: flex; flex-wrap: wrap; gap: 4px 10px; justify-content: center; }
+.shadow-word { display: inline-flex; flex-direction: column; align-items: center; }
+.shadow-word .tib { font-size: 28px; }
+.shadow .pron { margin-top: -6px; }
+button.recording { border-color: #c62828; color: #c62828; }

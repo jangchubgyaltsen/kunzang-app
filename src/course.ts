@@ -1,4 +1,5 @@
-import { syllables, syllableMap, type Syllable } from './content.ts'
+import { passages, passageTitles, syllables, syllableMap, type Syllable } from './content.ts'
+import { lineById, linesOf, readLines, tokenMap, yitongOf, type ReadLine } from './reading.ts'
 import wordsRaw from './words.json'
 
 export const LETTERS: [string, string][] = [
@@ -30,8 +31,9 @@ export const LOOKALIKE: string[][] = [
 ]
 
 type WordSyl = Omit<Syllable, 'count' | 'reviewStatus' | 'audio' | 'audioStatus'>
-export type Word = { id: string; tibetan: string; wylie: string; gloss: string; audio: string; syllables: WordSyl[]; kcs: string[] }
-export const words = wordsRaw as Word[]
+export type Word = { id: string; tibetan: string; wylie: string; gloss: string; audio: string; syllables: WordSyl[]; kcs: string[]; yitong?: string }
+// 词卡读音：原文里出现过的词用切分版（从整句连读里切出来的），其余保留原来的单词音频
+export const words = (wordsRaw as Word[]).map((w) => ({ ...w, audio: tokenMap.get(w.tibetan)?.audio ?? w.audio, yitong: yitongOf(w.tibetan) }))
 export const wordMap = new Map(words.map((w) => [w.tibetan, w]))
 
 type Rule = { name: string; intro: string; example: string; has: (s: WordSyl) => boolean }
@@ -63,18 +65,23 @@ export const RULES: Record<string, Rule> = {
   },
 }
 
-export type KC = string // L:ཀ  V:ི  R:suf  W:བླ་མ  S:བླ
+export type KC = string // L:ཀ  V:ི  R:suf  W:བླ་མ  S:བླ  T:原文里的词  X:原文的一句（行 id）
 
-export type Intro = { kind: 'intro'; kc: KC; label: string; big: string; sub?: string; note?: string; audio?: string; parts?: { ch: string; role: string }[] }
+/** pron 是一本通式注音，按对照表推出来的，还没逐个核对 */
+export type Intro = { kind: 'intro'; kc: KC; label: string; big: string; sub?: string; pron?: string; note?: string; audio?: string; parts?: { ch: string; role: string }[] }
+/** 跟读：先听整句连读，再自己读（可以录下来对比），不计分 */
+export type Shadow = { kind: 'shadow'; kc: KC; line: ReadLine }
 export type Question =
   | Intro
+  | Shadow
+  | { kind: 'order'; kc: KC; audio: string; pieces: string[]; answer: string; explain: string }
   | { kind: 'glyph2wylie'; kc: KC; prompt: string; options: string[]; answer: string; audio?: string; explain: string }
   | { kind: 'wylie2glyph'; kc: KC; prompt: string; options: string[]; answer: string; audio?: string; explain: string }
   | { kind: 'findRoot'; kc: KC; prompt: string; parts: string[]; answer: number; audio?: string; explain: string }
   | { kind: 'listen'; kc: KC; audio: string; options: string[]; answer: string; explain: string }
   | { kind: 'meaning'; kc: KC; prompt: string; options: string[]; answer: string; audio?: string; explain: string }
   | { kind: 'meaning2word'; kc: KC; prompt: string; options: string[]; answer: string; audio?: string; explain: string }
-export type Scored = Exclude<Question, Intro>
+export type Scored = Exclude<Question, Intro | Shadow>
 
 const I = 'V:ི', U = 'V:ུ', E = 'V:ེ', O = 'V:ོ'
 
@@ -179,6 +186,7 @@ export function rootReason(s: WordSyl) {
 export function kcLabel(kc: KC) {
   if (kc.startsWith('R:')) return RULES[kc]?.name ?? kc
   if (kc.startsWith('V:')) return '◌' + kc.slice(2)
+  if (kc.startsWith('X:')) return lineById.get(kc.slice(2))?.words.map((w) => w.tibetan).join('་') ?? kc
   return kc.slice(2)
 }
 
@@ -208,11 +216,26 @@ export function introFor(kc: KC): Intro {
   }
   if (type === 'W') {
     const w = wordMap.get(val)!
-    return { kind: 'intro', kc, label: '新词', big: w.tibetan, sub: w.wylie, note: w.gloss, audio: w.audio }
+    return { kind: 'intro', kc, label: '新词', big: w.tibetan, sub: w.wylie, pron: w.yitong, note: w.gloss, audio: w.audio }
+  }
+  if (type === 'T') {
+    const t = tokenMap.get(val)!
+    return { kind: 'intro', kc, label: '原文里的词', big: t.tibetan, sub: wylieOf(t.tibetan), pron: t.yitong, audio: t.audio, note: glossOf(t.tibetan) }
+  }
+  if (type === 'X') {
+    const l = lineById.get(val)!
+    return { kind: 'intro', kc, label: '整句', big: l.words.map((w) => w.tibetan).join('་'), pron: l.words.map((w) => w.yitong).join(' '), audio: l.audio }
   }
   const s = syllableMap.get(val)!
   return { kind: 'intro', kc, label: '音节', big: s.tibetan, sub: s.wylie, audio: s.audio, parts: partsOf(s) }
 }
+
+const wylieOf = (t: string) => t.split('་').map((x) => syllableMap.get(x)?.wylie ?? '?').join(' ')
+/** 原文词的意思：先查词表；带格助词的词（如 བླ་མའི）找不到就不显示 */
+const glossOf = (t: string) => wordMap.get(t)?.gloss
+
+/** 原文里的一个词对应的知识点：词表里有就用 W:，否则 T: */
+export const tokenKC = (t: string): KC => (wordMap.has(t) ? 'W:' + t : 'T:' + t)
 
 function syllableOf(t: string): WordSyl | undefined {
   return syllableMap.get(t) ?? words.flatMap((w) => w.syllables).find((s) => s.tibetan === t)
@@ -289,6 +312,29 @@ export function questionFor(kc: KC, variant?: number, known: Set<KC> = ALL): Sco
     }
   }
 
+  if (type === 'T') {
+    const t = tokenMap.get(val)!
+    const pool = [...tokenMap.keys()]
+    const n = t.tibetan.split('་').length
+    const near = pool.filter((x) => x !== val && x.split('་').length === n)
+    const explain = `${t.tibetan}（${wylieOf(t.tibetan)}，注音 ${t.yitong}）`
+    if (v % 2 === 0) return { kind: 'listen', kc, audio: t.audio, answer: t.tibetan, explain, options: optionsWith(t.tibetan, pool, near) }
+    const wy = wylieOf(t.tibetan)
+    return {
+      kind: 'glyph2wylie', kc, prompt: t.tibetan, answer: wy, audio: t.audio, explain,
+      options: optionsWith(wy, pool.map(wylieOf), near.map(wylieOf)),
+    }
+  }
+
+  if (type === 'X') {
+    const l = lineById.get(val)!
+    const ws = l.words.map((w) => w.tibetan)
+    let pieces = shuffle(ws)
+    // 打乱后碰巧和原句一样就再换一次
+    for (let k = 0; k < 5 && pieces.join() === ws.join() && ws.length > 1; k++) pieces = shuffle(ws)
+    return { kind: 'order', kc, audio: l.audio, pieces, answer: ws.join('་'), explain: `${ws.join('་')}\n${l.words.map((w) => w.yitong).join(' ')}` }
+  }
+
   const s = syllableMap.get(val)!
   const kind = v % 3
   if (kind === 0) return rootQuestion(kc, s)
@@ -314,55 +360,160 @@ function rootQuestion(kc: KC, s: WordSyl): Scored {
   }
 }
 
-/**
- * 单元里还没学过的新内容：每节课最多 4 个新字母、元音或规则，
- * 每学完一个就看看哪些词已经能读了，马上加进来（最多 3 个词）。
- */
-function freshItems(u: UnitDef, seen: Set<KC>) {
-  const have = new Set([...knownThrough(u.n - 1), ...seen])
+// ───────────────────────── 关卡 ─────────────────────────
+//
+// 像 Duolingo 一样，每个单元拆成一串小关卡，一次只学 2–3 个新东西：
+//   learn    新内容：介绍卡 + 马上出题，再穿插复习
+//   practice 本单元前面几关的内容再练一遍，不加新内容
+//   read     用学过的拼读规则读开篇里的真实音节
+//   line     原文一句：先学这句里的词（切分版读音），最后听整句排词序、跟读
+//   test     单元小测：不出介绍卡，全单元抽题，80% 通过
+// 拼读线（单元 1–10）和诵读线（单元 11 起，开篇原文）各自按顺序解锁，可以同时学。
+
+export type LevelKind = 'learn' | 'practice' | 'read' | 'line' | 'test'
+export type Level = { id: string; unit: number; kind: LevelKind; title: string; kcs: KC[]; line?: string }
+export type Track = 'spell' | 'read'
+export type PathUnit = { n: number; track: Track; title: string; intro: string; examples: string[]; levels: Level[]; passage?: string }
+
+/** 平均分成每份不超过 n 个，避免最后剩一个孤零零的小关 */
+const chunk = <T,>(a: T[], n: number) => {
+  const k = Math.ceil(a.length / n)
+  return Array.from({ length: k }, (_, i) => a.slice(Math.round((i * a.length) / k), Math.round(((i + 1) * a.length) / k)))
+}
+
+/** 本单元的新内容按学习顺序排好：每加一个字母或规则，马上把已经能读的词排进来。 */
+function unitOrder(u: UnitDef): KC[] {
+  const have = new Set(knownThrough(u.n - 1))
   const out: KC[] = []
-  const ready = (k: KC) => !seen.has(k) && !out.includes(k) && within(wordMap.get(k.slice(2))!.kcs, have)
   const unitWords = u.kcs.filter((k) => k.startsWith('W:'))
-  let nNew = 0, nWords = 0
   const addWords = () => {
-    for (const w of unitWords) if (nWords < 3 && ready(w)) { out.push(w); nWords++ }
+    for (const w of unitWords) if (!out.includes(w) && within(wordMap.get(w.slice(2))!.kcs, have)) out.push(w)
   }
   addWords()
   for (const k of u.kcs) {
-    if (k.startsWith('W:') || seen.has(k) || nNew >= 4) continue
+    if (k.startsWith('W:')) continue
     out.push(k)
     have.add(k)
-    nNew++
     addWords()
+  }
+  for (const w of unitWords) if (!out.includes(w)) out.push(w)
+  return out
+}
+
+const SPELL_TITLES = ['5 个字母 · 后加字', '元音 ◌ི · 5 个字母', '元音 ◌ུ · 3 个字母', '元音 ◌ེ ◌ོ', '前加字', '上加字', '下加字', '再后加字 ས', '最后 4 个字母', '综合：开篇全部音节和词']
+const SPELL_EXAMPLES = [
+  ['ལམ', 'ནང', 'མན་ངག'], ['མི', 'ཟབ', 'ཐར་ལམ'], ['ཞིང', 'དམ་པ', 'ཞལ་ལུང'], ['ཆོས', 'ཆེན་པོ', 'འོད་ཟེར'], ['བདག', 'གསལ', 'ཀུན་བཟང'],
+  ['སྣང', 'སྙིང་པོ', 'རྩ་བ'], ['བླ་མ', 'ཕྱག་འཚལ', 'རྒྱལ་བ'], ['སངས་རྒྱས', 'རིག་འཛིན', 'ཐུགས་རྗེ'], ['ལྷ', 'ཚེ་གཅིག'], ['བླ', 'མའི', 'སྐུའི'],
+]
+
+function spellUnit(u: UnitDef): PathUnit {
+  const levels: Level[] = []
+  const id = (s: string) => `u${u.n}-${s}`
+  if (u.n < 10) {
+    const groups = chunk(unitOrder(u), 3)
+    groups.forEach((g, i) => {
+      levels.push({ id: id('l' + (i + 1)), unit: u.n, kind: 'learn', title: '新内容 ' + g.map(kcLabel).join(' '), kcs: g })
+      // 每学三关，练一关
+      if (i % 3 === 2 && i < groups.length - 1)
+        levels.push({ id: id('p' + Math.ceil(i / 3)), unit: u.n, kind: 'practice', title: '练一练', kcs: groups.slice(i - 2, i + 1).flat() })
+    })
+  }
+  chunk(u.extra, u.n < 10 ? 10 : 40).forEach((g, i) => levels.push({ id: id('r' + (i + 1)), unit: u.n, kind: 'read', title: '读开篇音节', kcs: g }))
+  levels.push({ id: id('t'), unit: u.n, kind: 'test', title: '单元小测', kcs: [...u.kcs, ...u.extra] })
+  return { n: u.n, track: 'spell', title: SPELL_TITLES[u.n - 1], intro: u.intro, examples: SPELL_EXAMPLES[u.n - 1], levels }
+}
+
+/** 原文单元：一段一个单元；一句一关，长句的词分两关学，最后一关听整句、排词序、跟读。 */
+function passageUnit(passage: string, n: number): PathUnit {
+  const levels: Level[] = []
+  const all: KC[] = []
+  for (const l of linesOf(passage)) {
+    const ks = [...new Set(l.words.map((w) => tokenKC(w.tibetan)))]
+    const groups = ks.length > 6 ? [ks.slice(0, Math.ceil(ks.length / 2)), ks.slice(Math.ceil(ks.length / 2))] : [ks]
+    const name = linesOf(passage).length > 1 ? `第 ${l.index + 1} 句` : '这一句'
+    groups.forEach((g, i) => {
+      const last = i === groups.length - 1
+      levels.push({
+        id: `${l.id}-${i + 1}`, unit: n, kind: 'line', line: l.id,
+        title: name + (groups.length > 1 ? (last ? ' · 下半' : ' · 上半') : ''), kcs: last ? [...g, 'X:' + l.id] : g,
+      })
+    })
+    all.push(...ks, 'X:' + l.id)
+  }
+  levels.push({ id: `${passage}-t`, unit: n, kind: 'test', title: '整段小测', kcs: [...new Set(all)] })
+  return {
+    n, track: 'read', passage, title: '原文：' + (passageTitles[passage] ?? passage), levels,
+    intro: '一句一关：先认这句里的词，最后听整句连读、排出词序、跟着读。', examples: [],
+  }
+}
+
+export const PATH: PathUnit[] = [...UNITS.map(spellUnit), ...passages.map((p, i) => passageUnit(p.id, 11 + i))]
+export const LEVELS: Level[] = PATH.flatMap((u) => u.levels)
+export const levelById = new Map(LEVELS.map((l) => [l.id, l]))
+export const unitByN = new Map(PATH.map((u) => [u.n, u]))
+
+const lineKCs = readLines.flatMap((l) => [...l.words.map((w) => tokenKC(w.tibetan)), 'X:' + l.id])
+const ALL_WITH_TEXT = new Set([...ALL, ...lineKCs])
+
+/** 出题时认为学习者已经认识的知识点（用来挑干扰项） */
+function knownFor(unit: number) {
+  return unit <= 10 ? knownThrough(unit) : ALL_WITH_TEXT
+}
+
+/** 第一次见的知识点先上介绍卡；ask 时紧跟着出一道题 */
+function withIntros(kcs: KC[], seen: Set<KC>, known: Set<KC>, ask: boolean) {
+  const out: Question[] = []
+  for (const k of kcs) {
+    if (k.startsWith('X:')) continue
+    if (!seen.has(k)) out.push(introFor(k))
+    if (ask) out.push(questionFor(k, 0, known))
   }
   return out
 }
 
-/**
- * 像 Duolingo 一样组一节课：先介绍几个新字母或规则，马上出题；
- * 再介绍用这些字母拼成的新词；中间穿插复习已经学过的内容。
- */
-export function buildLesson(unit: number, seen: Set<KC>, weak: KC[] = []): { questions: Question[]; known: Set<KC> } {
-  const u = UNITS.find((x) => x.n === unit)!
-  const known = knownThrough(unit)
-  const fresh = unit === 10 ? [] : freshItems(u, seen)
-  const firstRound: Question[] = []
-  const later: Question[] = []
-  for (const k of fresh) {
-    firstRound.push(introFor(k), questionFor(k, 0, known))
-    later.push(questionFor(k, 1, known))
+/** 组一关的题。seen：已经练过的知识点；weak：最近常错的，优先拿来复习。 */
+export function buildLevel(levelId: string, seen: Set<KC>, weak: KC[] = []): { questions: Question[]; known: Set<KC> } {
+  const lv = levelById.get(levelId)!
+  const u = unitByN.get(lv.unit)!
+  const known = knownFor(lv.unit)
+  const idx = u.levels.indexOf(lv)
+  const earlierInUnit = u.levels.slice(0, idx).flatMap((l) => l.kcs).filter((k) => seen.has(k) && !k.startsWith('X:'))
+  const weakKnown = weak.filter((k) => known.has(k) && seen.has(k) && !lv.kcs.includes(k))
+  const review = (n: number) => [...new Set([...weakKnown.slice(0, 2), ...shuffle(earlierInUnit)])].slice(0, n).map((k) => questionFor(k, undefined, known))
+
+  if (lv.kind === 'learn' || lv.kind === 'line') {
+    const items = lv.kcs.filter((k) => !k.startsWith('X:'))
+    const fresh = items.filter((k) => !seen.has(k))
+    const first = withIntros(items, seen, known, true)
+    const second = shuffle([...items.map((k) => questionFor(k, 1, known)), ...review(Math.max(4, 10 - fresh.length * 2))])
+    const qs: Question[] = [...first, ...second]
+    if (lv.line && lv.kcs.includes('X:' + lv.line)) {
+      const x = 'X:' + lv.line
+      if (!seen.has(x)) qs.push(introFor(x))
+      qs.push(questionFor(x, 0, known), { kind: 'shadow', kc: x, line: lineById.get(lv.line)! })
+    }
+    return { questions: qs, known }
   }
-  const practiced = [...u.kcs.filter((k) => seen.has(k)), ...u.extra]
-  const earlier = [...knownThrough(unit - 1)].filter((k) => seen.has(k) || k.startsWith('S:'))
-  const reviewPool = [...new Set([...weak.filter((k) => known.has(k) && !fresh.includes(k)), ...shuffle(practiced), ...shuffle(earlier)])]
-  const reviewCount = Math.max(4, 14 - fresh.length * 2)
-  for (const k of reviewPool.slice(0, reviewCount)) later.push(questionFor(k, undefined, known))
-  // 新内容按顺序先出，复习题打散穿插在后半段
-  const mixed = shuffle(later)
-  const questions: Question[] = []
-  firstRound.forEach((q, i) => {
-    questions.push(q)
-    if (i % 2 === 1 && i >= 3 && mixed.length) questions.push(mixed.shift()!)
-  })
-  return { questions: [...questions, ...mixed], known }
+
+  if (lv.kind === 'practice' || lv.kind === 'read') {
+    const pick = shuffle(lv.kcs).slice(0, 10)
+    const unseen = pick.filter((k) => !seen.has(k))
+    return { questions: [...withIntros(unseen, seen, known, false), ...shuffle([...pick.map((k) => questionFor(k, undefined, known)), ...review(2)])], known }
+  }
+
+  // 单元小测：全单元抽题；原文小测每句都要排一次词序
+  const xs = lv.kcs.filter((k) => k.startsWith('X:'))
+  const rest = shuffle(lv.kcs.filter((k) => !k.startsWith('X:'))).slice(0, Math.max(8, 14 - xs.length))
+  const unseen = [...xs, ...rest].filter((k) => !seen.has(k))
+  return { questions: [...withIntros(unseen, seen, known, false), ...shuffle([...rest.map((k) => questionFor(k, undefined, known)), ...xs.map((k) => questionFor(k, 0, known))])], known }
+}
+
+/** 定时抽查：从一个单元里抽题，优先抽最近答错的。 */
+export function buildSpotCheck(unit: number, weak: KC[] = []): Question[] {
+  const u = unitByN.get(unit)!
+  const known = knownFor(unit)
+  const pool = [...new Set(u.levels.flatMap((l) => l.kcs))]
+  const inPool = new Set(pool)
+  const picked = [...new Set([...weak.filter((k) => inPool.has(k)).slice(0, 4), ...shuffle(pool)])].slice(0, 10)
+  return shuffle(picked.map((k) => questionFor(k, k.startsWith('X:') ? 0 : undefined, known)))
 }

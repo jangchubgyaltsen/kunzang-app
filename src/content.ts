@@ -1,4 +1,5 @@
 import raw from './opening.json'
+import { tokenMap } from './reading.ts'
 
 export type Syllable = {
   tibetan: string
@@ -30,6 +31,14 @@ export type Passage = {
 
 export const passages = raw.passages as Passage[]
 export const syllables = raw.syllables as Syllable[]
+
+// 新音频：每句用整句连读；单独成词的音节（如 ལ、དང、མི）用从整句里切出来的那个词，
+// 不再用孤立合成的单音节。
+for (const p of passages) p.lines.forEach((l, i) => (l.audio = `op/${p.id}-${i + 1}`))
+for (const s of syllables) {
+  const t = tokenMap.get(s.tibetan)
+  if (t) s.audio = t.audio
+}
 export const syllableMap = new Map(syllables.map((s) => [s.tibetan, s]))
 
 export const passageTitles: Record<string, string> = {

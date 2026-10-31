@@ -1,0 +1,1229 @@
+{
+ "lines": [
+  {
+   "id": "title-1",
+   "passage": "title",
+   "index": 0,
+   "audio": "op/title-1",
+   "words": [
+    {
+     "id": "title-1-w01",
+     "tibetan": "རྫོགས་པ་ཆེན་པོ",
+     "yitong": "zu ba qian bu",
+     "audio": "op/title-1-w01"
+    },
+    {
+     "id": "title-1-w02",
+     "tibetan": "ཀློང་ཆེན",
+     "yitong": "long qian",
+     "audio": "op/title-1-w02"
+    },
+    {
+     "id": "title-1-w03",
+     "tibetan": "སྙིང་ཏིག",
+     "yitong": "niang de",
+     "audio": "op/title-1-w03"
+    },
+    {
+     "id": "title-1-w04",
+     "tibetan": "གི",
+     "yitong": "ge",
+     "audio": "op/title-1-w04"
+    },
+    {
+     "id": "title-1-w05",
+     "tibetan": "སྔོན་འགྲོའི",
+     "yitong": "ngun zhuoi",
+     "audio": "op/title-1-w05"
+    },
+    {
+     "id": "title-1-w06",
+     "tibetan": "ཁྲིད་ཡིག",
+     "yitong": "chi ye",
+     "audio": "op/title-1-w06"
+    },
+    {
+     "id": "title-1-w07",
+     "tibetan": "ཀུན་བཟང",
+     "yitong": "gun sang",
+     "audio": "op/title-1-w07"
+    },
+    {
+     "id": "title-1-w08",
+     "tibetan": "བླ་མའི",
+     "yitong": "la mai",
+     "audio": "op/title-1-w08"
+    },
+    {
+     "id": "title-1-w09",
+     "tibetan": "ཞལ་ལུང",
+     "yitong": "xie long",
+     "audio": "op/title-1-w09"
+    },
+    {
+     "id": "title-1-w10",
+     "tibetan": "ཞེས་བྱ་བ",
+     "yitong": "xei cha wa",
+     "audio": "op/title-1-w10"
+    },
+    {
+     "id": "title-1-w11",
+     "tibetan": "བཞུགས་སོ",
+     "yitong": "xou suo",
+     "audio": "op/title-1-w11"
+    }
+   ]
+  },
+  {
+   "id": "homage-1",
+   "passage": "homage",
+   "index": 0,
+   "audio": "op/homage-1",
+   "words": [
+    {
+     "id": "homage-1-w01",
+     "tibetan": "རྗེ་བཙུན",
+     "yitong": "jie zun",
+     "audio": "op/homage-1-w01"
+    },
+    {
+     "id": "homage-1-w02",
+     "tibetan": "བླ་མ",
+     "yitong": "la ma",
+     "audio": "op/homage-1-w02"
+    },
+    {
+     "id": "homage-1-w03",
+     "tibetan": "དམིགས་པ",
+     "yitong": "me ba",
+     "audio": "op/homage-1-w03"
+    },
+    {
+     "id": "homage-1-w04",
+     "tibetan": "མེད་པའི",
+     "yitong": "mai bai",
+     "audio": "op/homage-1-w04"
+    },
+    {
+     "id": "homage-1-w05",
+     "tibetan": "ཐུགས་རྗེ",
+     "yitong": "tou jie",
+     "audio": "op/homage-1-w05"
+    },
+    {
+     "id": "homage-1-w06",
+     "tibetan": "ཆེན་པོ",
+     "yitong": "qian bu",
+     "audio": "op/homage-1-w06"
+    },
+    {
+     "id": "homage-1-w07",
+     "tibetan": "དང",
+     "yitong": "dang",
+     "audio": "op/homage-1-w07"
+    },
+    {
+     "id": "homage-1-w08",
+     "tibetan": "ལྡན་པ",
+     "yitong": "dan ba",
+     "audio": "op/homage-1-w08"
+    },
+    {
+     "id": "homage-1-w09",
+     "tibetan": "རྣམས",
+     "yitong": "nam",
+     "audio": "op/homage-1-w09"
+    },
+    {
+     "id": "homage-1-w10",
+     "tibetan": "ལ",
+     "yitong": "la",
+     "audio": "op/homage-1-w10"
+    },
+    {
+     "id": "homage-1-w11",
+     "tibetan": "ཕྱག་འཚལ་ལོ",
+     "yitong": "qia cai luo",
+     "audio": "op/homage-1-w11"
+    }
+   ]
+  },
+  {
+   "id": "verse-1-1",
+   "passage": "verse-1",
+   "index": 0,
+   "audio": "op/verse-1-1",
+   "words": [
+    {
+     "id": "verse-1-1-w01",
+     "tibetan": "རྒྱལ་བའི",
+     "yitong": "jie wai",
+     "audio": "op/verse-1-1-w01"
+    },
+    {
+     "id": "verse-1-1-w02",
+     "tibetan": "དགོངས་པ",
+     "yitong": "gong ba",
+     "audio": "op/verse-1-1-w02"
+    },
+    {
+     "id": "verse-1-1-w03",
+     "tibetan": "རིག་འཛིན",
+     "yitong": "re zin",
+     "audio": "op/verse-1-1-w03"
+    },
+    {
+     "id": "verse-1-1-w04",
+     "tibetan": "བརྡའ",
+     "yitong": "da",
+     "audio": "op/verse-1-1-w04"
+    },
+    {
+     "id": "verse-1-1-w05",
+     "tibetan": "ཡིས",
+     "yitong": "yi",
+     "audio": "op/verse-1-1-w05"
+    },
+    {
+     "id": "verse-1-1-w06",
+     "tibetan": "བརྒྱུད",
+     "yitong": "ji",
+     "audio": "op/verse-1-1-w06"
+    }
+   ]
+  },
+  {
+   "id": "verse-1-2",
+   "passage": "verse-1",
+   "index": 1,
+   "audio": "op/verse-1-2",
+   "words": [
+    {
+     "id": "verse-1-2-w01",
+     "tibetan": "གང་ཟག",
+     "yitong": "gang sa",
+     "audio": "op/verse-1-2-w01"
+    },
+    {
+     "id": "verse-1-2-w02",
+     "tibetan": "མི",
+     "yitong": "me",
+     "audio": "op/verse-1-2-w02"
+    },
+    {
+     "id": "verse-1-2-w03",
+     "tibetan": "ལས",
+     "yitong": "lei",
+     "audio": "op/verse-1-2-w03"
+    },
+    {
+     "id": "verse-1-2-w04",
+     "tibetan": "སྐལ་པ",
+     "yitong": "gai ba",
+     "audio": "op/verse-1-2-w04"
+    },
+    {
+     "id": "verse-1-2-w05",
+     "tibetan": "རབ",
+     "yitong": "raf",
+     "audio": "op/verse-1-2-w05"
+    },
+    {
+     "id": "verse-1-2-w06",
+     "tibetan": "གྱུར་པས",
+     "yitong": "jur bei",
+     "audio": "op/verse-1-2-w06"
+    }
+   ]
+  },
+  {
+   "id": "verse-1-3",
+   "passage": "verse-1",
+   "index": 2,
+   "audio": "op/verse-1-3",
+   "words": [
+    {
+     "id": "verse-1-3-w01",
+     "tibetan": "དམ་པའི",
+     "yitong": "dam bai",
+     "audio": "op/verse-1-3-w01"
+    },
+    {
+     "id": "verse-1-3-w02",
+     "tibetan": "རྗེས་ཟིན",
+     "yitong": "jei sin",
+     "audio": "op/verse-1-3-w02"
+    },
+    {
+     "id": "verse-1-3-w03",
+     "tibetan": "དོན་གཉིས",
+     "yitong": "dun ni",
+     "audio": "op/verse-1-3-w03"
+    },
+    {
+     "id": "verse-1-3-w04",
+     "tibetan": "མཐར་ཕྱིན་པ",
+     "yitong": "tar qin ba",
+     "audio": "op/verse-1-3-w04"
+    }
+   ]
+  },
+  {
+   "id": "verse-1-4",
+   "passage": "verse-1",
+   "index": 3,
+   "audio": "op/verse-1-4",
+   "words": [
+    {
+     "id": "verse-1-4-w01",
+     "tibetan": "བརྒྱུད་གསུམ",
+     "yitong": "ji sum",
+     "audio": "op/verse-1-4-w01"
+    },
+    {
+     "id": "verse-1-4-w02",
+     "tibetan": "བླ་མ",
+     "yitong": "la ma",
+     "audio": "op/verse-1-4-w02"
+    },
+    {
+     "id": "verse-1-4-w03",
+     "tibetan": "རྣམས",
+     "yitong": "nam",
+     "audio": "op/verse-1-4-w03"
+    },
+    {
+     "id": "verse-1-4-w04",
+     "tibetan": "ལ",
+     "yitong": "la",
+     "audio": "op/verse-1-4-w04"
+    },
+    {
+     "id": "verse-1-4-w05",
+     "tibetan": "ཕྱག་འཚལ་ལོ",
+     "yitong": "qia cai luo",
+     "audio": "op/verse-1-4-w05"
+    }
+   ]
+  },
+  {
+   "id": "verse-2-1",
+   "passage": "verse-2",
+   "index": 0,
+   "audio": "op/verse-2-1",
+   "words": [
+    {
+     "id": "verse-2-1-w01",
+     "tibetan": "ཆོས་ཟད",
+     "yitong": "qei sai",
+     "audio": "op/verse-2-1-w01"
+    },
+    {
+     "id": "verse-2-1-w02",
+     "tibetan": "ཀློང་དུ",
+     "yitong": "long de",
+     "audio": "op/verse-2-1-w02"
+    },
+    {
+     "id": "verse-2-1-w03",
+     "tibetan": "ཆོས་སྐུའི",
+     "yitong": "qei gei",
+     "audio": "op/verse-2-1-w03"
+    },
+    {
+     "id": "verse-2-1-w04",
+     "tibetan": "དགོངས་པ",
+     "yitong": "gong ba",
+     "audio": "op/verse-2-1-w04"
+    },
+    {
+     "id": "verse-2-1-w05",
+     "tibetan": "བརྙེས",
+     "yitong": "nyei",
+     "audio": "op/verse-2-1-w05"
+    }
+   ]
+  },
+  {
+   "id": "verse-2-2",
+   "passage": "verse-2",
+   "index": 1,
+   "audio": "op/verse-2-2",
+   "words": [
+    {
+     "id": "verse-2-2-w01",
+     "tibetan": "འོད་གསལ",
+     "yitong": "ao sai",
+     "audio": "op/verse-2-2-w01"
+    },
+    {
+     "id": "verse-2-2-w02",
+     "tibetan": "དབྱིངས་སུ",
+     "yitong": "yang se",
+     "audio": "op/verse-2-2-w02"
+    },
+    {
+     "id": "verse-2-2-w03",
+     "tibetan": "ལོངས་སྐུའི",
+     "yitong": "long gei",
+     "audio": "op/verse-2-2-w03"
+    },
+    {
+     "id": "verse-2-2-w04",
+     "tibetan": "ཞིང་སྣང",
+     "yitong": "xiang nang",
+     "audio": "op/verse-2-2-w04"
+    },
+    {
+     "id": "verse-2-2-w05",
+     "tibetan": "གཟིགས",
+     "yitong": "se",
+     "audio": "op/verse-2-2-w05"
+    }
+   ]
+  },
+  {
+   "id": "verse-2-3",
+   "passage": "verse-2",
+   "index": 2,
+   "audio": "op/verse-2-3",
+   "words": [
+    {
+     "id": "verse-2-3-w01",
+     "tibetan": "གདུལ་བྱའི",
+     "yitong": "dai chai",
+     "audio": "op/verse-2-3-w01"
+    },
+    {
+     "id": "verse-2-3-w02",
+     "tibetan": "སྣང་ངོར",
+     "yitong": "nang ngor",
+     "audio": "op/verse-2-3-w02"
+    },
+    {
+     "id": "verse-2-3-w03",
+     "tibetan": "སྤྲུལ་སྐུའི",
+     "yitong": "zhai gei",
+     "audio": "op/verse-2-3-w03"
+    },
+    {
+     "id": "verse-2-3-w04",
+     "tibetan": "འགྲོ་དོན",
+     "yitong": "zhuo dun",
+     "audio": "op/verse-2-3-w04"
+    },
+    {
+     "id": "verse-2-3-w05",
+     "tibetan": "མཛད",
+     "yitong": "zai",
+     "audio": "op/verse-2-3-w05"
+    }
+   ]
+  },
+  {
+   "id": "verse-2-4",
+   "passage": "verse-2",
+   "index": 3,
+   "audio": "op/verse-2-4",
+   "words": [
+    {
+     "id": "verse-2-4-w01",
+     "tibetan": "ཀུན་མཁྱེན",
+     "yitong": "gun qian",
+     "audio": "op/verse-2-4-w01"
+    },
+    {
+     "id": "verse-2-4-w02",
+     "tibetan": "ཆོས་ཀྱི",
+     "yitong": "qei ji",
+     "audio": "op/verse-2-4-w02"
+    },
+    {
+     "id": "verse-2-4-w03",
+     "tibetan": "རྒྱལ་པོ",
+     "yitong": "jie bu",
+     "audio": "op/verse-2-4-w03"
+    },
+    {
+     "id": "verse-2-4-w04",
+     "tibetan": "ལ",
+     "yitong": "la",
+     "audio": "op/verse-2-4-w04"
+    },
+    {
+     "id": "verse-2-4-w05",
+     "tibetan": "ཕྱག་འཚལ",
+     "yitong": "qia cai",
+     "audio": "op/verse-2-4-w05"
+    }
+   ]
+  },
+  {
+   "id": "verse-3-1",
+   "passage": "verse-3",
+   "index": 0,
+   "audio": "op/verse-3-1",
+   "words": [
+    {
+     "id": "verse-3-1-w01",
+     "tibetan": "མཁྱེན་པས",
+     "yitong": "qian bei",
+     "audio": "op/verse-3-1-w01"
+    },
+    {
+     "id": "verse-3-1-w02",
+     "tibetan": "ཤེས་བྱ",
+     "yitong": "xei cha",
+     "audio": "op/verse-3-1-w02"
+    },
+    {
+     "id": "verse-3-1-w03",
+     "tibetan": "ཀུན་གྱི",
+     "yitong": "gun ji",
+     "audio": "op/verse-3-1-w03"
+    },
+    {
+     "id": "verse-3-1-w04",
+     "tibetan": "དེ་ཉིད",
+     "yitong": "di ni",
+     "audio": "op/verse-3-1-w04"
+    },
+    {
+     "id": "verse-3-1-w05",
+     "tibetan": "གཟིགས",
+     "yitong": "se",
+     "audio": "op/verse-3-1-w05"
+    }
+   ]
+  },
+  {
+   "id": "verse-3-2",
+   "passage": "verse-3",
+   "index": 1,
+   "audio": "op/verse-3-2",
+   "words": [
+    {
+     "id": "verse-3-2-w01",
+     "tibetan": "ཐུགས་བརྩེའི",
+     "yitong": "tou zei",
+     "audio": "op/verse-3-2-w01"
+    },
+    {
+     "id": "verse-3-2-w02",
+     "tibetan": "འོད་ཟེར",
+     "yitong": "ao ser",
+     "audio": "op/verse-3-2-w02"
+    },
+    {
+     "id": "verse-3-2-w03",
+     "tibetan": "གདུལ་བྱའི",
+     "yitong": "dai chai",
+     "audio": "op/verse-3-2-w03"
+    },
+    {
+     "id": "verse-3-2-w04",
+     "tibetan": "དཔལ་དུ",
+     "yitong": "huai de",
+     "audio": "op/verse-3-2-w04"
+    },
+    {
+     "id": "verse-3-2-w05",
+     "tibetan": "ཤར",
+     "yitong": "xiar",
+     "audio": "op/verse-3-2-w05"
+    }
+   ]
+  },
+  {
+   "id": "verse-3-3",
+   "passage": "verse-3",
+   "index": 2,
+   "audio": "op/verse-3-3",
+   "words": [
+    {
+     "id": "verse-3-3-w01",
+     "tibetan": "ཟབ་ལམ",
+     "yitong": "saf lam",
+     "audio": "op/verse-3-3-w01"
+    },
+    {
+     "id": "verse-3-3-w02",
+     "tibetan": "ཐེག་རྩེའི",
+     "yitong": "tai zei",
+     "audio": "op/verse-3-3-w02"
+    },
+    {
+     "id": "verse-3-3-w03",
+     "tibetan": "བསྟན་པ",
+     "yitong": "dan ba",
+     "audio": "op/verse-3-3-w03"
+    },
+    {
+     "id": "verse-3-3-w04",
+     "tibetan": "གསལ",
+     "yitong": "sai",
+     "audio": "op/verse-3-3-w04"
+    },
+    {
+     "id": "verse-3-3-w05",
+     "tibetan": "མཛད་པ",
+     "yitong": "zai ba",
+     "audio": "op/verse-3-3-w05"
+    }
+   ]
+  },
+  {
+   "id": "verse-3-4",
+   "passage": "verse-3",
+   "index": 3,
+   "audio": "op/verse-3-4",
+   "words": [
+    {
+     "id": "verse-3-4-w01",
+     "tibetan": "རིག་འཛིན",
+     "yitong": "re zin",
+     "audio": "op/verse-3-4-w01"
+    },
+    {
+     "id": "verse-3-4-w02",
+     "tibetan": "འཇིགས་མེད",
+     "yitong": "je mai",
+     "audio": "op/verse-3-4-w02"
+    },
+    {
+     "id": "verse-3-4-w03",
+     "tibetan": "གླིང་པ",
+     "yitong": "lang ba",
+     "audio": "op/verse-3-4-w03"
+    },
+    {
+     "id": "verse-3-4-w04",
+     "tibetan": "ལ",
+     "yitong": "la",
+     "audio": "op/verse-3-4-w04"
+    },
+    {
+     "id": "verse-3-4-w05",
+     "tibetan": "ཕྱག་འཚལ",
+     "yitong": "qia cai",
+     "audio": "op/verse-3-4-w05"
+    }
+   ]
+  },
+  {
+   "id": "verse-4-1",
+   "passage": "verse-4",
+   "index": 0,
+   "audio": "op/verse-4-1",
+   "words": [
+    {
+     "id": "verse-4-1-w01",
+     "tibetan": "སྤྱན་རས་གཟིགས",
+     "yitong": "jian rei se",
+     "audio": "op/verse-4-1-w01"
+    },
+    {
+     "id": "verse-4-1-w02",
+     "tibetan": "དབང",
+     "yitong": "huang",
+     "audio": "op/verse-4-1-w02"
+    },
+    {
+     "id": "verse-4-1-w03",
+     "tibetan": "བཤེས་གཉེན",
+     "yitong": "xei nian",
+     "audio": "op/verse-4-1-w03"
+    },
+    {
+     "id": "verse-4-1-w04",
+     "tibetan": "ཚུལ",
+     "yitong": "cai",
+     "audio": "op/verse-4-1-w04"
+    },
+    {
+     "id": "verse-4-1-w05",
+     "tibetan": "བཟུང་ནས",
+     "yitong": "song nei",
+     "audio": "op/verse-4-1-w05"
+    }
+   ]
+  },
+  {
+   "id": "verse-4-2",
+   "passage": "verse-4",
+   "index": 1,
+   "audio": "op/verse-4-2",
+   "words": [
+    {
+     "id": "verse-4-2-w01",
+     "tibetan": "གསུང་གི",
+     "yitong": "song ge",
+     "audio": "op/verse-4-2-w01"
+    },
+    {
+     "id": "verse-4-2-w02",
+     "tibetan": "སྣང་བས",
+     "yitong": "nang wei",
+     "audio": "op/verse-4-2-w02"
+    },
+    {
+     "id": "verse-4-2-w03",
+     "tibetan": "འབྲེལ་ཚད",
+     "yitong": "zhai cai",
+     "audio": "op/verse-4-2-w03"
+    },
+    {
+     "id": "verse-4-2-w04",
+     "tibetan": "ཐར་ལམ",
+     "yitong": "tar lam",
+     "audio": "op/verse-4-2-w04"
+    },
+    {
+     "id": "verse-4-2-w05",
+     "tibetan": "དགོད",
+     "yitong": "gao",
+     "audio": "op/verse-4-2-w05"
+    }
+   ]
+  },
+  {
+   "id": "verse-4-3",
+   "passage": "verse-4",
+   "index": 2,
+   "audio": "op/verse-4-3",
+   "words": [
+    {
+     "id": "verse-4-3-w01",
+     "tibetan": "གང་ལ",
+     "yitong": "gang la",
+     "audio": "op/verse-4-3-w01"
+    },
+    {
+     "id": "verse-4-3-w02",
+     "tibetan": "གང་འདུལ",
+     "yitong": "gang dai",
+     "audio": "op/verse-4-3-w02"
+    },
+    {
+     "id": "verse-4-3-w03",
+     "tibetan": "མཛད་པ",
+     "yitong": "zai ba",
+     "audio": "op/verse-4-3-w03"
+    },
+    {
+     "id": "verse-4-3-w04",
+     "tibetan": "མཐའ་ཡས་པ",
+     "yitong": "ta yei ba",
+     "audio": "op/verse-4-3-w04"
+    }
+   ]
+  },
+  {
+   "id": "verse-4-4",
+   "passage": "verse-4",
+   "index": 3,
+   "audio": "op/verse-4-4",
+   "words": [
+    {
+     "id": "verse-4-4-w01",
+     "tibetan": "དྲིན་ཆེན",
+     "yitong": "zhin qian",
+     "audio": "op/verse-4-4-w01"
+    },
+    {
+     "id": "verse-4-4-w02",
+     "tibetan": "རྩ་བའི",
+     "yitong": "za wai",
+     "audio": "op/verse-4-4-w02"
+    },
+    {
+     "id": "verse-4-4-w03",
+     "tibetan": "བླ་མ",
+     "yitong": "la ma",
+     "audio": "op/verse-4-4-w03"
+    },
+    {
+     "id": "verse-4-4-w04",
+     "tibetan": "ལ",
+     "yitong": "la",
+     "audio": "op/verse-4-4-w04"
+    },
+    {
+     "id": "verse-4-4-w05",
+     "tibetan": "ཕྱག་འཚལ",
+     "yitong": "qia cai",
+     "audio": "op/verse-4-4-w05"
+    }
+   ]
+  },
+  {
+   "id": "verse-5-1",
+   "passage": "verse-5",
+   "index": 0,
+   "audio": "op/verse-5-1",
+   "words": [
+    {
+     "id": "verse-5-1-w01",
+     "tibetan": "བསྟན་པ",
+     "yitong": "dan ba",
+     "audio": "op/verse-5-1-w01"
+    },
+    {
+     "id": "verse-5-1-w02",
+     "tibetan": "ཡོངས་རྫོགས",
+     "yitong": "yong zu",
+     "audio": "op/verse-5-1-w02"
+    },
+    {
+     "id": "verse-5-1-w03",
+     "tibetan": "ཀུན་མཁྱེན",
+     "yitong": "gun qian",
+     "audio": "op/verse-5-1-w03"
+    },
+    {
+     "id": "verse-5-1-w04",
+     "tibetan": "བརྒྱུད་པའི",
+     "yitong": "ji bai",
+     "audio": "op/verse-5-1-w04"
+    },
+    {
+     "id": "verse-5-1-w05",
+     "tibetan": "གཞུང",
+     "yitong": "xong",
+     "audio": "op/verse-5-1-w05"
+    }
+   ]
+  },
+  {
+   "id": "verse-5-2",
+   "passage": "verse-5",
+   "index": 1,
+   "audio": "op/verse-5-2",
+   "words": [
+    {
+     "id": "verse-5-2-w01",
+     "tibetan": "མན་ངག",
+     "yitong": "man nga",
+     "audio": "op/verse-5-2-w01"
+    },
+    {
+     "id": "verse-5-2-w02",
+     "tibetan": "སྙིང་པོ",
+     "yitong": "niang bu",
+     "audio": "op/verse-5-2-w02"
+    },
+    {
+     "id": "verse-5-2-w03",
+     "tibetan": "ཚེ་གཅིག",
+     "yitong": "cei je",
+     "audio": "op/verse-5-2-w03"
+    },
+    {
+     "id": "verse-5-2-w04",
+     "tibetan": "སངས་རྒྱས",
+     "yitong": "sang jei",
+     "audio": "op/verse-5-2-w04"
+    },
+    {
+     "id": "verse-5-2-w05",
+     "tibetan": "ཆོས",
+     "yitong": "qei",
+     "audio": "op/verse-5-2-w05"
+    }
+   ]
+  },
+  {
+   "id": "verse-5-3",
+   "passage": "verse-5",
+   "index": 2,
+   "audio": "op/verse-5-3",
+   "words": [
+    {
+     "id": "verse-5-3-w01",
+     "tibetan": "ལམ་གྱི",
+     "yitong": "lam ji",
+     "audio": "op/verse-5-3-w01"
+    },
+    {
+     "id": "verse-5-3-w02",
+     "tibetan": "སྔོན་འགྲོ",
+     "yitong": "ngun zhuo",
+     "audio": "op/verse-5-3-w02"
+    },
+    {
+     "id": "verse-5-3-w03",
+     "tibetan": "ཐུན་མོང",
+     "yitong": "tun mong",
+     "audio": "op/verse-5-3-w03"
+    },
+    {
+     "id": "verse-5-3-w04",
+     "tibetan": "ཕྱི",
+     "yitong": "qi",
+     "audio": "op/verse-5-3-w04"
+    },
+    {
+     "id": "verse-5-3-w05",
+     "tibetan": "དང",
+     "yitong": "dang",
+     "audio": "op/verse-5-3-w05"
+    },
+    {
+     "id": "verse-5-3-w06",
+     "tibetan": "ནང",
+     "yitong": "nang",
+     "audio": "op/verse-5-3-w06"
+    }
+   ]
+  },
+  {
+   "id": "verse-5-4",
+   "passage": "verse-5",
+   "index": 3,
+   "audio": "op/verse-5-4",
+   "words": [
+    {
+     "id": "verse-5-4-w01",
+     "tibetan": "གདམས་པའི",
+     "yitong": "dam bai",
+     "audio": "op/verse-5-4-w01"
+    },
+    {
+     "id": "verse-5-4-w02",
+     "tibetan": "ཆ་ལག",
+     "yitong": "qia la",
+     "audio": "op/verse-5-4-w02"
+    },
+    {
+     "id": "verse-5-4-w03",
+     "tibetan": "ཉེ་ལམ",
+     "yitong": "nie lam",
+     "audio": "op/verse-5-4-w03"
+    },
+    {
+     "id": "verse-5-4-w04",
+     "tibetan": "འཕོ་བར",
+     "yitong": "pu war",
+     "audio": "op/verse-5-4-w04"
+    },
+    {
+     "id": "verse-5-4-w05",
+     "tibetan": "བཅས",
+     "yitong": "jei",
+     "audio": "op/verse-5-4-w05"
+    }
+   ]
+  },
+  {
+   "id": "verse-6-1",
+   "passage": "verse-6",
+   "index": 0,
+   "audio": "op/verse-6-1",
+   "words": [
+    {
+     "id": "verse-6-1-w01",
+     "tibetan": "གསལ་ལ",
+     "yitong": "sai la",
+     "audio": "op/verse-6-1-w01"
+    },
+    {
+     "id": "verse-6-1-w02",
+     "tibetan": "གོ་བདེ",
+     "yitong": "gu di",
+     "audio": "op/verse-6-1-w02"
+    },
+    {
+     "id": "verse-6-1-w03",
+     "tibetan": "དོན་ཟབ",
+     "yitong": "dun saf",
+     "audio": "op/verse-6-1-w03"
+    },
+    {
+     "id": "verse-6-1-w04",
+     "tibetan": "རྨད་དུ",
+     "yitong": "mai de",
+     "audio": "op/verse-6-1-w04"
+    },
+    {
+     "id": "verse-6-1-w05",
+     "tibetan": "བྱུང",
+     "yitong": "chong",
+     "audio": "op/verse-6-1-w05"
+    }
+   ]
+  },
+  {
+   "id": "verse-6-2",
+   "passage": "verse-6",
+   "index": 1,
+   "audio": "op/verse-6-2",
+   "words": [
+    {
+     "id": "verse-6-2-w01",
+     "tibetan": "མཚུངས་མེད",
+     "yitong": "cong mai",
+     "audio": "op/verse-6-2-w01"
+    },
+    {
+     "id": "verse-6-2-w02",
+     "tibetan": "བླ་མའི",
+     "yitong": "la mai",
+     "audio": "op/verse-6-2-w02"
+    },
+    {
+     "id": "verse-6-2-w03",
+     "tibetan": "བཀའ་ལུང",
+     "yitong": "gua long",
+     "audio": "op/verse-6-2-w03"
+    },
+    {
+     "id": "verse-6-2-w04",
+     "tibetan": "མ་ནོར་བ",
+     "yitong": "ma nor wa",
+     "audio": "op/verse-6-2-w04"
+    }
+   ]
+  },
+  {
+   "id": "verse-6-3",
+   "passage": "verse-6",
+   "index": 2,
+   "audio": "op/verse-6-3",
+   "words": [
+    {
+     "id": "verse-6-3-w01",
+     "tibetan": "རང་བློར",
+     "yitong": "rang lor",
+     "audio": "op/verse-6-3-w01"
+    },
+    {
+     "id": "verse-6-3-w02",
+     "tibetan": "ཇི་བཞིན",
+     "yitong": "ji xin",
+     "audio": "op/verse-6-3-w02"
+    },
+    {
+     "id": "verse-6-3-w03",
+     "tibetan": "ངེས་བཞིན",
+     "yitong": "ngei xin",
+     "audio": "op/verse-6-3-w03"
+    },
+    {
+     "id": "verse-6-3-w04",
+     "tibetan": "འདིར",
+     "yitong": "dir",
+     "audio": "op/verse-6-3-w04"
+    },
+    {
+     "id": "verse-6-3-w05",
+     "tibetan": "བཤད་ཀྱིས",
+     "yitong": "xie ji",
+     "audio": "op/verse-6-3-w05"
+    }
+   ]
+  },
+  {
+   "id": "verse-6-4",
+   "passage": "verse-6",
+   "index": 3,
+   "audio": "op/verse-6-4",
+   "words": [
+    {
+     "id": "verse-6-4-w01",
+     "tibetan": "ལྷ",
+     "yitong": "la",
+     "audio": "op/verse-6-4-w01"
+    },
+    {
+     "id": "verse-6-4-w02",
+     "tibetan": "དང",
+     "yitong": "dang",
+     "audio": "op/verse-6-4-w02"
+    },
+    {
+     "id": "verse-6-4-w03",
+     "tibetan": "བླ་མས",
+     "yitong": "la mei",
+     "audio": "op/verse-6-4-w03"
+    },
+    {
+     "id": "verse-6-4-w04",
+     "tibetan": "བདག་རྒྱུད",
+     "yitong": "da ji",
+     "audio": "op/verse-6-4-w04"
+    },
+    {
+     "id": "verse-6-4-w05",
+     "tibetan": "བྱིན་གྱིས",
+     "yitong": "chin ji",
+     "audio": "op/verse-6-4-w05"
+    },
+    {
+     "id": "verse-6-4-w06",
+     "tibetan": "རློབས",
+     "yitong": "luf",
+     "audio": "op/verse-6-4-w06"
+    }
+   ]
+  }
+ ],
+ "sylYitong": {
+  "རྫོགས": "zu",
+  "པ": "ba",
+  "ཆེན": "qian",
+  "པོ": "bu",
+  "ཀློང": "long",
+  "སྙིང": "niang",
+  "ཏིག": "de",
+  "གི": "ge",
+  "སྔོན": "ngun",
+  "འགྲོའི": "zhuoi",
+  "ཁྲིད": "chi",
+  "ཡིག": "ye",
+  "ཀུན": "gun",
+  "བཟང": "sang",
+  "བླ": "la",
+  "མའི": "mai",
+  "ཞལ": "xie",
+  "ལུང": "long",
+  "ཞེས": "xei",
+  "བྱ": "cha",
+  "བ": "wa",
+  "བཞུགས": "xou",
+  "སོ": "suo",
+  "རྗེ": "jie",
+  "བཙུན": "zun",
+  "མ": "ma",
+  "དམིགས": "me",
+  "མེད": "mai",
+  "པའི": "bai",
+  "ཐུགས": "tou",
+  "དང": "dang",
+  "ལྡན": "dan",
+  "རྣམས": "nam",
+  "ལ": "la",
+  "ཕྱག": "qia",
+  "འཚལ": "cai",
+  "ལོ": "luo",
+  "རྒྱལ": "jie",
+  "བའི": "wai",
+  "དགོངས": "gong",
+  "རིག": "re",
+  "འཛིན": "zin",
+  "བརྡའ": "da",
+  "ཡིས": "yi",
+  "བརྒྱུད": "ji",
+  "གང": "gang",
+  "ཟག": "sa",
+  "མི": "me",
+  "ལས": "lei",
+  "སྐལ": "gai",
+  "རབ": "raf",
+  "གྱུར": "jur",
+  "པས": "bei",
+  "དམ": "dam",
+  "རྗེས": "jei",
+  "ཟིན": "sin",
+  "དོན": "dun",
+  "གཉིས": "ni",
+  "མཐར": "tar",
+  "ཕྱིན": "qin",
+  "གསུམ": "sum",
+  "ཆོས": "qei",
+  "ཟད": "sai",
+  "དུ": "de",
+  "སྐུའི": "gei",
+  "བརྙེས": "nyei",
+  "འོད": "ao",
+  "གསལ": "sai",
+  "དབྱིངས": "yang",
+  "སུ": "se",
+  "ལོངས": "long",
+  "ཞིང": "xiang",
+  "སྣང": "nang",
+  "གཟིགས": "se",
+  "གདུལ": "dai",
+  "བྱའི": "chai",
+  "ངོར": "ngor",
+  "སྤྲུལ": "zhai",
+  "འགྲོ": "zhuo",
+  "མཛད": "zai",
+  "མཁྱེན": "qian",
+  "ཀྱི": "ji",
+  "ཤེས": "xei",
+  "གྱི": "ji",
+  "དེ": "di",
+  "ཉིད": "ni",
+  "བརྩེའི": "zei",
+  "ཟེར": "ser",
+  "དཔལ": "huai",
+  "ཤར": "xiar",
+  "ཟབ": "saf",
+  "ལམ": "lam",
+  "ཐེག": "tai",
+  "རྩེའི": "zei",
+  "བསྟན": "dan",
+  "འཇིགས": "je",
+  "གླིང": "lang",
+  "སྤྱན": "jian",
+  "རས": "rei",
+  "དབང": "huang",
+  "བཤེས": "xei",
+  "གཉེན": "nian",
+  "ཚུལ": "cai",
+  "བཟུང": "song",
+  "ནས": "nei",
+  "གསུང": "song",
+  "བས": "wei",
+  "འབྲེལ": "zhai",
+  "ཚད": "cai",
+  "ཐར": "tar",
+  "དགོད": "gao",
+  "འདུལ": "dai",
+  "མཐའ": "ta",
+  "ཡས": "yei",
+  "དྲིན": "zhin",
+  "རྩ": "za",
+  "ཡོངས": "yong",
+  "གཞུང": "xong",
+  "མན": "man",
+  "ངག": "nga",
+  "ཚེ": "cei",
+  "གཅིག": "je",
+  "སངས": "sang",
+  "རྒྱས": "jei",
+  "ཐུན": "tun",
+  "མོང": "mong",
+  "ཕྱི": "qi",
+  "ནང": "nang",
+  "གདམས": "dam",
+  "ཆ": "qia",
+  "ལག": "la",
+  "ཉེ": "nie",
+  "འཕོ": "pu",
+  "བར": "war",
+  "བཅས": "jei",
+  "གོ": "gu",
+  "བདེ": "di",
+  "རྨད": "mai",
+  "བྱུང": "chong",
+  "མཚུངས": "cong",
+  "བཀའ": "gua",
+  "ནོར": "nor",
+  "རང": "rang",
+  "བློར": "lor",
+  "ཇི": "ji",
+  "བཞིན": "xin",
+  "ངེས": "ngei",
+  "འདིར": "dir",
+  "བཤད": "xie",
+  "ཀྱིས": "ji",
+  "ལྷ": "la",
+  "མས": "mei",
+  "བདག": "da",
+  "རྒྱུད": "ji",
+  "བྱིན": "chin",
+  "གྱིས": "ji",
+  "རློབས": "luf"
+ }
+}

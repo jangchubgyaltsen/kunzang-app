@@ -1,15 +1,27 @@
 import { useEffect, useMemo, useState } from 'react'
-import { buildLesson, kcLabel, partsOf, questionFor, UNITS, type Intro, type KC, type Question, type Scored } from './course.ts'
+import { buildLevel, kcLabel, levelById, partsOf, questionFor, unitByN, type Intro, type KC, type Question, type Scored, type Shadow } from './course.ts'
 import { syllableMap } from './content.ts'
-import { finishUnit, recordAnswer, seenKCs, weakKCs } from './progress.ts'
+import { finishLevel, recordAnswer, seenKCs, weakKCs } from './progress.ts'
 import { play } from './audio.ts'
 import { say } from './sound.ts'
+import ShadowCard from './Shadow.tsx'
 import './lesson.css'
 
-type Props = { unit?: number; questions?: Question[]; title?: string; onExit: () => void }
-type Done = { accuracy: number; passed: boolean; remaining: number }
+type Result = { passed: boolean; unitDone?: boolean }
+type Props = {
+  /** 关卡 id；不传就用 questions（复习、抽查） */
+  level?: string
+  questions?: Question[]
+  title?: string
+  onExit: () => void
+  /** 自定义结算（例如抽查），返回是否通过 */
+  onFinish?: (accuracy: number) => Promise<Result>
+}
+type Done = { accuracy: number } & Result
 
-export default function Lesson({ unit, questions, title, onExit }: Props) {
+export default function Lesson({ level, questions, title, onExit, onFinish }: Props) {
+  const lv = level ? levelById.get(level) : undefined
+  const unit = lv?.unit
   const [queue, setQueue] = useState<Question[] | null>(questions ?? null)
   const [known, setKnown] = useState<Set<KC> | undefined>()
   const [i, setI] = useState(0)
@@ -19,13 +31,13 @@ export default function Lesson({ unit, questions, title, onExit }: Props) {
   const [done, setDone] = useState<Done | null>(null)
 
   useEffect(() => {
-    if (!questions && unit)
+    if (!questions && level)
       Promise.all([seenKCs(), weakKCs()]).then(([seen, weak]) => {
-        const l = buildLesson(unit, seen, weak)
+        const l = buildLevel(level, seen, weak)
         setQueue(l.questions)
         setKnown(l.known)
       })
-  }, [unit, questions])
+  }, [level, questions])
 
   const q = queue?.[i]
   useEffect(() => {
@@ -33,7 +45,7 @@ export default function Lesson({ unit, questions, title, onExit }: Props) {
   }, [q])
 
   if (!queue) return <section className="lesson">载入中…</section>
-  if (done) return <Summary unit={unit} done={done} firstTry={firstTry} onExit={onExit} />
+  if (done) return <Summary level={level} done={done} firstTry={firstTry} onExit={onExit} />
   if (!q) return null
 
   const next = async () => {
@@ -41,7 +53,7 @@ export default function Lesson({ unit, questions, title, onExit }: Props) {
     if (i + 1 < queue.length) return setI(i + 1)
     const vals = [...firstTry.values()]
     const accuracy = vals.filter(Boolean).length / Math.max(1, vals.length)
-    const r = unit ? await finishUnit(unit, accuracy) : { passed: accuracy >= 0.8, remaining: 0 }
+    const r = onFinish ? await onFinish(accuracy) : level ? await finishLevel(level, accuracy) : { passed: accuracy >= 0.8 }
     setDone({ accuracy, ...r })
   }
 
@@ -50,7 +62,7 @@ export default function Lesson({ unit, questions, title, onExit }: Props) {
     <div className="lesson-top">
       <button className="link" onClick={onExit}>✕</button>
       <div className="bar"><div style={{ width: progress + '%' }} /></div>
-      <span className="small muted">{title ?? `单元 ${unit}`}</span>
+      <span className="small muted">{title ?? (lv ? `单元 ${unit} · ${lv.title}` : '')}</span>
     </div>
   )
 
@@ -60,6 +72,15 @@ export default function Lesson({ unit, questions, title, onExit }: Props) {
         {top}
         <IntroCard q={q} />
         <button className="primary" onClick={next}>知道了</button>
+      </section>
+    )
+
+  if (q.kind === 'shadow')
+    return (
+      <section className="lesson">
+        {top}
+        <ShadowCard q={q as Shadow} />
+        <button className="primary" onClick={next}>跟读完了</button>
       </section>
     )
 
@@ -89,11 +110,11 @@ export default function Lesson({ unit, questions, title, onExit }: Props) {
     <section className="lesson">
       {top}
       <Prompt q={q} />
-      <Options q={q} chosen={chosen} onChoose={choose} />
+      {q.kind === 'order' ? <OrderPieces key={i} q={q} locked={answered} onDone={choose} /> : <Options q={q} chosen={chosen} onChoose={choose} />}
       {answered && (
         <div className={'feedback ' + (isRight(chosen) ? 'ok' : 'bad')}>
           <div className="fb-title">{isRight(chosen) ? '答对了' : `正确答案：${labelOf(q, q.answer)}`}</div>
-          <div>{q.explain}</div>
+          <div className="explain">{q.explain}</div>
           {!isRight(chosen) && repeated && <Basics q={q} />}
           <button className="primary" onClick={next}>继续</button>
         </div>
@@ -112,6 +133,11 @@ function IntroCard({ q }: { q: Intro }) {
       <div className="intro-label">{q.label}</div>
       <div className="tib huge tap" onClick={() => (q.audio ? play(q.audio) : say(q.big))}>{q.big}</div>
       {q.sub && <div className="latin-mid">{q.sub}</div>}
+      {q.pron && (
+        <div className="pron" title="一本通式注音，尚未逐个核对">
+          {q.pron}
+        </div>
+      )}
       {q.audio && <button className="intro-play" onClick={() => play(q.audio!)}>▶ 听一遍</button>}
       {q.parts && (
         <div className="parts">
@@ -151,6 +177,13 @@ function Prompt({ q }: { q: Scored }) {
           <div className="tib huge tap" onClick={() => (q.audio ? play(q.audio) : say(q.prompt))}>{q.prompt}</div>
         </div>
       )
+    case 'order':
+      return (
+        <div className="prompt">
+          <div className="ask">听整句，按顺序点出词语</div>
+          <button className="play-big" onClick={() => play(q.audio)}>▶</button>
+        </div>
+      )
     case 'listen':
       return (
         <div className="prompt">
@@ -175,7 +208,37 @@ function Prompt({ q }: { q: Scored }) {
   }
 }
 
-function Options({ q, chosen, onChoose }: { q: Scored; chosen: string | number | null; onChoose: (c: string | number) => void }) {
+/** 排词序：点下面的词放进句子，点句子里的词放回去，放满了自动判对错 */
+function OrderPieces({ q, locked, onDone }: { q: Extract<Scored, { kind: 'order' }>; locked: boolean; onDone: (joined: string) => void }) {
+  const [placed, setPlaced] = useState<number[]>([])
+  const put = (k: number) => {
+    if (locked) return
+    say(q.pieces[k])
+    const p = [...placed, k]
+    setPlaced(p)
+    if (p.length === q.pieces.length) onDone(p.map((x) => q.pieces[x]).join('་'))
+  }
+  return (
+    <div className="order">
+      <div className={'order-line tib' + (locked ? (placed.map((x) => q.pieces[x]).join('་') === q.answer ? ' right' : ' wrong') : '')}>
+        {placed.map((k) => (
+          <button key={k} className="piece" onClick={() => !locked && setPlaced(placed.filter((x) => x !== k))}>
+            {q.pieces[k]}
+          </button>
+        ))}
+      </div>
+      <div className="order-bank tib">
+        {q.pieces.map((p, k) => (
+          <button key={k} className={'piece' + (placed.includes(k) ? ' used' : '')} disabled={placed.includes(k)} onClick={() => put(k)}>
+            {p}
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function Options({ q, chosen, onChoose }: { q: Exclude<Scored, { kind: 'order' }>; chosen: string | number | null; onChoose: (c: string | number) => void }) {
   const items: (string | number)[] = q.kind === 'findRoot' ? q.parts.map((_, k) => k) : q.options
   const cls = (c: string | number) =>
     chosen === null ? '' : c === q.answer ? ' right' : c === chosen ? ' wrong' : ' dim'
@@ -193,6 +256,7 @@ function Options({ q, chosen, onChoose }: { q: Scored; chosen: string | number |
 
 /** 同一知识点连续答错时，回到结构拆解。 */
 function Basics({ q }: { q: Scored }) {
+  if (q.kind === 'order') return null
   const t = q.kind === 'findRoot' ? q.prompt : q.kc.startsWith('S:') ? q.kc.slice(2) : null
   const s = t ? syllableMap.get(t) : undefined
   if (q.kind !== 'findRoot' && !s) return null
@@ -212,19 +276,18 @@ function Basics({ q }: { q: Scored }) {
   )
 }
 
-function Summary({ unit, done, firstTry, onExit }: { unit?: number; done: Done; firstTry: Map<string, boolean>; onExit: () => void }) {
+function Summary({ level, done, firstTry, onExit }: { level?: string; done: Done; firstTry: Map<string, boolean>; onExit: () => void }) {
   const wrong = useMemo(
-    () => [...new Set([...firstTry.entries()].filter(([, ok]) => !ok).map(([k]) => kcLabel(k.replace(/(glyph2wylie|wylie2glyph|findRoot|listen|meaning2word|meaning)$/, ''))))],
+    () => [...new Set([...firstTry.entries()].filter(([, ok]) => !ok).map(([k]) => kcLabel(k.replace(/(glyph2wylie|wylie2glyph|findRoot|listen|meaning2word|meaning|order)$/, ''))))],
     [firstTry],
   )
-  const u = UNITS.find((x) => x.n === unit)
-  const goodEnough = done.accuracy >= 0.8
+  const lv = level ? levelById.get(level) : undefined
+  const u = lv ? unitByN.get(lv.unit) : undefined
   return (
     <section className="lesson summary">
-      <h1>{done.passed ? '本单元通过' : goodEnough ? '这节课完成' : '再练一次'}</h1>
+      <h1>{done.unitDone ? '本单元通过' : done.passed ? (lv ? '本关通过' : '完成') : '再练一次'}</h1>
       <div className="big-number">{Math.round(done.accuracy * 100)}%</div>
-      <p className="muted">首次作答正确率{unit ? '，通过需要 80%' : ''}</p>
-      {unit && done.remaining > 0 && <p>本单元还有 {done.remaining} 个新内容，再上一节课继续学。</p>}
+      <p className="muted">首次作答正确率，通过需要 80%</p>
       {wrong.length > 0 && (
         <>
           <p>需要加强：</p>
@@ -238,7 +301,8 @@ function Summary({ unit, done, firstTry, onExit }: { unit?: number; done: Done; 
           <p className="small muted">这些已加入复习队列。</p>
         </>
       )}
-      {done.passed && u && unit! < 10 && <p>下一单元已解锁。</p>}
+      {done.unitDone && u && <p>明天会有第一次抽查，之后第 3、7、14、30 天各抽查一次，帮你把这个单元记牢。</p>}
+      {lv && done.passed && !done.unitDone && <p>下一关已解锁。</p>}
       <button className="primary" onClick={onExit}>返回</button>
     </section>
   )
