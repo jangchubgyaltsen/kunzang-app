@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { Shadow } from './course.ts'
-import { play, stop } from './audio.ts'
+import { play, playUrl, stop } from './audio.ts'
 
 /**
  * 跟读：听整句连读，自己读一遍。能录音的话录下来，和原音前后对比着听。
@@ -10,14 +10,10 @@ export default function ShadowCard({ q }: { q: Shadow }) {
   const [rec, setRec] = useState<MediaRecorder | null>(null)
   const [mine, setMine] = useState<string | null>(null)
   const [err, setErr] = useState('')
-  const mineAudio = useRef<HTMLAudioElement | null>(null)
   const canRecord = typeof MediaRecorder !== 'undefined' && !!navigator.mediaDevices?.getUserMedia
 
   useEffect(() => {
     play(q.line.audio)
-    return () => {
-      mineAudio.current?.pause()
-    }
   }, [q])
   useEffect(() => () => void (mine && URL.revokeObjectURL(mine)), [mine])
 
@@ -43,17 +39,12 @@ export default function ShadowCard({ q }: { q: Shadow }) {
 
   const playMine = (then?: () => void) => {
     if (!mine) return
-    stop()
-    mineAudio.current?.pause()
-    const a = new Audio(mine)
-    mineAudio.current = a
-    if (then) a.onended = then
-    void a.play()
+    // 用和原音同一个播放器，iOS 上原音放完后接着放录音才不会被拦
+    playUrl(mine, then)
   }
 
   // 先放原音，原音放完再放自己的
   const compare = () => {
-    mineAudio.current?.pause()
     play(q.line.audio, () => playMine())
   }
 
