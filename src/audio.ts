@@ -5,10 +5,21 @@ player.preload = 'auto'
 // 而预缓存只返回完整的 200 响应，Safari 就不播放。所以先整个取回来，
 // 转成 blob 地址再交给播放器。
 const blobs = new Map<string, Promise<string>>()
-// 开篇逐词和整句的新音频在 op/ 下，是 mp3；其余是 m4a
-const urlOf = (id: string) => `./audio/${id}.${id.startsWith('op/') ? 'mp3' : 'm4a'}`
+// 开篇逐词和整句的新音频在 op/ 下，是 mp3；全书整句在 book/audio/ 下；其余是 m4a
+const urlOf = (id: string) =>
+  id.startsWith('book/') ? `./book/audio/${id.slice(5)}.m4a` : `./audio/${id}.${id.startsWith('op/') ? 'mp3' : 'm4a'}`
+// 全书有一万多句，只留最近听过的几十句的 blob，其余释放
+const recentBook: string[] = []
 function blobUrl(id: string) {
   let p = blobs.get(id)
+  if (!p && id.startsWith('book/')) {
+    recentBook.push(id)
+    if (recentBook.length > 40) {
+      const old = recentBook.shift()!
+      blobs.get(old)?.then((u) => URL.revokeObjectURL(u)).catch(() => {})
+      blobs.delete(old)
+    }
+  }
   if (!p) {
     p = fetch(urlOf(id))
       .then((r) => {
@@ -38,19 +49,51 @@ document.addEventListener('touchend', unlock, true)
 let latest = 0
 let queue: string[] = []
 let afterAll: (() => void) | undefined
-player.addEventListener('ended', () => {
+let stopAt = Infinity
+function finished() {
   const next = queue.shift()
   if (next) return start(next)
   const f = afterAll
   afterAll = undefined
+  current = null
+  notify()
   f?.()
-})
+}
+player.addEventListener('ended', finished)
+
+// 正在播哪一段：原文页用来高亮正在读的句子
+let current: string | null = null
+const listeners = new Set<(id: string | null) => void>()
+const notify = () => listeners.forEach((f) => f(current))
+export function onTrack(f: (id: string | null) => void) {
+  listeners.add(f)
+  return () => void listeners.delete(f)
+}
+
+// 只播整句里的一段（点全书里的词）：到点就停
+function watchStop() {
+  if (stopAt === Infinity) return
+  if (player.currentTime >= stopAt) {
+    player.pause()
+    stopAt = Infinity
+    finished()
+    return
+  }
+  requestAnimationFrame(watchStop)
+}
 
 /** 播放一段音频；正在播的（包括连播队列）会被打断。onEnd 在正常播完时调用。 */
 export function play(id: string, onEnd?: () => void) {
   queue = []
   afterAll = onEnd
   start(id)
+}
+
+/** 播放一段音频里从 from 到 to 秒的部分。 */
+export function playRange(id: string, from: number, to: number) {
+  queue = []
+  afterAll = undefined
+  start(id, from, to)
 }
 
 /** 依次连播几段，例如整段原文一句接一句。 */
@@ -63,20 +106,34 @@ export function playSeq(ids: string[]) {
 export function stop() {
   queue = []
   afterAll = undefined
+  stopAt = Infinity
   ++latest
   player.pause()
+  current = null
+  notify()
 }
 
-function start(id: string) {
+function start(id: string, from = 0, to = Infinity) {
   const n = ++latest
   player.pause()
+  stopAt = Infinity
+  current = id
+  notify()
   blobUrl(id)
     .catch(() => urlOf(id))
-    .then((src) => {
+    .then(async (src) => {
       if (n !== latest) return
       player.src = src
-      player.currentTime = 0
-      return player.play()
+      if (from > 0) {
+        // 要等元数据读出来才能跳到中间
+        await new Promise((r) => player.addEventListener('loadedmetadata', r, { once: true }))
+        if (n !== latest) return
+      }
+      player.currentTime = from
+      await player.play()
+      if (n !== latest) return
+      stopAt = to
+      if (to !== Infinity) requestAnimationFrame(watchStop)
     })
     .catch((e) => console.warn('play failed', id, e))
 }

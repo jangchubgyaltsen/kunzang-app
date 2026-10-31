@@ -98,9 +98,10 @@ export async function importData(data: {
   })
 }
 
-export async function importTranslationPack(data: { app?: string; passages?: Record<string, string> }) {
-  if (data.app !== 'kunzang-zh' || !data.passages) throw new Error('不是中文译文包')
-  const rows = Object.entries(data.passages).map(([id, chinese]) => ({ id, chinese }))
+/** 译文包：passages 是开篇各段（title、verse-1……），book 是全书各段落（p0009……）。 */
+export async function importTranslationPack(data: { app?: string; passages?: Record<string, string>; book?: Record<string, string> }) {
+  if (data.app !== 'kunzang-zh' || (!data.passages && !data.book)) throw new Error('不是中文译文包')
+  const rows = Object.entries({ ...data.passages, ...data.book }).map(([id, chinese]) => ({ id, chinese }))
   await db.translations.bulkPut(rows)
   return rows.length
 }
