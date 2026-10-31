@@ -67,6 +67,10 @@ export const BOOK_CV: [string, string][] = [
   ['ཞོ', 'xiu'], ['ཟོ', 'suo'], ['འོ', 'ao'], ['རི', 'ri'], ['ལུ', 'le'], ['ལོ', 'luo'], ['ཤི', 'he'], ['སུ', 'se'], ['སོ', 'suo'],
 ]
 export const cvAudioOf = (s: string) => cvAudio(s[0], s[1])
+const bookPron = new Map(BOOK_CV)
+/** 字母 × 元音组合表：30 个字母各配 ི ུ ེ ོ，共 120 个。书上有注音的才显示注音。 */
+export const CV_MARKS = VOWELS.map((v) => v[0])
+export const cvPron = (s: string) => bookPron.get(s)
 
 const wylieOf = new Map(LETTERS)
 const vowelLatin = new Map(VOWELS.map(([m, v]) => [m, v]))
@@ -77,13 +81,13 @@ export type DrillItem = { key: string; tib: string; pron: string; hanzi?: string
 export const letterItem = (l: string): DrillItem => ({
   key: 'L:' + l, tib: l, pron: PRON[l][0], hanzi: PRON[l][1], wylie: wylieOf.get(l)!, audio: letterAudio(l), base: l,
 })
-export const cvItem = ([s, pron]: [string, string]): DrillItem => ({
-  key: 'CV:' + s, tib: s, pron, wylie: wylieOf.get(s[0])!.replace(/a$/, '') + vowelLatin.get(s[1]), audio: cvAudioOf(s), base: s[0],
+export const cvItem = (s: string): DrillItem => ({
+  key: 'CV:' + s, tib: s, pron: bookPron.get(s) ?? '', wylie: wylieOf.get(s[0])!.replace(/a$/, '') + vowelLatin.get(s[1]), audio: cvAudioOf(s), base: s[0],
 })
 
 /** 四个选项：答案 + 形近字 + 同行的字 + 其他。选项按转写区分，注音相同的也能分开。 */
 export function optionsFor(it: DrillItem, pool: DrillItem[]): DrillItem[] {
-  const all = it.key.startsWith('CV:') ? BOOK_CV.map(cvItem) : LETTERS.map((l) => letterItem(l[0]))
+  const all = it.key.startsWith('CV:') ? BOOK_CV.map(([x]) => cvItem(x)) : LETTERS.map((l) => letterItem(l[0]))
   const near = it.key.startsWith('CV:')
     ? all.filter((x) => x.base === it.base || partners.get(it.base)?.has(x.base) || x.tib[1] === it.tib[1])
     : all.filter((x) => partners.get(it.tib)?.has(x.tib))
@@ -129,34 +133,48 @@ export function record(stats: Record<string, Stat>, key: string, ok: boolean, ms
   stats[key] = s
 }
 
-/** 每日练习里的一步：新字先认识一下，再考 */
-export type Step = { it: DrillItem; intro?: boolean }
+/** 每日练习里的一步：新字先认识一下（intro），字母看字选读音，组合自己念再对答案（say） */
+export type Step = { it: DrillItem; intro?: boolean; say?: boolean }
 
-/**
- * 每天自动出的一组：
- * - 还没一眼认出的字，每个考两次；
- * - 按字母表顺序带进几个新字，先看一遍再考；
- * - 已经熟的字挑最久没见的几个复习；
- * - 字母大部分熟了以后，书上的拼读例子也按同样办法加进来。
- */
-export function buildDaily(stats: Record<string, Stat>): Step[] {
-  const letters = LETTERS.map((l) => letterItem(l[0]))
-  const fluentLetters = letters.filter((x) => isFluent(stats[x.key])).length
-  const all = fluentLetters >= 20 ? [...letters, ...BOOK_CV.map(cvItem)] : letters
+const noRepeat = (q: DrillItem[]) => {
+  for (let i = 1; i < q.length; i++)
+    if (q[i].key === q[i - 1].key) {
+      const j = q.findIndex((x, k) => k > i && x.key !== q[i].key && x.key !== q[i - 1].key)
+      if (j > 0) [q[i], q[j]] = [q[j], q[i]]
+    }
+  return q
+}
+
+/** 从一组里挑：没记牢的优先，再按顺序带新的，最后挑最久没见的熟的复习 */
+function choose(all: DrillItem[], stats: Record<string, Stat>, n: number, maxFresh: number) {
   const seen = (x: DrillItem) => (stats[x.key]?.seen ?? 0) > 0
-  const weak = all.filter((x) => seen(x) && !isFluent(stats[x.key])).sort((a, b) => stats[a.key].fast - stats[b.key].fast).slice(0, 10)
-  const fresh = all.filter((x) => !seen(x)).slice(0, weak.length >= 8 ? 2 : weak.length >= 4 ? 4 : 6)
+  const weak = all.filter((x) => seen(x) && !isFluent(stats[x.key])).sort((a, b) => stats[a.key].fast - stats[b.key].fast).slice(0, n)
+  const fresh = all.filter((x) => !seen(x)).slice(0, Math.max(0, Math.min(maxFresh, n - weak.length)))
   const review = all
     .filter((x) => isFluent(stats[x.key]))
     .sort((a, b) => (stats[a.key].at ?? 0) - (stats[b.key].at ?? 0))
-    .slice(0, weak.length + fresh.length < 6 ? 8 : 4)
-  const quiz = shuffle([...weak, ...weak, ...fresh, ...fresh, ...review])
-  for (let i = 1; i < quiz.length; i++)
-    if (quiz[i].key === quiz[i - 1].key) {
-      const j = quiz.findIndex((x, k) => k > i && x.key !== quiz[i].key && x.key !== quiz[i - 1].key)
-      if (j > 0) [quiz[i], quiz[j]] = [quiz[j], quiz[i]]
-    }
-  return [...fresh.map((it) => ({ it, intro: true })), ...quiz.map((it) => ({ it }))]
+    .slice(0, Math.max(2, n - weak.length - fresh.length))
+  return { weak, fresh, review }
+}
+
+/**
+ * 每天自动出的一组，分两段：
+ * 1. 字母：没记牢的考两次，按字母表顺序带进几个新字（先看一遍再考），熟的挑最久没见的复习；
+ * 2. 字母 + 元音组合：只用已经见过的字母，看组合自己念，再听答案自评。
+ */
+export function buildDaily(stats: Record<string, Stat>): Step[] {
+  const letters = LETTERS.map((l) => letterItem(l[0]))
+  const L = choose(letters, stats, 10, 6)
+  const fresh = L.weak.length >= 8 ? L.fresh.slice(0, 2) : L.weak.length >= 4 ? L.fresh.slice(0, 4) : L.fresh
+  const letterQuiz = noRepeat(shuffle([...L.weak, ...L.weak, ...fresh, ...fresh, ...L.review]))
+
+  // 组合：字母见过（或今天刚学）的才出；按字母顺序，一个字母的四个元音一起带进来
+  const known = new Set([...letters.filter((x) => (stats[x.key]?.seen ?? 0) > 0), ...fresh].map((x) => x.tib))
+  const combos = LETTERS.map((l) => l[0]).filter((l) => known.has(l)).flatMap((l) => CV_MARKS.map((m) => cvItem(l + m)))
+  const C = choose(combos, stats, 8, 4)
+  const cvQuiz = noRepeat(shuffle([...C.weak, ...C.fresh, ...C.review]))
+
+  return [...fresh.map((it) => ({ it, intro: true })), ...letterQuiz.map((it) => ({ it })), ...cvQuiz.map((it) => ({ it, say: true }))]
 }
 
 // 每天打开 App 时自动弹出一次
