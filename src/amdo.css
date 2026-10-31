@@ -1,0 +1,21 @@
+.amdo .chips.sets { margin: 10px 0; }
+.amdo-actions { display: flex; gap: 10px; align-items: center; justify-content: space-between; margin: 10px 0; flex-wrap: wrap; }
+.amdo-actions .primary { padding: 8px 18px; }
+.talk-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px; }
+.talk-list li { display: flex; gap: 10px; background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 8px 12px; cursor: pointer; }
+.talk-list .num { color: var(--muted); font-size: 13px; min-width: 24px; padding-top: 8px; }
+.talk-tib { font-size: 22px; }
+.talk-zh { font-size: 15px; color: var(--muted); }
+.word-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; }
+.word-cell { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px; }
+.word-cell .tib { font-size: 24px; }
+.spell-table { display: flex; flex-direction: column; gap: 6px; }
+.spell-row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.spell-cell { font-size: 24px; min-width: 56px; padding: 4px 8px; line-height: 1.6; }
+.spell-all { color: var(--accent); border-color: var(--accent); padding: 6px 10px; }
+.lesson-list { list-style: none; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.lesson-list button { width: 100%; text-align: left; padding: 12px 14px; }
+.seg-list { display: flex; flex-direction: column; gap: 6px; }
+.seg { padding: 0; overflow: hidden; border-width: 2px; background: #fff; }
+.seg.on { border-color: var(--accent); }
+.seg img { display: block; width: 100%; height: auto; }

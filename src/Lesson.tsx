@@ -123,6 +123,9 @@ export default function Lesson({ level, questions, title, onExit, onFinish }: Pr
   )
 }
 
+// 会话整句：字号小一点，选项一行一个
+const long = (q: Scored) => q.kc.startsWith('A:')
+
 function labelOf(q: Scored, a: string | number) {
   return q.kind === 'findRoot' ? q.parts[a as number] : String(a)
 }
@@ -194,14 +197,14 @@ function Prompt({ q }: { q: Scored }) {
     case 'meaning':
       return (
         <div className="prompt">
-          <div className="ask">这个词是什么意思？</div>
-          <div className="tib huge tap" onClick={() => (q.audio ? play(q.audio) : say(q.prompt))}>{q.prompt}</div>
+          <div className="ask">{q.kc.startsWith('A:') ? '这句话是什么意思？' : '这个词是什么意思？'}</div>
+          <div className={'tib tap ' + (long(q) ? 'big center' : 'huge')} onClick={() => (q.audio ? play(q.audio) : say(q.prompt))}>{q.prompt}</div>
         </div>
       )
     case 'meaning2word':
       return (
         <div className="prompt">
-          <div className="ask">哪个词的意思是</div>
+          <div className="ask">{q.kc.startsWith('A:') ? '哪一句的意思是' : '哪个词的意思是'}</div>
           <div className="zh-big">{q.prompt}</div>
         </div>
       )
@@ -242,9 +245,9 @@ function Options({ q, chosen, onChoose }: { q: Exclude<Scored, { kind: 'order' }
   const items: (string | number)[] = q.kind === 'findRoot' ? q.parts.map((_, k) => k) : q.options
   const cls = (c: string | number) =>
     chosen === null ? '' : c === q.answer ? ' right' : c === chosen ? ' wrong' : ' dim'
-  const style = q.kind === 'meaning' ? ' gloss' : q.kind === 'glyph2wylie' ? ' latin' : ' tib'
+  const style = (q.kind === 'meaning' ? ' gloss' : q.kind === 'glyph2wylie' ? ' latin' : ' tib') + (long(q) ? ' long' : '')
   return (
-    <div className={'options' + (q.kind === 'findRoot' ? ' row' : '')}>
+    <div className={'options' + (q.kind === 'findRoot' ? ' row' : '') + (long(q) ? ' one' : '')}>
       {items.map((c) => (
         <button key={String(c)} className={'opt' + style + cls(c)} onClick={() => onChoose(c)}>
           {labelOf(q, c)}

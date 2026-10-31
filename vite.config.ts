@@ -23,9 +23,15 @@ export default defineConfig({
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,woff2,m4a,mp3}'],
         // 全书原文和音频太大，不预先缓存：打开哪一章、听哪一句才下载，下载过的存起来离线可用
-        globIgnores: ['book/**'],
+        globIgnores: ['book/**', 'amdo/**'],
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
         runtimeCaching: [
+          {
+            // 安多会话教材的录音和课文图片：用到才下载，下载过的存起来离线可用
+            urlPattern: ({ url }) => url.pathname.includes('/amdo/'),
+            handler: 'CacheFirst',
+            options: { cacheName: 'amdo', expiration: { maxEntries: 5000 }, cacheableResponse: { statuses: [200] } },
+          },
           {
             urlPattern: ({ url }) => url.pathname.includes('/book/audio/'),
             handler: 'CacheFirst',

@@ -22,7 +22,7 @@ def conv(src, dst):
     af = ('silenceremove=start_periods=1:start_threshold=-45dB,areverse,'
           'silenceremove=start_periods=1:start_threshold=-45dB,areverse,'
           'apad=pad_dur=0.08,loudnorm=I=-18:TP=-2:LRA=11')
-    subprocess.run(['ffmpeg', '-v', 'error', '-y', '-i', src, '-af', af, '-ac', '1', '-ar', '16000',
+    subprocess.run(['ffmpeg', '-v', 'error', '-y', *(['-f', 'mp3'] if src.endswith('.mp3') else []), '-i', src, '-af', af, '-ac', '1', '-ar', '16000',
                     '-c:a', 'aac', '-b:a', '32k', dst], check=True)
 
 rows = list(csv.DictReader(open(os.path.join(SRC, '字母拼读.tsv')), delimiter='\t'))

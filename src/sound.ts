@@ -2,6 +2,7 @@ import { realAudioOf, syllables } from './content.ts'
 import { LETTERS, VOWELS, cvAudio, letterAudio, letterWylie, words } from './course.ts'
 import { play } from './audio.ts'
 import { tokenMap } from './reading.ts'
+import { amdoAudioByText } from './amdo.ts'
 
 // 藏文、Wylie 或中文释义 → 音频编号，用于“点什么就读什么”
 const byText = new Map<string, string>()
@@ -15,7 +16,7 @@ for (const [l, wy] of LETTERS) {
 
 export function audioFor(text: string): string | undefined {
   const t = text.trim().replace(/[་།\s]+$/, '')
-  const real = realAudioOf(t)
+  const real = realAudioOf(t) ?? amdoAudioByText.get(t)
   if (real) return real
   if (byText.has(t)) return byText.get(t)
   // 下加形式（ྱ ྲ ླ 等）按对应的字母读

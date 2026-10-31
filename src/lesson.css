@@ -51,3 +51,7 @@ button.primary:disabled { opacity: .4; }
 .shadow-word .tib { font-size: 28px; }
 .shadow .pron { margin-top: -6px; }
 button.recording { border-color: #c62828; color: #c62828; }
+
+.options.one { grid-template-columns: 1fr; }
+.opt.tib.long { font-size: 22px; text-align: left; padding: 10px 14px; }
+.opt.gloss.long { text-align: left; }

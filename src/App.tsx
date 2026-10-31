@@ -16,8 +16,9 @@ import { spotCheckSession, type Session } from './session.ts'
 import { linesOf, yitongOf, type Token } from './reading.ts'
 import { chapters } from './book.ts'
 import { BookChapter } from './BookReader.tsx'
+import AmdoView from './Amdo.tsx'
 
-type Tab = 'path' | 'alphabet' | 'reader' | 'review' | 'settings'
+type Tab = 'path' | 'alphabet' | 'amdo' | 'reader' | 'review' | 'settings'
 export default function App() {
   const [tab, setTab] = useState<Tab>('path')
   const [passageId, setPassageId] = useState('title')
@@ -66,6 +67,7 @@ export default function App() {
           <PathView onOpen={openPassage} onStart={setSession} onReview={() => setTab('review')} onPlay={(kind, daily) => setGame({ kind, daily })} />
         )}
         {!busy && tab === 'reader' && <ReaderView passageId={passageId} onSelect={setPassageId} chapterId={chapterId} onChapter={pickChapter} />}
+        {!busy && tab === 'amdo' && <AmdoView onStart={setSession} />}
         {!busy && tab === 'review' && <Review onStart={setSession} />}
         {!busy && tab === 'settings' && <SettingsView />}
       </main>
@@ -75,6 +77,7 @@ export default function App() {
             [
               ['path', '路径'],
               ['alphabet', '字母'],
+              ['amdo', '会话'],
               ['reader', '原文'],
               ['review', '复习'],
               ['settings', '设置'],

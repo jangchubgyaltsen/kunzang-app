@@ -1,6 +1,7 @@
 import { passages, passageTitles, realAudioOf, syllables, syllableMap, type Syllable } from './content.ts'
 import { lineById, linesOf, readLines, tokenMap, yitongOf, type ReadLine } from './reading.ts'
 import wordsRaw from './words.json'
+import { amdoSentences, amdoWordById, amdoWords, sentenceById, sylsOf } from './amdo.ts'
 
 export const LETTERS: [string, string][] = [
   ['ཀ', 'ka'], ['ཁ', 'kha'], ['ག', 'ga'], ['ང', 'nga'],
@@ -184,6 +185,8 @@ export function rootReason(s: WordSyl) {
 
 /** 给人看的知识点名称 */
 export function kcLabel(kc: KC) {
+  if (kc.startsWith('A:')) return sentenceById.get(kc.slice(2))?.tib ?? kc
+  if (kc.startsWith('D:')) return amdoWordById.get(kc.slice(2))?.tib ?? kc
   if (kc.startsWith('R:')) return RULES[kc]?.name ?? kc
   if (kc.startsWith('V:')) return '◌' + kc.slice(2)
   if (kc.startsWith('X:')) return lineById.get(kc.slice(2))?.words.map((w) => w.tibetan).join('་') ?? kc
@@ -309,6 +312,82 @@ export function questionFor(kc: KC, variant?: number, known: Set<KC> = ALL): Sco
         return { kind: 'glyph2wylie', kc, prompt: w.tibetan, answer: w.wylie, audio: w.audio, explain, options: optionsWith(w.wylie, pool.map((x) => x.wylie), near.map((x) => x.wylie)) }
       default:
         return { kind: 'meaning2word', kc, prompt: w.gloss, answer: w.tibetan, audio: w.audio, explain, options: optionsWith(w.tibetan, pool.map((x) => x.tibetan), near.map((x) => x.tibetan)) }
+    }
+  }
+
+  // 安多会话 300 句（A:编号）
+  if (type === 'A') {
+    const s = sentenceById.get(val)!
+    const explain = `${s.tib}\n${s.zh}`
+    const near = amdoSentences.filter((x) => x !== s && Math.abs(x.tib.length - s.tib.length) < 12)
+    const syls = sylsOf(s.tib)
+    switch (v % 4) {
+      case 0:
+        return { kind: 'meaning', kc, prompt: s.tib, answer: s.zh, audio: s.audio, explain, options: optionsWith(s.zh, amdoSentences.map((x) => x.zh), near.map((x) => x.zh)) }
+      case 1:
+        return { kind: 'meaning2word', kc, prompt: s.zh, answer: s.tib, audio: s.audio, explain, options: optionsWith(s.tib, amdoSentences.map((x) => x.tib), near.map((x) => x.tib)) }
+      case 2:
+        if (syls.length >= 2 && syls.length <= 9) {
+          let pieces = shuffle(syls)
+          for (let k = 0; k < 5 && pieces.join() === syls.join(); k++) pieces = shuffle(syls)
+          return { kind: 'order', kc, audio: s.audio, pieces, answer: syls.join('་'), explain }
+        }
+        return { kind: 'listen', kc, audio: s.audio, answer: s.tib, explain, options: optionsWith(s.tib, amdoSentences.map((x) => x.tib), near.map((x) => x.tib)) }
+      default:
+        return { kind: 'listen', kc, audio: s.audio, answer: s.tib, explain, options: optionsWith(s.tib, amdoSentences.map((x) => x.tib), near.map((x) => x.tib)) }
+    }
+  }
+
+  // 安多会话教材的单词（D:编号）
+  if (type === 'D') {
+    const w = amdoWordById.get(val)!
+    const explain = `${w.tib}：${w.zh}`
+    const near = amdoWords.filter((x) => x !== w && (x.page === w.page || x.tib.length === w.tib.length))
+    switch (v % 3) {
+      case 0:
+        return { kind: 'meaning', kc, prompt: w.tib, answer: w.zh, audio: w.audio, explain, options: optionsWith(w.zh, amdoWords.map((x) => x.zh), near.map((x) => x.zh)) }
+      case 1:
+        return { kind: 'listen', kc, audio: w.audio, answer: w.tib, explain, options: optionsWith(w.tib, amdoWords.map((x) => x.tib), near.map((x) => x.tib)) }
+      default:
+        return { kind: 'meaning2word', kc, prompt: w.zh, answer: w.tib, audio: w.audio, explain, options: optionsWith(w.tib, amdoWords.map((x) => x.tib), near.map((x) => x.tib)) }
+    }
+  }
+
+  // 安多会话 300 句（A:编号）
+  if (type === 'A') {
+    const s = sentenceById.get(val)!
+    const explain = `${s.tib}\n${s.zh}`
+    const near = amdoSentences.filter((x) => x !== s && Math.abs(x.tib.length - s.tib.length) < 12)
+    const syls = sylsOf(s.tib)
+    switch (v % 4) {
+      case 0:
+        return { kind: 'meaning', kc, prompt: s.tib, answer: s.zh, audio: s.audio, explain, options: optionsWith(s.zh, amdoSentences.map((x) => x.zh), near.map((x) => x.zh)) }
+      case 1:
+        return { kind: 'meaning2word', kc, prompt: s.zh, answer: s.tib, audio: s.audio, explain, options: optionsWith(s.tib, amdoSentences.map((x) => x.tib), near.map((x) => x.tib)) }
+      case 2:
+        if (syls.length >= 2 && syls.length <= 9) {
+          let pieces = shuffle(syls)
+          for (let k = 0; k < 5 && pieces.join() === syls.join(); k++) pieces = shuffle(syls)
+          return { kind: 'order', kc, audio: s.audio, pieces, answer: syls.join('་'), explain }
+        }
+        return { kind: 'listen', kc, audio: s.audio, answer: s.tib, explain, options: optionsWith(s.tib, amdoSentences.map((x) => x.tib), near.map((x) => x.tib)) }
+      default:
+        return { kind: 'listen', kc, audio: s.audio, answer: s.tib, explain, options: optionsWith(s.tib, amdoSentences.map((x) => x.tib), near.map((x) => x.tib)) }
+    }
+  }
+
+  // 安多会话教材的单词（D:编号）
+  if (type === 'D') {
+    const w = amdoWordById.get(val)!
+    const explain = `${w.tib}：${w.zh}`
+    const near = amdoWords.filter((x) => x !== w && (x.page === w.page || x.tib.length === w.tib.length))
+    switch (v % 3) {
+      case 0:
+        return { kind: 'meaning', kc, prompt: w.tib, answer: w.zh, audio: w.audio, explain, options: optionsWith(w.zh, amdoWords.map((x) => x.zh), near.map((x) => x.zh)) }
+      case 1:
+        return { kind: 'listen', kc, audio: w.audio, answer: w.tib, explain, options: optionsWith(w.tib, amdoWords.map((x) => x.tib), near.map((x) => x.tib)) }
+      default:
+        return { kind: 'meaning2word', kc, prompt: w.zh, answer: w.tib, audio: w.audio, explain, options: optionsWith(w.tib, amdoWords.map((x) => x.tib), near.map((x) => x.tib)) }
     }
   }
 
