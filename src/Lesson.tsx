@@ -5,6 +5,7 @@ import { finishLevel, recordAnswer, seenKCs, weakKCs } from './progress.ts'
 import { play } from './audio.ts'
 import { say } from './sound.ts'
 import ShadowCard from './Shadow.tsx'
+import { cvPron, PRON } from './alphabet.ts'
 import './lesson.css'
 
 type Result = { passed: boolean; unitDone?: boolean }
@@ -91,8 +92,10 @@ export default function Lesson({ level, questions, title, onExit, onFinish }: Pr
     if (answered) return
     setChosen(c)
     const ok = isRight(c)
-    // 答对读题目本身，答错读你选的那个，让耳朵也记住区别
-    if (ok && q.audio) play(q.audio)
+    // 答对读题目本身，答错读你选的那个，让耳朵也记住区别（自评题刚听过答案，不再读）
+    if (q.kind === 'sayit') {
+      if (!ok) play(q.audio)
+    } else if (ok && q.audio) play(q.audio)
     else say(labelOf(q, c))
     await recordAnswer(q.kc, ok, unit)
     if (!firstTry.has(q.kc + q.kind)) setFirstTry(new Map(firstTry).set(q.kc + q.kind, ok))
@@ -110,10 +113,18 @@ export default function Lesson({ level, questions, title, onExit, onFinish }: Pr
     <section className="lesson">
       {top}
       <Prompt q={q} />
-      {q.kind === 'order' ? <OrderPieces key={i} q={q} locked={answered} onDone={choose} /> : <Options q={q} chosen={chosen} onChoose={choose} />}
+      {q.kind === 'order' ? (
+        <OrderPieces key={i} q={q} locked={answered} onDone={choose} />
+      ) : q.kind === 'sayit' ? (
+        <SayIt key={i} q={q} chosen={chosen} onChoose={choose} />
+      ) : (
+        <Options q={q} chosen={chosen} onChoose={choose} />
+      )}
       {answered && (
         <div className={'feedback ' + (isRight(chosen) ? 'ok' : 'bad')}>
-          <div className="fb-title">{isRight(chosen) ? '答对了' : `正确答案：${labelOf(q, q.answer)}`}</div>
+          <div className="fb-title">
+            {q.kind === 'sayit' ? (isRight(chosen) ? '好，记下了' : '再跟着念一遍，后面还会再练') : isRight(chosen) ? '答对了' : `正确答案：${labelOf(q, q.answer)}`}
+          </div>
           <div className="explain">{q.explain}</div>
           {!isRight(chosen) && repeated && <Basics q={q} />}
           <button className="primary" onClick={next}>继续</button>
@@ -127,15 +138,45 @@ function labelOf(q: Scored, a: string | number) {
   return q.kind === 'findRoot' ? q.parts[a as number] : String(a)
 }
 
+/** 自评题：自己先念，点开听答案，再说念对没有 */
+function SayIt({ q, chosen, onChoose }: { q: Extract<Scored, { kind: 'sayit' }>; chosen: string | number | null; onChoose: (c: string) => void }) {
+  const [heard, setHeard] = useState(false)
+  const pron = PRON[q.prompt]?.[0] ?? cvPron(q.prompt)
+  return (
+    <div className="sayit">
+      <button
+        className={heard ? '' : 'primary'}
+        onClick={() => {
+          play(q.audio)
+          setHeard(true)
+        }}
+      >
+        {heard ? '▶ 再听一遍' : '念完了，听答案'}
+      </button>
+      {heard && pron && <div className="pron center">一本通注音：{pron}</div>}
+      {heard && (
+        <div className="options">
+          {q.options.map((c) => (
+            <button key={c} className={'opt' + (chosen === null ? '' : c === chosen ? (c === q.answer ? ' right' : ' wrong') : ' dim')} onClick={() => onChoose(c)}>
+              {c}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 function IntroCard({ q }: { q: Intro }) {
+  const pron = q.pron ?? (q.kc.startsWith('C:') ? cvPron(q.kc.slice(2)) : undefined)
   return (
     <div className="intro-card">
       <div className="intro-label">{q.label}</div>
       <div className="tib huge tap" onClick={() => (q.audio ? play(q.audio) : say(q.big))}>{q.big}</div>
       {q.sub && <div className="latin-mid">{q.sub}</div>}
-      {q.pron && (
+      {pron && (
         <div className="pron" title="一本通式注音，尚未逐个核对">
-          {q.pron}
+          {pron}
         </div>
       )}
       {q.audio && <button className="intro-play" onClick={() => play(q.audio!)}>▶ 听一遍</button>}
@@ -175,6 +216,13 @@ function Prompt({ q }: { q: Scored }) {
         <div className="prompt">
           <div className="ask">这个音节的基字是哪个？</div>
           <div className="tib huge tap" onClick={() => (q.audio ? play(q.audio) : say(q.prompt))}>{q.prompt}</div>
+        </div>
+      )
+    case 'sayit':
+      return (
+        <div className="prompt">
+          <div className="ask">先自己大声念一遍</div>
+          <div className="tib huge">{q.prompt}</div>
         </div>
       )
     case 'order':
@@ -238,7 +286,7 @@ function OrderPieces({ q, locked, onDone }: { q: Extract<Scored, { kind: 'order'
   )
 }
 
-function Options({ q, chosen, onChoose }: { q: Exclude<Scored, { kind: 'order' }>; chosen: string | number | null; onChoose: (c: string | number) => void }) {
+function Options({ q, chosen, onChoose }: { q: Exclude<Scored, { kind: 'order' | 'sayit' }>; chosen: string | number | null; onChoose: (c: string | number) => void }) {
   const items: (string | number)[] = q.kind === 'findRoot' ? q.parts.map((_, k) => k) : q.options
   const cls = (c: string | number) =>
     chosen === null ? '' : c === q.answer ? ' right' : c === chosen ? ' wrong' : ' dim'
@@ -278,7 +326,7 @@ function Basics({ q }: { q: Scored }) {
 
 function Summary({ level, done, firstTry, onExit }: { level?: string; done: Done; firstTry: Map<string, boolean>; onExit: () => void }) {
   const wrong = useMemo(
-    () => [...new Set([...firstTry.entries()].filter(([, ok]) => !ok).map(([k]) => kcLabel(k.replace(/(glyph2wylie|wylie2glyph|findRoot|listen|meaning2word|meaning|order)$/, ''))))],
+    () => [...new Set([...firstTry.entries()].filter(([, ok]) => !ok).map(([k]) => kcLabel(k.replace(/(glyph2wylie|wylie2glyph|findRoot|listen|meaning2word|meaning|order|sayit)$/, ''))))],
     [firstTry],
   )
   const lv = level ? levelById.get(level) : undefined

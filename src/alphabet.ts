@@ -1,38 +1,14 @@
-import { LETTERS, VOWELS, cvAudio, letterAudio, shuffle } from './course.ts'
+import { LETTERS, LETTER_NOTE, PRON, VOWELS, cvAudio, letterAudio, shuffle } from './course.ts'
+
+export { LETTER_NOTE, PRON }
 import { db } from './db.ts'
 
 // 字母表和“看字念音”练习的数据。
 // 注音和汉字近音照《安多藏语一本通》第一章抄录（见 content/安多读音对照表-v0.md 第 1、2 节）。
 // 书上 ཀ/ག、ཏ/ད 这类清浊字注音相同，实际读音不同，以音频为准。
 
-/** 字母 → [一本通注音, 汉字近音] */
-export const PRON: Record<string, [string, string]> = {
-  ཀ: ['ga', '嘎'], ཁ: ['ka', '咔'], ག: ['ga', '嘎'], ང: ['nga', '那'],
-  ཅ: ['jia', '佳'], ཆ: ['qia', '恰'], ཇ: ['jia', '贾'], ཉ: ['nya', '尼啊'],
-  ཏ: ['da', '达'], ཐ: ['ta', '塔'], ད: ['da', '搭'], ན: ['na', '那'],
-  པ: ['ba', '吧'], ཕ: ['pa', '帕'], བ: ['wa', '哇'], མ: ['ma', '玛'],
-  ཙ: ['za', '杂'], ཚ: ['ca', '嚓'], ཛ: ['za', '杂'], ཝ: ['wa', '哇'],
-  ཞ: ['xia', '夏'], ཟ: ['sa', '萨'], འ: ['a', '阿'], ཡ: ['ya', '呀'],
-  ར: ['ra', '日啊'], ལ: ['la', '拉'], ཤ: ['xia', '夏'], ས: ['sa', '萨'],
-  ཧ: ['ha', '哈'], ཨ: ['a', '阿'],
-}
-
 /** 传统排列：四个一行，最后一行两个 */
 export const ROWS: string[][] = Array.from({ length: 8 }, (_, i) => LETTERS.slice(i * 4, i * 4 + 4).map((l) => l[0]))
-
-/** 和直觉不一样、要特别留意的字 */
-export const LETTER_NOTE: Record<string, string> = {
-  ཀ: '注 ga，但和 ག 读音不同',
-  ག: '注音同 ཀ，实际是浊音',
-  ཇ: '注音同 ཅ，实际是浊音',
-  ད: '注音同 ཏ，实际是浊音',
-  བ: '安多话读 wa，不读 ba',
-  ཛ: '注音同 ཙ，实际是浊音',
-  ཞ: '读 x，不读 zh',
-  ཟ: '读 s，不读 z',
-  ཤ: '注音同 ཞ',
-  ས: '注音同 ཟ',
-}
 
 /** 《一本通》第一、二课练习里成对比较字形的字 */
 export const SHAPE_PAIRS: [string, string][] = [

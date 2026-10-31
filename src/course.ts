@@ -13,6 +13,35 @@ export const LETTERS: [string, string][] = [
   ['ཧ', 'ha'], ['ཨ', 'a'],
 ]
 export const letterWylie = new Map(LETTERS)
+
+// 注音和汉字近音照《安多藏语一本通》第一章抄录（见 content/安多读音对照表-v0.md 第 1、2 节）。
+// 书上 ཀ/ག、ཏ/ད 这类清浊字注音相同，实际读音不同，以音频为准。
+/** 字母 → [一本通注音, 汉字近音] */
+export const PRON: Record<string, [string, string]> = {
+  ཀ: ['ga', '嘎'], ཁ: ['ka', '咔'], ག: ['ga', '嘎'], ང: ['nga', '那'],
+  ཅ: ['jia', '佳'], ཆ: ['qia', '恰'], ཇ: ['jia', '贾'], ཉ: ['nya', '尼啊'],
+  ཏ: ['da', '达'], ཐ: ['ta', '塔'], ད: ['da', '搭'], ན: ['na', '那'],
+  པ: ['ba', '吧'], ཕ: ['pa', '帕'], བ: ['wa', '哇'], མ: ['ma', '玛'],
+  ཙ: ['za', '杂'], ཚ: ['ca', '嚓'], ཛ: ['za', '杂'], ཝ: ['wa', '哇'],
+  ཞ: ['xia', '夏'], ཟ: ['sa', '萨'], འ: ['a', '阿'], ཡ: ['ya', '呀'],
+  ར: ['ra', '日啊'], ལ: ['la', '拉'], ཤ: ['xia', '夏'], ས: ['sa', '萨'],
+  ཧ: ['ha', '哈'], ཨ: ['a', '阿'],
+}
+
+/** 和直觉不一样、要特别留意的字 */
+export const LETTER_NOTE: Record<string, string> = {
+  ཀ: '注 ga，但和 ག 读音不同',
+  ག: '注音同 ཀ，实际是浊音',
+  ཇ: '注音同 ཅ，实际是浊音',
+  ད: '注音同 ཏ，实际是浊音',
+  བ: '安多话读 wa，不读 ba',
+  ཛ: '注音同 ཙ，实际是浊音',
+  ཞ: '读 x，不读 zh',
+  ཟ: '读 s，不读 z',
+  ཤ: '注音同 ཞ',
+  ས: '注音同 ཟ',
+}
+
 const letterNo = (l: string) => String(LETTERS.findIndex((x) => x[0] === l) + 1).padStart(2, '0')
 export const letterAudio = (l: string) => 'L-' + letterNo(l)
 
@@ -23,6 +52,15 @@ export const VOWELS: [string, string, string][] = [
   ['ོ', 'o', 'ན་རོ'],
 ]
 export const cvAudio = (l: string, v: string) => `CV-${letterNo(l)}-${VOWELS.find((x) => x[0] === v)![1]}`
+/** 组合的转写：ཀ + ི → ki */
+export const cvWylie = (l: string, v: string) => letterWylieOf(l).replace(/a$/, '') + VOWELS.find((x) => x[0] === v)![1]
+const letterWylieOf = (l: string) => LETTERS.find((x) => x[0] === l)![1]
+
+// 《一本通》注音相同、只靠清浊或写法区分的字。听音题里它们不能同时当选项。
+const SAME_SOUND: string[][] = [['ཀ', 'ག'], ['ཅ', 'ཇ'], ['ཏ', 'ད'], ['ཙ', 'ཛ'], ['ཞ', 'ཤ'], ['ཟ', 'ས'], ['བ', 'ཝ'], ['འ', 'ཨ']]
+const soundsLike = (a: string, b: string) => a === b || SAME_SOUND.some((g) => g.includes(a) && g.includes(b))
+// 安多话里 ི 和 ུ 常常都读得像 e，听音题不能拿它们互相当干扰项
+const vowelsClash = (a: string, b: string) => a === b || (['ི', 'ུ'].includes(a) && ['ི', 'ུ'].includes(b))
 
 // 形近字：出题时优先用作干扰项
 export const LOOKALIKE: string[][] = [
@@ -65,7 +103,7 @@ export const RULES: Record<string, Rule> = {
   },
 }
 
-export type KC = string // L:ཀ  V:ི  R:suf  W:བླ་མ  S:བླ  T:原文里的词  X:原文的一句（行 id）
+export type KC = string // L:ཀ  V:ི  C:ཀི（辅音×元音组合）  R:suf  W:བླ་མ  S:བླ  T:原文里的词  X:原文的一句（行 id）
 
 /** pron 是一本通式注音，按对照表推出来的，还没逐个核对 */
 export type Intro = { kind: 'intro'; kc: KC; label: string; big: string; sub?: string; pron?: string; note?: string; audio?: string; parts?: { ch: string; role: string }[] }
@@ -75,6 +113,8 @@ export type Question =
   | Intro
   | Shadow
   | { kind: 'order'; kc: KC; audio: string; pieces: string[]; answer: string; explain: string }
+  /** 自己先念，再点开听答案，自评念得对不对（组合读音很多还没有核对过的注音，只能对着音频） */
+  | { kind: 'sayit'; kc: KC; prompt: string; audio: string; options: string[]; answer: string; explain: string }
   | { kind: 'glyph2wylie'; kc: KC; prompt: string; options: string[]; answer: string; audio?: string; explain: string }
   | { kind: 'wylie2glyph'; kc: KC; prompt: string; options: string[]; answer: string; audio?: string; explain: string }
   | { kind: 'findRoot'; kc: KC; prompt: string; parts: string[]; answer: number; audio?: string; explain: string }
@@ -198,8 +238,10 @@ export function introFor(kc: KC): Intro {
   if (type === 'L') {
     const g = letterGroup(val)
     return {
-      kind: 'intro', kc, label: '新字母', big: val, sub: letterWylie.get(val), audio: letterAudio(val),
-      note: g.length ? `注意和 ${g.join(' ')} 区分。` : undefined,
+      kind: 'intro', kc, label: '新字母', big: val, sub: '转写 ' + letterWylie.get(val), pron: `${PRON[val][0]}（${PRON[val][1]}）`, audio: letterAudio(val),
+      note: [`不加元音时自带 a，单独就读 ${PRON[val][0]}。先跟着音频念几遍。`, LETTER_NOTE[val] && LETTER_NOTE[val] + '。', g.length ? `注意和 ${g.join(' ')} 区分。` : '']
+        .filter(Boolean)
+        .join(''),
     }
   }
   if (type === 'V') {
@@ -207,6 +249,14 @@ export function introFor(kc: KC): Intro {
     return {
       kind: 'intro', kc, label: '新元音', big: 'མ' + mark, sub: 'm' + vw, audio: cvAudio('མ', mark),
       note: `${mark} 叫 ${name}，读 ${vw}。加在任何字母上，a 都换成 ${vw}。`,
+    }
+  }
+  if (type === 'C') {
+    const [l, m] = [val[0], val[1]]
+    const name = VOWELS.find((x) => x[0] === m)![2]
+    return {
+      kind: 'intro', kc, label: '拼读', big: val, sub: cvWylie(l, m), audio: cvAudio(l, m),
+      note: `${l} 单独读 ${PRON[l][0]}（自带 a），加上 ${name} ◌${m}，a 就换掉了。先自己念一遍，再点上面的字听。`,
     }
   }
   if (type === 'R') {
@@ -255,15 +305,23 @@ export function questionFor(kc: KC, variant?: number, known: Set<KC> = ALL): Sco
     const w = letterWylie.get(val)!
     const group = letterGroup(val)
     const glyphPool = (knownLetters.length >= 4 ? knownLetters : LETTERS).map((l) => l[0])
-    const explain = group.length ? `${val} 读 ${w}；容易混的是 ${group.join(' ')}。` : `${val} 读 ${w}。`
-    if (v % 3 === 0)
-      return {
-        kind: 'glyph2wylie', kc, prompt: val, answer: w, audio: letterAudio(val), explain,
-        options: optionsWith(w, glyphPool.map((g) => letterWylie.get(g)!), group.map((g) => letterWylie.get(g)!)),
-      }
-    if (v % 3 === 1)
-      return { kind: 'listen', kc, audio: letterAudio(val), answer: val, options: optionsWith(val, glyphPool, group), explain }
-    return { kind: 'wylie2glyph', kc, prompt: w, answer: val, audio: letterAudio(val), options: optionsWith(val, glyphPool, group), explain }
+    const [py, hz] = PRON[val]
+    const explain = `${val} 转写 ${w}，单独读 ${py}（${hz}）` + (group.length ? `；容易混的是 ${group.join(' ')}。` : '。')
+    // 听音题不放注音相同、只靠清浊区分的字
+    const audible = (xs: string[]) => xs.filter((x) => !soundsLike(x, val) || x === val)
+    switch (v % 4) {
+      case 0:
+        return { kind: 'sayit', kc, prompt: val, audio: letterAudio(val), options: ['念对了', '没念对'], answer: '念对了', explain }
+      case 1:
+        return { kind: 'listen', kc, audio: letterAudio(val), answer: val, options: optionsWith(val, audible(glyphPool), audible(group)), explain }
+      case 2:
+        return {
+          kind: 'glyph2wylie', kc, prompt: val, answer: w, audio: letterAudio(val), explain,
+          options: optionsWith(w, glyphPool.map((g) => letterWylie.get(g)!), group.map((g) => letterWylie.get(g)!)),
+        }
+      default:
+        return { kind: 'wylie2glyph', kc, prompt: w, answer: val, audio: letterAudio(val), options: optionsWith(val, glyphPool, group), explain }
+    }
   }
 
   if (type === 'V') {
@@ -281,8 +339,33 @@ export function questionFor(kc: KC, variant?: number, known: Set<KC> = ALL): Sco
       }
     return {
       kind: 'listen', kc, audio: cvAudio(base, mark), answer: shown, explain,
-      options: optionsWith(shown, VOWELS.map((x) => base + x[0]).concat(base), knownMarks.map((x) => base + x[0]).concat(base)),
+      options: optionsWith(
+        shown,
+        VOWELS.filter((x) => !vowelsClash(x[0], mark) || x[0] === mark).map((x) => base + x[0]).concat(base),
+        knownMarks.filter((x) => !vowelsClash(x[0], mark)).map((x) => base + x[0]).concat(base),
+      ),
     }
+  }
+
+  if (type === 'C') {
+    const [l, m] = [val[0], val[1]]
+    const wy = cvWylie(l, m)
+    const explain = `${val} = ${l}（单独读 ${PRON[l][0]}）+ ◌${m}，转写 ${wy}。`
+    // 第一次先自己念再听（自评），之后听音选字、看字选转写
+    const knownMarks = VOWELS.map((x) => x[0]).filter((x) => known.has('V:' + x))
+    if (v % 3 === 1) {
+      // 听音选字：干扰项是同一个元音、读音不同的字母，再加同一个字母、读音不混的元音
+      const others = LETTERS.map((x) => x[0]).filter((x) => !soundsLike(x, l))
+      const sameVowel = others.filter((x) => known.has('L:' + x)).map((x) => x + m)
+      const sameBase = [l, ...knownMarks.filter((x) => !vowelsClash(x, m)).map((x) => l + x)]
+      return { kind: 'listen', kc, audio: cvAudio(l, m), answer: val, explain, options: optionsWith(val, others.map((x) => x + m), [...sameBase, ...shuffle(sameVowel)]) }
+    }
+    if (v % 3 === 2)
+      return {
+        kind: 'glyph2wylie', kc, prompt: val, answer: wy, audio: cvAudio(l, m), explain,
+        options: optionsWith(wy, LETTERS.map((x) => cvWylie(x[0], m)), knownMarks.map((x) => cvWylie(l, x))),
+      }
+    return { kind: 'sayit', kc, prompt: val, audio: cvAudio(l, m), options: ['念对了', '没念对'], answer: '念对了', explain }
   }
 
   if (type === 'R') {
@@ -400,7 +483,7 @@ function unitOrder(u: UnitDef): KC[] {
   return out
 }
 
-const SPELL_TITLES = ['5 个字母 · 后加字', '元音 ◌ི · 5 个字母', '元音 ◌ུ · 3 个字母', '元音 ◌ེ ◌ོ', '前加字', '上加字', '下加字', '再后加字 ས', '最后 4 个字母', '综合：开篇全部音节和词']
+const SPELL_TITLES = ['5 个字母 · 后加字', '元音 i（གི་གུ）· 5 个字母', '元音 u（ཞབས་ཀྱུ）· 3 个字母', '元音 e o（འགྲེང་བུ、ན་རོ）', '前加字', '上加字', '下加字', '再后加字 ས', '最后 4 个字母', '综合：开篇全部音节和词']
 const SPELL_EXAMPLES = [
   ['ལམ', 'ནང', 'མན་ངག'], ['མི', 'ཟབ', 'ཐར་ལམ'], ['ཞིང', 'དམ་པ', 'ཞལ་ལུང'], ['ཆོས', 'ཆེན་པོ', 'འོད་ཟེར'], ['བདག', 'གསལ', 'ཀུན་བཟང'],
   ['སྣང', 'སྙིང་པོ', 'རྩ་བ'], ['བླ་མ', 'ཕྱག་འཚལ', 'རྒྱལ་བ'], ['སངས་རྒྱས', 'རིག་འཛིན', 'ཐུགས་རྗེ'], ['ལྷ', 'ཚེ་གཅིག'], ['བླ', 'མའི', 'སྐུའི'],
@@ -408,18 +491,50 @@ const SPELL_EXAMPLES = [
 
 function spellUnit(u: UnitDef): PathUnit {
   const levels: Level[] = []
+  const cvOfUnit: KC[] = []
   const id = (s: string) => `u${u.n}-${s}`
   if (u.n < 10) {
     const groups = chunk(unitOrder(u), 3)
+    // 已经会的字母和元音（前面单元的），用来算每学一个新字母或元音能拼出哪些新组合
+    const before = knownThrough(u.n - 1)
+    const letters = LETTERS.map((x) => x[0]).filter((l) => before.has('L:' + l))
+    const marks = VOWELS.map((x) => x[0]).filter((m) => before.has('V:' + m))
+    let nc = 0
+    let pending: KC[] = []
+    const flush = () => {
+      for (const c of chunk(pending, 5)) {
+        nc++
+        levels.push({ id: id('c' + nc), unit: u.n, kind: 'learn', title: '拼读 ' + c.map((k) => k.slice(2)).join(' '), kcs: c })
+      }
+      pending = []
+    }
     groups.forEach((g, i) => {
       levels.push({ id: id('l' + (i + 1)), unit: u.n, kind: 'learn', title: '新内容 ' + g.map(kcLabel).join(' '), kcs: g })
+      // 这一关学了新字母或新元音：马上把它和已经会的元音、字母逐个拼一遍
+      const fresh: KC[] = []
+      for (const k of g) {
+        if (k.startsWith('L:')) {
+          letters.push(k.slice(2))
+          for (const m of marks) fresh.push('C:' + k.slice(2) + m)
+        }
+        if (k.startsWith('V:')) {
+          marks.push(k.slice(2))
+          for (const l of letters) fresh.push('C:' + l + k.slice(2))
+        }
+      }
+      // 同一关里先学元音、后学字母时，字母那边会重复算一次
+      const combos = [...new Set(fresh)]
+      cvOfUnit.push(...combos)
+      pending.push(...combos)
+      // 不到 3 个就攒到下一关一起拼，免得一关只有一个组合
+      if (pending.length >= 3 || i === groups.length - 1) flush()
       // 每学三关，练一关
       if (i % 3 === 2 && i < groups.length - 1)
         levels.push({ id: id('p' + Math.ceil(i / 3)), unit: u.n, kind: 'practice', title: '练一练', kcs: groups.slice(i - 2, i + 1).flat() })
     })
   }
   chunk(u.extra, u.n < 10 ? 10 : 40).forEach((g, i) => levels.push({ id: id('r' + (i + 1)), unit: u.n, kind: 'read', title: '读开篇音节', kcs: g }))
-  levels.push({ id: id('t'), unit: u.n, kind: 'test', title: '单元小测', kcs: [...u.kcs, ...u.extra] })
+  levels.push({ id: id('t'), unit: u.n, kind: 'test', title: '单元小测', kcs: [...u.kcs, ...cvOfUnit, ...u.extra] })
   return { n: u.n, track: 'spell', title: SPELL_TITLES[u.n - 1], intro: u.intro, examples: SPELL_EXAMPLES[u.n - 1], levels }
 }
 

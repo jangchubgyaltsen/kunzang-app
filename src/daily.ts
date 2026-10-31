@@ -25,7 +25,7 @@ const addDays = (d: Date, n: number) => new Date(d.getFullYear(), d.getMonth(), 
 const weekOf = (d: Date) => dayKey(addDays(d, -((d.getDay() + 6) % 7))) // 该周星期一
 
 // 规则（R:）没法单独出现在游戏里；原文的词（T:）和整句（X:）只在诵读线里练
-const playable = (k: KC) => !/^[RTX]:/.test(k)
+const playable = (k: KC) => !/^[RTXC]:/.test(k)
 /** 单音节的东西才能拿来拼：开篇音节，或者只有一个音节的词 */
 export const buildable = (k: KC) => k.startsWith('S:') || (k.startsWith('W:') && wordMap.get(k.slice(2))?.syllables.length === 1)
 
