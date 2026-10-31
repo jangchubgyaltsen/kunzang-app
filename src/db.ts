@@ -3,15 +3,22 @@ import Dexie, { type Table } from 'dexie'
 export type Flag = { id?: number; kind: 'syllable' | 'line'; ref: string; note: string; createdAt: number }
 export type Setting = { key: string; value: unknown }
 export type Translation = { id: string; chinese: string }
+export type Attempt = { id?: number; kc: string; ok: boolean; at: number; unit?: number }
+export type CardRow = { kc: string; due: number; card: unknown }
+export type UnitResult = { n: number; passedAt?: number; best: number }
 
 class AppDB extends Dexie {
   flags!: Table<Flag, number>
   settings!: Table<Setting, string>
   translations!: Table<Translation, string>
+  attempts!: Table<Attempt, number>
+  cards!: Table<CardRow, string>
+  units!: Table<UnitResult, number>
   constructor() {
     super('kunzang')
     this.version(1).stores({ flags: '++id, kind, ref', settings: 'key' })
     this.version(2).stores({ translations: 'id' })
+    this.version(3).stores({ attempts: '++id, kc, at', cards: 'kc, due', units: 'n' })
   }
 }
 
@@ -34,16 +41,28 @@ export async function exportData() {
     exportedAt: new Date().toISOString(),
     flags: await db.flags.toArray(),
     settings: await db.settings.toArray(),
+    attempts: await db.attempts.toArray(),
+    cards: await db.cards.toArray(),
+    units: await db.units.toArray(),
   }
 }
 
-export async function importData(data: { app?: string; flags?: Flag[]; settings?: Setting[] }) {
+export async function importData(data: {
+  app?: string
+  flags?: Flag[]
+  settings?: Setting[]
+  attempts?: Attempt[]
+  cards?: CardRow[]
+  units?: UnitResult[]
+}) {
   if (data.app !== 'kunzang') throw new Error('不是本 App 导出的备份文件')
-  await db.transaction('rw', db.flags, db.settings, async () => {
-    await db.flags.clear()
-    await db.settings.clear()
+  await db.transaction('rw', [db.flags, db.settings, db.attempts, db.cards, db.units], async () => {
+    await Promise.all([db.flags.clear(), db.settings.clear(), db.attempts.clear(), db.cards.clear(), db.units.clear()])
     await db.flags.bulkAdd(data.flags ?? [])
     await db.settings.bulkPut(data.settings ?? [])
+    await db.attempts.bulkAdd(data.attempts ?? [])
+    await db.cards.bulkPut(data.cards ?? [])
+    await db.units.bulkPut(data.units ?? [])
   })
 }
 
