@@ -5,7 +5,7 @@ import { GAMES, planToday, saveCheckin, streakInfo, sylOf, type GameKind, type T
 import { db } from './db.ts'
 import { recordAnswer } from './progress.ts'
 import { play } from './audio.ts'
-import { chime, say } from './sound.ts'
+import { say } from './sound.ts'
 import './games.css'
 
 type Item = { kc: KC; tib: string; wylie: string; audio?: string; gloss?: string }
@@ -134,7 +134,6 @@ function Flip({ items, preview, onDone }: { items: Item[]; preview?: Item; onDon
     if (now.length < 2) return
     setMoves(moves + 1)
     const [a, b] = now.map((k) => cards[k])
-    chime(a.pair === b.pair)
     if (a.pair === b.pair) {
       const it = pairs[a.pair]
       if (it.audio) play(it.audio)
@@ -210,7 +209,6 @@ function Quiz({ items, onDone }: { items: Item[]; onDone: (r: Result) => void })
   const answer = (yes: boolean) => {
     if (left <= 0) return
     const ok = yes === q.truth
-    chime(ok)
     setCount(count + 1)
     setFlash(ok ? 'ok' : 'bad')
     setTimeout(() => setFlash(null), 250)
@@ -301,14 +299,12 @@ function Build({ items, onDone }: { items: Item[]; onDone: (r: Result) => void }
       const f = filled + 1
       setFilled(f)
       if (f === parts.length) {
-        chime(!erred)
         if (it.audio) play(it.audio)
         if (!erred) setScore(score + 1)
         else missed.current.push(it)
         void recordAnswer(it.kc, !erred, undefined, 'game')
       }
     } else {
-      chime(false)
       setErred(true)
       setShake(k)
       setTimeout(() => setShake(null), 400)
@@ -373,7 +369,6 @@ function Words({ items, onDone }: { items: Item[]; onDone: (r: Result) => void }
   const pickZh = (zh: string) => {
     if (sel === null) return
     const it = items[sel]
-    chime(it.gloss === zh)
     if (it.gloss === zh) {
       const d = new Set(done).add(sel)
       setDone(d)
@@ -436,7 +431,6 @@ function Root({ items, onDone }: { items: Item[]; onDone: (r: Result) => void })
   const tap = async (k: number) => {
     if (wrong !== null) return
     const ok = parts[k].role === '基字'
-    chime(ok)
     void recordAnswer(it.kc, ok, undefined, 'game')
     if (it.audio) play(it.audio)
     if (ok) return setI(i + 1)
@@ -529,7 +523,6 @@ function Whack({ items, onDone }: { items: Item[]; onDone: (r: Result) => void }
   const tap = (k: number) => {
     const x = holes[k]
     if (!x || !target || hit !== null || left <= 0) return
-    chime(x.kc === target.kc)
     if (x.kc === target.kc) {
       setHit(k)
       setScore(score + 1)
@@ -585,7 +578,6 @@ function Mix({ items, onDone }: { items: Item[]; onDone: (r: Result) => void }) 
     if (chosen) return
     setChosen(o)
     const ok = o === answer
-    chime(ok)
     if (ok && it.audio) play(it.audio)
     else say(o)
     if (ok) setScore(score + 1)

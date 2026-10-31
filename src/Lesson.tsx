@@ -3,7 +3,7 @@ import { buildLesson, kcLabel, partsOf, questionFor, UNITS, type Intro, type KC,
 import { syllableMap } from './content.ts'
 import { finishUnit, recordAnswer, seenKCs, weakKCs } from './progress.ts'
 import { play } from './audio.ts'
-import { chime, say } from './sound.ts'
+import { say } from './sound.ts'
 import './lesson.css'
 
 type Props = { unit?: number; questions?: Question[]; title?: string; onExit: () => void }
@@ -70,7 +70,6 @@ export default function Lesson({ unit, questions, title, onExit }: Props) {
     if (answered) return
     setChosen(c)
     const ok = isRight(c)
-    chime(ok)
     // 答对读题目本身，答错读你选的那个，让耳朵也记住区别
     if (ok && q.audio) play(q.audio)
     else say(labelOf(q, c))

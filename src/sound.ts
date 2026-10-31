@@ -27,28 +27,3 @@ export function say(text: string) {
   if (a) play(a)
   return !!a
 }
-
-let ctx: AudioContext | null = null
-
-/** 答对、答错的提示音，用 Web Audio 合成，不占读音的播放器。 */
-export function chime(ok: boolean) {
-  try {
-    ctx ??= new AudioContext()
-    const notes = ok ? [660, 990] : [220, 180]
-    notes.forEach((f, k) => {
-      const t = ctx!.currentTime + k * 0.09
-      const o = ctx!.createOscillator()
-      const g = ctx!.createGain()
-      o.type = ok ? 'sine' : 'triangle'
-      o.frequency.value = f
-      g.gain.setValueAtTime(0.0001, t)
-      g.gain.exponentialRampToValueAtTime(0.15, t + 0.01)
-      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.16)
-      o.connect(g).connect(ctx!.destination)
-      o.start(t)
-      o.stop(t + 0.18)
-    })
-  } catch {
-    // 不支持 Web Audio 时静音
-  }
-}
