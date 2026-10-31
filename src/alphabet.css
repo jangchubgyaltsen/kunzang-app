@@ -39,3 +39,16 @@
 .drill-pron { font-family: ui-monospace, monospace; font-size: 28px; font-weight: 700; color: var(--accent); }
 .drill-hz { font-size: 18px; }
 .drill-opt { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; font-family: ui-monospace, monospace; }
+
+/* 格子一样大 */
+.abc-row { grid-template-columns: repeat(4, minmax(0, 1fr)); align-items: stretch; }
+
+/* 字母 + 元音组合表 */
+.cv-table { display: flex; flex-direction: column; gap: 4px; background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 8px; }
+.cv-row { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; }
+.cv-head { text-align: center; color: var(--muted); font-size: 20px; }
+.cv-cell { display: flex; flex-direction: column; align-items: center; padding: 14px 0 2px; border-radius: 8px; min-width: 0; }
+.cv-cell .tib { font-size: 26px; line-height: 1.7; }
+.cv-pron { font-family: ui-monospace, monospace; font-size: 12px; color: var(--muted); line-height: 1.2; }
+.cv-cell.base { background: #f6f1e7; }
+.cv-cell.fluent { border-color: #c9a227; background: #fbf3dc; }
