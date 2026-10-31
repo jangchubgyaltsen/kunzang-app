@@ -1,6 +1,7 @@
 import { passages, passageTitles, realAudioOf, syllables, syllableMap, type Syllable } from './content.ts'
 import { lineById, linesOf, readLines, tokenMap, yitongOf, type ReadLine } from './reading.ts'
 import wordsRaw from './words.json'
+import { amdoSentences, amdoSets, amdoTables, amdoWordById, amdoWords, cellById, sentenceById, sylsOf } from './amdo.ts'
 
 export const LETTERS: [string, string][] = [
   ['ཀ', 'ka'], ['ཁ', 'kha'], ['ག', 'ga'], ['ང', 'nga'],
@@ -78,7 +79,8 @@ export type Question =
   | { kind: 'glyph2wylie'; kc: KC; prompt: string; options: string[]; answer: string; audio?: string; explain: string }
   | { kind: 'wylie2glyph'; kc: KC; prompt: string; options: string[]; answer: string; audio?: string; explain: string }
   | { kind: 'findRoot'; kc: KC; prompt: string; parts: string[]; answer: number; audio?: string; explain: string }
-  | { kind: 'listen'; kc: KC; audio: string; options: string[]; answer: string; explain: string }
+  /** zh：选项是中文意思（听会话选意思） */
+  | { kind: 'listen'; kc: KC; audio: string; options: string[]; answer: string; explain: string; zh?: boolean }
   | { kind: 'meaning'; kc: KC; prompt: string; options: string[]; answer: string; audio?: string; explain: string }
   | { kind: 'meaning2word'; kc: KC; prompt: string; options: string[]; answer: string; audio?: string; explain: string }
 export type Scored = Exclude<Question, Intro | Shadow>
@@ -105,6 +107,10 @@ export type UnitDef = {
   kcs: KC[]
   /** 已经能拼读的开篇音节，用来复习规则 */
   extra: KC[]
+  /** 安多会话教材里、学到本单元刚好能读的口语词（D:），真人录音 */
+  oral: KC[]
+  /** 拼读表里刚好能读的格子（P:），真人录音 */
+  hear: KC[]
 }
 
 const sylKCs = (s: WordSyl) => {
@@ -127,22 +133,37 @@ export const UNITS: UnitDef[] = []
     p.add.forEach((k) => known.add(k))
     const newWords = words.filter((w) => within(w.kcs, known) && !within(w.kcs, before)).map((w) => 'W:' + w.tibetan)
     const extra = usableSyl.filter((s) => within(sylKCs(s), known) && !within(sylKCs(s), before)).map((s) => 'S:' + s.tibetan)
-    UNITS.push({ n: i + 1, intro: p.intro, kcs: [...p.add, ...newWords], extra })
+    const oral = amdoWords.filter((w) => w.kcs && within(w.kcs, known) && !within(w.kcs, before)).map((w) => 'D:' + w.id)
+    UNITS.push({ n: i + 1, intro: p.intro, kcs: [...p.add, ...newWords], extra, oral, hear: hearCells(known, before) })
   }
+  const placed = new Set(UNITS.flatMap((u) => u.oral))
   UNITS.push({
     n: 10,
-    intro: '综合练习：开篇里的全部音节和词，找基字，认读音。',
+    intro: '综合练习：开篇里的全部音节和词，找基字，认读音；教材里剩下的口语词也在这里。',
     kcs: [],
     extra: [...syllables.filter((s) => !s.needsCheck).map((s) => 'S:' + s.tibetan), ...words.map((w) => 'W:' + w.tibetan)],
+    oral: amdoWords.map((w) => 'D:' + w.id).filter((k) => !placed.has(k)),
+    hear: amdoTables.find((t) => t.part === '叠加字')!.rows.flat().filter((c) => c.id).map((c) => 'P:' + c.id!),
   })
 }
 
+/** 拼读表（真人录音）里学到本单元刚好能读的格子；每单元最多 20 个，均匀抽，其余在资料库里听 */
+function hearCells(known: Set<KC>, before: Set<KC>) {
+  const skip = ['辅音', '元音', '元音与辅音拼法', '叠加字']
+  const cells = amdoTables
+    .filter((t) => !skip.includes(t.part))
+    .flatMap((t) => t.rows.flat())
+    .filter((c) => c.id && c.kcs && within(c.kcs, known) && !within(c.kcs, before))
+  const k = Math.max(1, Math.ceil(cells.length / 20))
+  return cells.filter((_, i) => i % k === 0).map((c) => 'P:' + c.id!)
+}
+
 export const unitOfKC = new Map<KC, number>()
-for (const u of UNITS) for (const k of [...u.kcs, ...u.extra]) if (!unitOfKC.has(k)) unitOfKC.set(k, u.n)
+for (const u of UNITS) for (const k of [...u.kcs, ...u.extra, ...u.oral, ...u.hear]) if (!unitOfKC.has(k)) unitOfKC.set(k, u.n)
 
 /** 学到第 n 单元为止认识的全部知识点 */
 export function knownThrough(n: number) {
-  return new Set(UNITS.filter((u) => u.n <= n).flatMap((u) => [...u.kcs, ...u.extra]))
+  return new Set(UNITS.filter((u) => u.n <= n).flatMap((u) => [...u.kcs, ...u.extra, ...u.oral, ...u.hear]))
 }
 const ALL = knownThrough(99)
 
@@ -184,6 +205,9 @@ export function rootReason(s: WordSyl) {
 
 /** 给人看的知识点名称 */
 export function kcLabel(kc: KC) {
+  if (kc.startsWith('A:')) return sentenceById.get(kc.slice(2))?.tib ?? kc
+  if (kc.startsWith('D:')) return amdoWordById.get(kc.slice(2))?.tib ?? kc
+  if (kc.startsWith('P:')) return cellById.get(kc.slice(2))?.cell.tib ?? kc
   if (kc.startsWith('R:')) return RULES[kc]?.name ?? kc
   if (kc.startsWith('V:')) return '◌' + kc.slice(2)
   if (kc.startsWith('X:')) return lineById.get(kc.slice(2))?.words.map((w) => w.tibetan).join('་') ?? kc
@@ -217,6 +241,18 @@ export function introFor(kc: KC): Intro {
   if (type === 'W') {
     const w = wordMap.get(val)!
     return { kind: 'intro', kc, label: '新词', big: w.tibetan, sub: w.wylie, pron: w.yitong, note: w.gloss, audio: w.audio }
+  }
+  if (type === 'A') {
+    const s = sentenceById.get(val)!
+    return { kind: 'intro', kc, label: '会话 · 真人录音', big: s.tib, note: s.zh, audio: s.audio }
+  }
+  if (type === 'D') {
+    const w = amdoWordById.get(val)!
+    return { kind: 'intro', kc, label: '口语词 · 真人录音', big: w.tib, note: w.zh, audio: w.audio }
+  }
+  if (type === 'P') {
+    const c = cellById.get(val)!
+    return { kind: 'intro', kc, label: '听拼读 · ' + c.part, big: c.cell.tib, audio: c.cell.audio }
   }
   if (type === 'T') {
     const t = tokenMap.get(val)!
@@ -312,6 +348,102 @@ export function questionFor(kc: KC, variant?: number, known: Set<KC> = ALL): Sco
     }
   }
 
+  // 安多会话 300 句（A:编号）
+  if (type === 'A') {
+    const s = sentenceById.get(val)!
+    const explain = `${s.tib}\n${s.zh}`
+    const near = amdoSentences.filter((x) => x !== s && Math.abs(x.tib.length - s.tib.length) < 12)
+    const syls = sylsOf(s.tib)
+    switch (v % 5) {
+      case 4:
+        return { kind: 'listen', kc, audio: s.audio, answer: s.zh, explain, zh: true, options: optionsWith(s.zh, amdoSentences.map((x) => x.zh), near.map((x) => x.zh)) }
+      case 0:
+        return { kind: 'meaning', kc, prompt: s.tib, answer: s.zh, audio: s.audio, explain, options: optionsWith(s.zh, amdoSentences.map((x) => x.zh), near.map((x) => x.zh)) }
+      case 1:
+        return { kind: 'meaning2word', kc, prompt: s.zh, answer: s.tib, audio: s.audio, explain, options: optionsWith(s.tib, amdoSentences.map((x) => x.tib), near.map((x) => x.tib)) }
+      case 2:
+        if (syls.length >= 2 && syls.length <= 9) {
+          let pieces = shuffle(syls)
+          for (let k = 0; k < 5 && pieces.join() === syls.join(); k++) pieces = shuffle(syls)
+          return { kind: 'order', kc, audio: s.audio, pieces, answer: syls.join('་'), explain }
+        }
+        return { kind: 'listen', kc, audio: s.audio, answer: s.tib, explain, options: optionsWith(s.tib, amdoSentences.map((x) => x.tib), near.map((x) => x.tib)) }
+      default:
+        return { kind: 'listen', kc, audio: s.audio, answer: s.tib, explain, options: optionsWith(s.tib, amdoSentences.map((x) => x.tib), near.map((x) => x.tib)) }
+    }
+  }
+
+  // 拼读表的一格（P:编号）：听音选字，干扰项优先取同一行、同一张表
+  if (type === 'P') {
+    const c = cellById.get(val)!
+    const same = c.row.filter((x) => x.id && x !== c.cell).map((x) => x.tib)
+    const table = amdoTables.find((t) => t.part === c.part)!.rows.flat().filter((x) => x.id).map((x) => x.tib)
+    return { kind: 'listen', kc, audio: c.cell.audio, answer: c.cell.tib, explain: `刚才读的是 ${c.cell.tib}（${c.part}）。`, options: optionsWith(c.cell.tib, table, same) }
+  }
+
+  // 安多会话教材的单词（D:编号）
+  if (type === 'D') {
+    const w = amdoWordById.get(val)!
+    const explain = `${w.tib}：${w.zh}`
+    const near = amdoWords.filter((x) => x !== w && (x.page === w.page || x.tib.length === w.tib.length))
+    switch (v % 3) {
+      case 0:
+        return { kind: 'meaning', kc, prompt: w.tib, answer: w.zh, audio: w.audio, explain, options: optionsWith(w.zh, amdoWords.map((x) => x.zh), near.map((x) => x.zh)) }
+      case 1:
+        return { kind: 'listen', kc, audio: w.audio, answer: w.tib, explain, options: optionsWith(w.tib, amdoWords.map((x) => x.tib), near.map((x) => x.tib)) }
+      default:
+        return { kind: 'meaning2word', kc, prompt: w.zh, answer: w.tib, audio: w.audio, explain, options: optionsWith(w.tib, amdoWords.map((x) => x.tib), near.map((x) => x.tib)) }
+    }
+  }
+
+  // 安多会话 300 句（A:编号）
+  if (type === 'A') {
+    const s = sentenceById.get(val)!
+    const explain = `${s.tib}\n${s.zh}`
+    const near = amdoSentences.filter((x) => x !== s && Math.abs(x.tib.length - s.tib.length) < 12)
+    const syls = sylsOf(s.tib)
+    switch (v % 5) {
+      case 4:
+        return { kind: 'listen', kc, audio: s.audio, answer: s.zh, explain, zh: true, options: optionsWith(s.zh, amdoSentences.map((x) => x.zh), near.map((x) => x.zh)) }
+      case 0:
+        return { kind: 'meaning', kc, prompt: s.tib, answer: s.zh, audio: s.audio, explain, options: optionsWith(s.zh, amdoSentences.map((x) => x.zh), near.map((x) => x.zh)) }
+      case 1:
+        return { kind: 'meaning2word', kc, prompt: s.zh, answer: s.tib, audio: s.audio, explain, options: optionsWith(s.tib, amdoSentences.map((x) => x.tib), near.map((x) => x.tib)) }
+      case 2:
+        if (syls.length >= 2 && syls.length <= 9) {
+          let pieces = shuffle(syls)
+          for (let k = 0; k < 5 && pieces.join() === syls.join(); k++) pieces = shuffle(syls)
+          return { kind: 'order', kc, audio: s.audio, pieces, answer: syls.join('་'), explain }
+        }
+        return { kind: 'listen', kc, audio: s.audio, answer: s.tib, explain, options: optionsWith(s.tib, amdoSentences.map((x) => x.tib), near.map((x) => x.tib)) }
+      default:
+        return { kind: 'listen', kc, audio: s.audio, answer: s.tib, explain, options: optionsWith(s.tib, amdoSentences.map((x) => x.tib), near.map((x) => x.tib)) }
+    }
+  }
+
+  // 拼读表的一格（P:编号）：听音选字，干扰项优先取同一行、同一张表
+  if (type === 'P') {
+    const c = cellById.get(val)!
+    const same = c.row.filter((x) => x.id && x !== c.cell).map((x) => x.tib)
+    const table = amdoTables.find((t) => t.part === c.part)!.rows.flat().filter((x) => x.id).map((x) => x.tib)
+    return { kind: 'listen', kc, audio: c.cell.audio, answer: c.cell.tib, explain: `刚才读的是 ${c.cell.tib}（${c.part}）。`, options: optionsWith(c.cell.tib, table, same) }
+  }
+
+  // 安多会话教材的单词（D:编号）
+  if (type === 'D') {
+    const w = amdoWordById.get(val)!
+    const explain = `${w.tib}：${w.zh}`
+    const near = amdoWords.filter((x) => x !== w && (x.page === w.page || x.tib.length === w.tib.length))
+    switch (v % 3) {
+      case 0:
+        return { kind: 'meaning', kc, prompt: w.tib, answer: w.zh, audio: w.audio, explain, options: optionsWith(w.zh, amdoWords.map((x) => x.zh), near.map((x) => x.zh)) }
+      case 1:
+        return { kind: 'listen', kc, audio: w.audio, answer: w.tib, explain, options: optionsWith(w.tib, amdoWords.map((x) => x.tib), near.map((x) => x.tib)) }
+      default:
+        return { kind: 'meaning2word', kc, prompt: w.zh, answer: w.tib, audio: w.audio, explain, options: optionsWith(w.tib, amdoWords.map((x) => x.tib), near.map((x) => x.tib)) }
+    }
+  }
+
   if (type === 'T') {
     const t = tokenMap.get(val)!
     const pool = [...tokenMap.keys()]
@@ -370,9 +502,11 @@ function rootQuestion(kc: KC, s: WordSyl): Scored {
 //   test     单元小测：不出介绍卡，全单元抽题，80% 通过
 // 拼读线（单元 1–10）和诵读线（单元 11 起，开篇原文）各自按顺序解锁，可以同时学。
 
-export type LevelKind = 'learn' | 'practice' | 'read' | 'line' | 'test'
-export type Level = { id: string; unit: number; kind: LevelKind; title: string; kcs: KC[]; line?: string }
-export type Track = 'spell' | 'read'
+export type LevelKind = 'learn' | 'practice' | 'read' | 'line' | 'test' | 'talk'
+/** talk 关的三步：听懂（听录音选意思）→ 认读（看藏文选意思、看中文选藏文）→ 说（排音节、听音选句） */
+export type TalkStage = 'hear' | 'read' | 'say'
+export type Level = { id: string; unit: number; kind: LevelKind; title: string; kcs: KC[]; line?: string; stage?: TalkStage }
+export type Track = 'spell' | 'read' | 'talk'
 export type PathUnit = { n: number; track: Track; title: string; intro: string; examples: string[]; levels: Level[]; passage?: string }
 
 /** 平均分成每份不超过 n 个，避免最后剩一个孤零零的小关 */
@@ -419,7 +553,10 @@ function spellUnit(u: UnitDef): PathUnit {
     })
   }
   chunk(u.extra, u.n < 10 ? 10 : 40).forEach((g, i) => levels.push({ id: id('r' + (i + 1)), unit: u.n, kind: 'read', title: '读开篇音节', kcs: g }))
-  levels.push({ id: id('t'), unit: u.n, kind: 'test', title: '单元小测', kcs: [...u.kcs, ...u.extra] })
+  // 安多会话教材：用刚学的拼读读口语词，听拼读表的真人录音
+  chunk(u.oral, 10).forEach((g, i) => levels.push({ id: id('d' + (i + 1)), unit: u.n, kind: 'learn', title: '口语词 · 真人录音', kcs: g }))
+  chunk(u.hear, 10).forEach((g, i) => levels.push({ id: id('h' + (i + 1)), unit: u.n, kind: 'practice', title: '听拼读 · 真人录音', kcs: g }))
+  levels.push({ id: id('t'), unit: u.n, kind: 'test', title: '单元小测', kcs: [...u.kcs, ...u.extra, ...u.oral] })
   return { n: u.n, track: 'spell', title: SPELL_TITLES[u.n - 1], intro: u.intro, examples: SPELL_EXAMPLES[u.n - 1], levels }
 }
 
@@ -447,7 +584,28 @@ function passageUnit(passage: string, n: number): PathUnit {
   }
 }
 
-export const PATH: PathUnit[] = [...UNITS.map(spellUnit), ...passages.map((p, i) => passageUnit(p.id, 11 + i))]
+/** 会话线：《安多方言会话教材》300 句，15 句一个单元，从第一天就能学，以听懂为先 */
+export const TALK_BASE = 31
+function talkUnit(set: { title: string; ids: string[] }, i: number): PathUnit {
+  const n = TALK_BASE + i
+  const ks = set.ids.map((x) => 'A:' + x)
+  const half = Math.ceil(ks.length / 2)
+  const id = (s: string) => `a${i + 1}-${s}`
+  const first = sentenceById.get(set.ids[0])!
+  const levels: Level[] = [
+    { id: id('h1'), unit: n, kind: 'talk', stage: 'hear', title: '听懂 · 前半', kcs: ks.slice(0, half) },
+    { id: id('h2'), unit: n, kind: 'talk', stage: 'hear', title: '听懂 · 后半', kcs: ks.slice(half) },
+    { id: id('r'), unit: n, kind: 'talk', stage: 'read', title: '认读', kcs: ks },
+    { id: id('s'), unit: n, kind: 'talk', stage: 'say', title: '说：排出整句', kcs: ks },
+    { id: id('t'), unit: n, kind: 'test', title: '单元小测', kcs: ks },
+  ]
+  return {
+    n, track: 'talk', title: `会话 ${i + 1} · ${set.title}`, levels, examples: [],
+    intro: `从“${first.zh}”开始的 ${ks.length} 句安多话，全部是真人录音。先听懂，再认读，最后自己排出整句。`,
+  }
+}
+
+export const PATH: PathUnit[] = [...UNITS.map(spellUnit), ...passages.map((p, i) => passageUnit(p.id, 11 + i)), ...amdoSets.map(talkUnit)]
 export const LEVELS: Level[] = PATH.flatMap((u) => u.levels)
 export const levelById = new Map(LEVELS.map((l) => [l.id, l]))
 export const unitByN = new Map(PATH.map((u) => [u.n, u]))
@@ -459,6 +617,9 @@ const ALL_WITH_TEXT = new Set([...ALL, ...lineKCs])
 function knownFor(unit: number) {
   return unit <= 10 ? knownThrough(unit) : ALL_WITH_TEXT
 }
+
+/** 会话关每一步用的题型（见 questionFor 的 A: 分支） */
+const TALK_VARIANTS: Record<TalkStage, number[]> = { hear: [4, 4], read: [0, 1], say: [2, 3] }
 
 /** 第一次见的知识点先上介绍卡；ask 时紧跟着出一道题 */
 function withIntros(kcs: KC[], seen: Set<KC>, known: Set<KC>, ask: boolean) {
@@ -493,6 +654,17 @@ export function buildLevel(levelId: string, seen: Set<KC>, weak: KC[] = []): { q
       qs.push(questionFor(x, 0, known), { kind: 'shadow', kc: x, line: lineById.get(lv.line)! })
     }
     return { questions: qs, known }
+  }
+
+  if (lv.kind === 'talk') {
+    const [a, b] = TALK_VARIANTS[lv.stage ?? 'hear']
+    if (lv.stage === 'hear') {
+      // 新句子先听一遍（介绍卡），马上听音选意思；最后再打乱听一轮
+      const first = lv.kcs.flatMap((k) => [...(seen.has(k) ? [] : [introFor(k)]), questionFor(k, a, known)])
+      return { questions: [...first, ...shuffle(lv.kcs).map((k) => questionFor(k, b, known))], known }
+    }
+    const pick = shuffle(lv.kcs).slice(0, 10)
+    return { questions: pick.map((k, j) => questionFor(k, j % 2 ? b : a, known)), known }
   }
 
   if (lv.kind === 'practice' || lv.kind === 'read') {

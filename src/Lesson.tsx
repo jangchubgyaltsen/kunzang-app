@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { buildLevel, kcLabel, levelById, partsOf, questionFor, unitByN, type Intro, type KC, type Question, type Scored, type Shadow } from './course.ts'
+import { TALK_BASE, buildLevel, kcLabel, levelById, partsOf, questionFor, unitByN, type Intro, type KC, type Question, type Scored, type Shadow } from './course.ts'
 import { syllableMap } from './content.ts'
 import { finishLevel, recordAnswer, seenKCs, weakKCs } from './progress.ts'
 import { play } from './audio.ts'
@@ -62,7 +62,7 @@ export default function Lesson({ level, questions, title, onExit, onFinish }: Pr
     <div className="lesson-top">
       <button className="link" onClick={onExit}>✕</button>
       <div className="bar"><div style={{ width: progress + '%' }} /></div>
-      <span className="small muted">{title ?? (lv ? `单元 ${unit} · ${lv.title}` : '')}</span>
+      <span className="small muted">{title ?? (lv ? `${unit && unit >= TALK_BASE ? unitByN.get(unit)!.title : '单元 ' + unit} · ${lv.title}` : '')}</span>
     </div>
   )
 
@@ -123,6 +123,9 @@ export default function Lesson({ level, questions, title, onExit, onFinish }: Pr
   )
 }
 
+// 会话整句：字号小一点，选项一行一个
+const long = (q: Scored) => q.kc.startsWith('A:')
+
 function labelOf(q: Scored, a: string | number) {
   return q.kind === 'findRoot' ? q.parts[a as number] : String(a)
 }
@@ -131,7 +134,7 @@ function IntroCard({ q }: { q: Intro }) {
   return (
     <div className="intro-card">
       <div className="intro-label">{q.label}</div>
-      <div className="tib huge tap" onClick={() => (q.audio ? play(q.audio) : say(q.big))}>{q.big}</div>
+      <div className={'tib tap ' + (q.kc.startsWith('A:') ? 'big center' : 'huge')} onClick={() => (q.audio ? play(q.audio) : say(q.big))}>{q.big}</div>
       {q.sub && <div className="latin-mid">{q.sub}</div>}
       {q.pron && (
         <div className="pron" title="一本通式注音，尚未逐个核对">
@@ -187,21 +190,21 @@ function Prompt({ q }: { q: Scored }) {
     case 'listen':
       return (
         <div className="prompt">
-          <div className="ask">听音选字</div>
+          <div className="ask">{q.zh ? '听这句话，选出意思' : q.kc.startsWith('A:') ? '听这句话，选出藏文' : '听音选字'}</div>
           <button className="play-big" onClick={() => play(q.audio)}>▶</button>
         </div>
       )
     case 'meaning':
       return (
         <div className="prompt">
-          <div className="ask">这个词是什么意思？</div>
-          <div className="tib huge tap" onClick={() => (q.audio ? play(q.audio) : say(q.prompt))}>{q.prompt}</div>
+          <div className="ask">{q.kc.startsWith('A:') ? '这句话是什么意思？' : '这个词是什么意思？'}</div>
+          <div className={'tib tap ' + (long(q) ? 'big center' : 'huge')} onClick={() => (q.audio ? play(q.audio) : say(q.prompt))}>{q.prompt}</div>
         </div>
       )
     case 'meaning2word':
       return (
         <div className="prompt">
-          <div className="ask">哪个词的意思是</div>
+          <div className="ask">{q.kc.startsWith('A:') ? '哪一句的意思是' : '哪个词的意思是'}</div>
           <div className="zh-big">{q.prompt}</div>
         </div>
       )
@@ -242,9 +245,9 @@ function Options({ q, chosen, onChoose }: { q: Exclude<Scored, { kind: 'order' }
   const items: (string | number)[] = q.kind === 'findRoot' ? q.parts.map((_, k) => k) : q.options
   const cls = (c: string | number) =>
     chosen === null ? '' : c === q.answer ? ' right' : c === chosen ? ' wrong' : ' dim'
-  const style = q.kind === 'meaning' ? ' gloss' : q.kind === 'glyph2wylie' ? ' latin' : ' tib'
+  const style = (q.kind === 'meaning' || (q.kind === 'listen' && q.zh) ? ' gloss' : q.kind === 'glyph2wylie' ? ' latin' : ' tib') + (long(q) ? ' long' : '')
   return (
-    <div className={'options' + (q.kind === 'findRoot' ? ' row' : '')}>
+    <div className={'options' + (q.kind === 'findRoot' ? ' row' : '') + (long(q) ? ' one' : '')}>
       {items.map((c) => (
         <button key={String(c)} className={'opt' + style + cls(c)} onClick={() => onChoose(c)}>
           {labelOf(q, c)}
