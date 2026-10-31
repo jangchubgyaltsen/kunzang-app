@@ -20,9 +20,9 @@ export async function kcMastered(kc: KC) {
   return okRate >= 0.8 && spaced
 }
 
-export async function recordAnswer(kc: KC, ok: boolean, unit?: number) {
+export async function recordAnswer(kc: KC, ok: boolean, unit?: number, src?: string) {
   const now = new Date()
-  await db.attempts.add({ kc, ok, at: now.getTime(), unit })
+  await db.attempts.add({ kc, ok, at: now.getTime(), unit, src })
   const row = await db.cards.get(kc)
   const card: Card = row ? reviveCard(row.card) : createEmptyCard(now)
   const next = scheduler.next(card, now, ok ? Rating.Good : Rating.Again).card

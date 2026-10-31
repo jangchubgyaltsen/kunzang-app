@@ -4,6 +4,9 @@ import { play } from './audio.ts'
 import { db, exportData, importData, importTranslationPack } from './db.ts'
 import Lesson from './Lesson.tsx'
 import Review from './Review.tsx'
+import Game from './Games.tsx'
+import Today from './Today.tsx'
+import type { GameKind } from './daily.ts'
 import { getUnitStates, type UnitState } from './progress.ts'
 
 type Tab = 'path' | 'reader' | 'review' | 'settings'
@@ -12,6 +15,8 @@ export default function App() {
   const [tab, setTab] = useState<Tab>('path')
   const [passageId, setPassageId] = useState('title')
   const [lesson, setLesson] = useState<number | null>(null)
+  const [game, setGame] = useState<{ kind?: GameKind; daily: boolean } | null>(null)
+  const busy = lesson !== null || game !== null
 
   const openPassage = (id: string) => {
     setPassageId(id)
@@ -22,12 +27,13 @@ export default function App() {
     <div className="app">
       <main>
         {lesson !== null && <Lesson unit={lesson} onExit={() => setLesson(null)} />}
-        {lesson === null && tab === 'path' && <PathView onOpen={openPassage} onStartLesson={setLesson} />}
-        {lesson === null && tab === 'reader' && <ReaderView passageId={passageId} onSelect={setPassageId} />}
-        {lesson === null && tab === 'review' && <Review />}
-        {lesson === null && tab === 'settings' && <SettingsView />}
+        {game !== null && <Game kind={game.kind} daily={game.daily} onExit={() => setGame(null)} />}
+        {!busy && tab === 'path' && <PathView onOpen={openPassage} onStartLesson={setLesson} onPlay={(kind, daily) => setGame({ kind, daily })} />}
+        {!busy && tab === 'reader' && <ReaderView passageId={passageId} onSelect={setPassageId} />}
+        {!busy && tab === 'review' && <Review />}
+        {!busy && tab === 'settings' && <SettingsView />}
       </main>
-      {lesson === null && (
+      {!busy && (
       <nav className="tabs">
         {(
           [
@@ -47,7 +53,7 @@ export default function App() {
   )
 }
 
-function PathView({ onOpen, onStartLesson }: { onOpen: (id: string) => void; onStartLesson: (n: number) => void }) {
+function PathView({ onOpen, onStartLesson, onPlay }: { onOpen: (id: string) => void; onStartLesson: (n: number) => void; onPlay: (kind: GameKind | undefined, daily: boolean) => void }) {
   const [states, setStates] = useState<Map<number, UnitState>>(new Map())
   useEffect(() => {
     getUnitStates().then((xs) => setStates(new Map(xs.map((x) => [x.n, x]))))
@@ -57,6 +63,7 @@ function PathView({ onOpen, onStartLesson }: { onOpen: (id: string) => void; onS
   const current = units.find((u) => !u.target && states.get(u.n)?.status === 'available')?.n
   return (
     <section>
+      <Today onPlay={onPlay} />
       <h1>今日路径</h1>
       <p className="muted">第一部分：拼读 → 开篇原文</p>
       <ol className="path">

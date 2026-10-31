@@ -13,7 +13,7 @@ export const LETTERS: [string, string][] = [
 ]
 export const letterWylie = new Map(LETTERS)
 const letterNo = (l: string) => String(LETTERS.findIndex((x) => x[0] === l) + 1).padStart(2, '0')
-const letterAudio = (l: string) => 'L-' + letterNo(l)
+export const letterAudio = (l: string) => 'L-' + letterNo(l)
 
 export const VOWELS: [string, string, string][] = [
   ['ི', 'i', 'གི་གུ'],
@@ -21,10 +21,10 @@ export const VOWELS: [string, string, string][] = [
   ['ེ', 'e', 'འགྲེང་བུ'],
   ['ོ', 'o', 'ན་རོ'],
 ]
-const cvAudio = (l: string, v: string) => `CV-${letterNo(l)}-${VOWELS.find((x) => x[0] === v)![1]}`
+export const cvAudio = (l: string, v: string) => `CV-${letterNo(l)}-${VOWELS.find((x) => x[0] === v)![1]}`
 
 // 形近字：出题时优先用作干扰项
-const LOOKALIKE: string[][] = [
+export const LOOKALIKE: string[][] = [
   ['ཅ', 'ཙ'], ['ཆ', 'ཚ'], ['ཇ', 'ཛ'], ['པ', 'བ', 'ཕ'], ['ད', 'ཏ', 'ང', 'ཉ'],
   ['ཁ', 'ཤ', 'ག'], ['ཞ', 'ཟ'], ['ར', 'ཡ'], ['ལ', 'ཨ'], ['མ', 'ས', 'ཕ'], ['ན', 'ཏ'], ['ཝ', 'འ', 'ཨ'],
 ]
@@ -139,7 +139,7 @@ export function knownThrough(n: number) {
 }
 const ALL = knownThrough(99)
 
-const shuffle = <T,>(a: T[]) => {
+export const shuffle = <T,>(a: T[]) => {
   const b = [...a]
   for (let i = b.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1))
