@@ -94,6 +94,13 @@ export function hintFor(q: Scored, chosen: string | number): Hint {
     if (CV_PRON[c]) return { cat: 'vowel', text: `你选的 ${c} 读 ${CV_PRON[c][0]}，元音不一样。`, audio: [cvAudio(c[0], c[1])] }
   }
 
+  // 全书原文
+  if (q.kind === 'pickWord') {
+    const g = tibGloss.get(c)
+    return { cat: 'word', text: `${c}${g ? `（${g}）` : ''} 不在这句里。一个词一个词对着看。` }
+  }
+  if (type === 'B') return { cat: 'sent', text: '这是本章另一段的意思。抓住段里认识的词再看。' }
+
   // 会话句
   if (type === 'A') {
     const byZh = sentByZh.get(c)

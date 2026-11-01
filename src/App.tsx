@@ -11,7 +11,7 @@ import Practice from './Practice.tsx'
 import { AlphabetView, Drill } from './Alphabet.tsx'
 import { loadPlan } from './practice.ts'
 import { ensureChecks, getPathState, type LevelState, type UnitState } from './progress.ts'
-import { PATH, letterAudio, wordMap, type Level, type Track } from './course.ts'
+import { PATH, letterAudio, wordMap, type Level, type Question, type Track } from './course.ts'
 import { type Session } from './session.ts'
 import { linesOf, yitongOf, type Token } from './reading.ts'
 import { chapters } from './book.ts'
@@ -63,7 +63,9 @@ export default function App() {
         {!busy && tab === 'path' && (
           <PathView onOpen={openPassage} onStart={setSession} onPractice={() => setPractice({ auto: false })} />
         )}
-        {!busy && tab === 'reader' && <ReaderView passageId={passageId} onSelect={setPassageId} chapterId={chapterId} onChapter={pickChapter} />}
+        {!busy && tab === 'reader' && (
+          <ReaderView passageId={passageId} onSelect={setPassageId} chapterId={chapterId} onChapter={pickChapter} onQuiz={(questions, title) => setSession({ questions, title })} />
+        )}
         {!busy && tab === 'amdo' && <AmdoView onStart={setSession} />}
         {!busy && tab === 'review' && <Review onStart={setSession} />}
         {!busy && tab === 'settings' && <SettingsView />}
@@ -234,7 +236,7 @@ function UnitNote({ st, n, total }: { st?: UnitState; n: number; total: number }
 // 节点左右错落的偏移量（相对节点宽度）
 const ZIGZAG = [0, 0.8, 1.2, 0.8, 0, -0.8, -1.2, -0.8]
 
-function ReaderView({ passageId, onSelect, chapterId, onChapter }: { passageId: string; onSelect: (id: string) => void; chapterId: string; onChapter: (id: string) => void }) {
+function ReaderView({ passageId, onSelect, chapterId, onChapter, onQuiz }: { passageId: string; onSelect: (id: string) => void; chapterId: string; onChapter: (id: string) => void; onQuiz: (questions: Question[], title: string) => void }) {
   const info = chapters.find((c) => c.id === chapterId)
   const [picked, setPicked] = useState<Syllable | null>(null)
   return (
@@ -249,7 +251,7 @@ function ReaderView({ passageId, onSelect, chapterId, onChapter }: { passageId: 
           </button>
         ))}
       </div>
-      {info ? <BookChapter key={info.id} info={info} onPick={setPicked} /> : <OpeningReader passageId={passageId} onSelect={onSelect} />}
+      {info ? <BookChapter key={info.id} info={info} onPick={setPicked} onQuiz={onQuiz} /> : <OpeningReader passageId={passageId} onSelect={onSelect} />}
       {picked && <SyllableCard s={picked} onClose={() => setPicked(null)} />}
     </section>
   )

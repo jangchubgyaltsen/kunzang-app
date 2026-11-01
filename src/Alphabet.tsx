@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { play } from './audio.ts'
 import {
   ALL_CARDS, CV_MARKS, CV_PRON, CV_SOURCE, FAST_MS, FLUENT_DAYS, HOOK_PAIRS, LETTER_NOTE, PRON, ROWS, SHAPE_PAIRS, SOUND_PAIRS, VOWEL_INFO,
-  buildDaily, cardCounts, cvAudioOf, isFluent, isLookalike, isSoundPair, loadStats, markDailyDone, optionsFor, record,
+  buildDaily, cardCounts, loadSession, saveSession, cvAudioOf, isFluent, isLookalike, isSoundPair, loadStats, markDailyDone, optionsFor, record,
   type DrillItem, type Stat, type Step,
 } from './alphabet.ts'
 import { letterAudio } from './course.ts'
@@ -60,7 +60,7 @@ export function AlphabetView({ onStart }: { onStart: (all?: boolean) => void }) 
       <h2>每日字卡</h2>
       <p className="muted small">
         30 个字母加 120 个字母 + 元音组合，一共 150 张卡。每天第一次打开 App 先考这个：到期的卡看字选注音、听音选字轮着考，
-        选项里放的是书上成对比较的形近字和发音相近的字；答错的当天再考，答得越快越稳，隔的天数越长。新卡按字母表顺序每天带 15 张（到期的积压多时 10 张），每天一组至少 10 张卡。拼读路径也按这个顺序学字母，两边共用一份记录。
+        选项里放的是书上成对比较的形近字和发音相近的字；答错的当天再考，答得越快越稳，隔的天数越长。每天一组 15 张：到期的优先，剩下的按字母表顺序带新卡（每天至少 5 张新卡）。拼读路径也按这个顺序学字母，两边共用一份记录。
       </p>
       <p className="small">
         今天到期 <b>{counts.due}</b> 张 · 还没见过 <b>{counts.fresh}</b> 张 · 已经记牢 <b>{counts.fluent}</b> / 150 张
@@ -116,7 +116,7 @@ export function AlphabetView({ onStart }: { onStart: (all?: boolean) => void }) 
       </div>
       <h2>字母 + 元音组合表</h2>
       <p className="muted small">
-        30 个字母各配四个元音，共 120 个，每日字卡里都会考。点格子听真人录音。黑字是《一本通》上的注音，红字是书上例词里出现过的，
+        第一列是 30 个字母本身，后面四列是每个字母配四个元音的 120 个组合，一共 150 张，每日字卡都会考到；记牢了的亮金色。点格子听真人录音。黑字是《一本通》上的注音，红字是书上例词里出现过的，
         灰色斜体是按书上的规律推出来的，以录音为准。
       </p>
       <div className="cv-table">
@@ -130,7 +130,7 @@ export function AlphabetView({ onStart }: { onStart: (all?: boolean) => void }) 
             {[l, ...CV_MARKS.map((m) => l + m)].map((x, k) => (
               <button
                 key={x}
-                className={'cv-cell' + (k > 0 && isFluent(stats['CV:' + x]) ? ' fluent' : '') + (k === 0 ? ' base' : '')}
+                className={'cv-cell' + (isFluent(stats[(k > 0 ? 'CV:' : 'L:') + x]) ? ' fluent' : '') + (k === 0 ? ' base' : '')}
                 onClick={() => play(k === 0 ? letterAudio(l) : cvAudioOf(x))}
               >
                 <span className="tib">{x}</span>
@@ -175,11 +175,22 @@ export function Drill({ onExit, onComplete, all = false }: { onExit: () => void;
   const shownAt = useRef(0)
 
   useEffect(() => {
-    loadStats().then((s) => {
+    ;(async () => {
+      const s = await loadStats()
+      // 今天这一组做到一半退出过：接着做，不重新开始
+      const saved = all ? undefined : await loadSession()
       setStats(s)
-      setQueue(buildDaily(s, all))
-    })
+      if (saved) {
+        setQueue(saved.steps)
+        setI(saved.i)
+        setLog(saved.log.map((x) => ({ it: saved.steps.find((st) => st.it.key === x.key)?.it ?? saved.steps[0].it, ok: x.ok, ms: x.ms })))
+      } else setQueue(buildDaily(s, all))
+    })()
   }, [all])
+  // 每走一步记下进度
+  useEffect(() => {
+    if (!all && queue.length) void saveSession(queue, i, log.map((x) => ({ key: x.it.key, ok: x.ok, ms: x.ms })))
+  }, [all, queue, i, log])
   const step = queue[i]
   const it = step?.it
   const done = !!stats && queue.length > 0 && i >= queue.length

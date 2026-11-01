@@ -80,6 +80,8 @@ export type Question =
   | { kind: 'order'; kc: KC; audio: string; pieces: string[]; answer: string; explain: string; need?: number; ask?: string }
   /** 拼字：看转写（有真人录音就同时听），给每个位置（前加字、基字、元音……）选字，拼出音节。answer 是各位置答案用 | 连起来 */
   | { kind: 'build'; kc: KC; target: string; wylie: string; audio?: string; slots: { role: string; options: string[]; answer: string }[]; answer: string; explain: string }
+  /** 找词：给一句原文，选出句子里出现的那个学过的词 */
+  | { kind: 'pickWord'; kc: KC; prompt: string; audio?: string; options: string[]; answer: string; explain: string }
   /** 找错：有人把这个音节拆错了，一个部件标错了，点出来 */
   | { kind: 'spotError'; kc: KC; prompt: string; parts: string[]; shown: string[]; roles: string[]; answer: number; audio?: string; explain: string }
   /** ask：题目上方的提示语（不给就用默认的）；seq：认读一行字时依次播放的录音 */
@@ -335,10 +337,16 @@ export function questionFor(kc: KC, variant?: number, known: Set<KC> = ALL): Sco
           kind: 'glyph2wylie', kc, ask: '这个字母怎么读？', prompt: val, answer: pronLabel(val), audio: letterAudio(val), explain,
           options: optionsWith(pronLabel(val), pool.filter(diffPron).map(pronLabel), [...shape, ...sound].filter(diffPron).map(pronLabel)),
         }
-      case 1:
+      case 1: {
+        // 听音选字：读音一样的字只有书上让比较的才放进来，不然听不出来
+        const hearable = (l: string) => l === val || diffPron(l) || sound.includes(l)
         if (sound.length)
-          return { kind: 'listen', kc, ask: '比较发音：听录音，是哪一个？', audio: letterAudio(val), answer: val, explain, options: shuffle([val, ...sound, ...shape.slice(0, 1)]) }
-        return { kind: 'listen', kc, audio: letterAudio(val), answer: val, explain, options: optionsWith(val, pool, shape) }
+          return {
+            kind: 'listen', kc, ask: '比较发音：听录音，是哪一个？', audio: letterAudio(val), answer: val, explain,
+            options: shuffle([...new Set([val, ...sound, ...shape.filter(hearable).slice(0, 1)])]),
+          }
+        return { kind: 'listen', kc, audio: letterAudio(val), answer: val, explain, options: optionsWith(val, pool.filter(hearable), shape.filter(hearable)) }
+      }
       case 2:
         return {
           kind: 'wylie2glyph', kc, ask: '比较字形：哪个字母读', prompt: pronLabel(val), answer: val, audio: letterAudio(val), explain,

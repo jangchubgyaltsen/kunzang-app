@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
+import { buildChapterQuiz } from './bookQuiz.ts'
+import type { Question } from './course.ts'
 import { onTrack, play, playRange, playSeq, stop } from './audio.ts'
 import { db } from './db.ts'
 import { downloadChapter, loadChapter, sentAudio, type BookSent, type BookWord, type Chapter, type ChapterInfo } from './book.ts'
@@ -10,7 +12,7 @@ const PAGE = 20 // 一次排出来的段落数，往下翻再接着排
 const POS_KEY = 'reader-pos'
 
 /** 正文一章：逐句播放、整段连读、点词听这个词（整句音频里切那一段）。 */
-export function BookChapter({ info, onPick }: { info: ChapterInfo; onPick: (s: Syllable) => void }) {
+export function BookChapter({ info, onPick, onQuiz }: { info: ChapterInfo; onPick: (s: Syllable) => void; onQuiz?: (questions: Question[], title: string) => void }) {
   const [ch, setCh] = useState<Chapter | null>(null)
   const [err, setErr] = useState('')
   const [shown, setShown] = useState(PAGE)
@@ -154,6 +156,16 @@ export function BookChapter({ info, onPick }: { info: ChapterInfo; onPick: (s: S
         <div ref={more} />
       </div>
       {shown < ch.paras.length && <p className="muted small center">往下翻继续…</p>}
+      {onQuiz && (
+        <div className="actions col">
+          <button className="primary" onClick={() => onQuiz(buildChapterQuiz(ch, zh), `第 ${Number(info.id)} 章 · 练习`)}>
+            做本章练习
+          </button>
+          <p className="muted small">
+            认本章出现的学过的词、在句子里找词{zh.size ? '、选段落的中文意思' : '（导入中文译文后还会考段落意思）'}。
+          </p>
+        </div>
+      )}
       <p className="muted small">
         读音为安多音 TTS 自动生成，尚未人工校对：整句是连读，点词听的是整句里那个词的一段。注音只在开篇出现过的音节上有，其余还没有做。
       </p>
