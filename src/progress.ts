@@ -171,8 +171,8 @@ export async function finishCheck(id: string, accuracy: number) {
   return passed
 }
 
-/** 字母（L:）和字母元音组合（CV:）由每日字卡负责复习，这里不出 */
-export const drillKC = (kc: KC) => kc.startsWith('L:') || kc.startsWith('CV:')
+/** 字母（L:）、元音（V:）和字母元音组合（CV:）由每日字卡负责复习，这里不出 */
+export const drillKC = (kc: KC) => kc.startsWith('L:') || kc.startsWith('CV:') || kc.startsWith('V:')
 
 export async function dueKCs(limit = 20): Promise<KC[]> {
   return (await db.cards.where('due').belowOrEqual(Date.now()).filter((r) => !drillKC(r.kc)).limit(limit).primaryKeys()) as KC[]
