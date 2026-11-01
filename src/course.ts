@@ -76,7 +76,12 @@ export type Shadow = { kind: 'shadow'; kc: KC; line: ReadLine }
 export type Question =
   | Intro
   | Shadow
-  | { kind: 'order'; kc: KC; audio: string; pieces: string[]; answer: string; explain: string }
+  /** 排序：need 是答案要几块（pieces 里多出来的是干扰项）；ask 是题目提示语 */
+  | { kind: 'order'; kc: KC; audio: string; pieces: string[]; answer: string; explain: string; need?: number; ask?: string }
+  /** 拼字：看转写（有真人录音就同时听），给每个位置（前加字、基字、元音……）选字，拼出音节。answer 是各位置答案用 | 连起来 */
+  | { kind: 'build'; kc: KC; target: string; wylie: string; audio?: string; slots: { role: string; options: string[]; answer: string }[]; answer: string; explain: string }
+  /** 找错：有人把这个音节拆错了，一个部件标错了，点出来 */
+  | { kind: 'spotError'; kc: KC; prompt: string; parts: string[]; shown: string[]; roles: string[]; answer: number; audio?: string; explain: string }
   /** ask：题目上方的提示语（不给就用默认的）；seq：认读一行字时依次播放的录音 */
   | { kind: 'glyph2wylie'; kc: KC; prompt: string; options: string[]; answer: string; audio?: string; explain: string; ask?: string; seq?: string[] }
   | { kind: 'wylie2glyph'; kc: KC; prompt: string; options: string[]; answer: string; audio?: string; explain: string; ask?: string }
@@ -300,6 +305,11 @@ function audioOf(t: string) {
 
 /** 出一道题。known 是学习者已经认识的知识点，用来挑干扰项和例子；不传就用全部。 */
 export function questionFor(kc: KC, variant?: number, known: Set<KC> = ALL): Scored {
+  // 随机出题时（复习、练一练、小测、抽查），三分之一换成要自己拼、自己排的回忆题
+  if (variant === undefined && Math.random() < 1 / 3) {
+    const r = recallFor(kc, known)
+    if (r) return r
+  }
   const [type, val] = [kc.slice(0, 1), kc.slice(2)]
   const v = variant ?? Math.floor(Math.random() * 4)
   const knownLetters = LETTERS.filter(([l]) => known.has('L:' + l))
@@ -549,6 +559,99 @@ function rootQuestion(kc: KC, s: WordSyl): Scored {
   }
 }
 
+// ───────────────────────── 回忆题 ─────────────────────────
+//
+// 选择题只考“认得出”。下面三种题要自己拼、自己排、自己判断，考的是“想得起来”：
+//   build      拼字：按转写（和录音）给每个位置选字，拼出音节
+//   order      听写词：听一个词，从多给的音节里挑出来排好
+//   spotError  找错：一个音节的拆解里有一处标错了，点出来
+
+const SLOT_LETTERS: Record<string, string[]> = {
+  前加字: ['ག', 'ད', 'བ', 'མ', 'འ'],
+  上加字: ['ར', 'ལ', 'ས'],
+  下加字: ['ཡ', 'ར', 'ལ', 'ཝ'],
+  后加字: ['ག', 'ང', 'ད', 'ན', 'བ', 'མ', 'འ', 'ར', 'ལ', 'ས'],
+  再后加字: ['ས', 'ད'],
+}
+const NO_VOWEL = '无'
+
+/** 一个位置的三个选项：答案 + 形近/音近的字 + 这个位置能放的其他字 */
+function slotOptions(role: string, answer: string, known: Set<KC>) {
+  const allowed = SLOT_LETTERS[role] ?? LETTERS.map((l) => l[0]).filter((l) => known.has('L:' + l))
+  const mates = [...(shapeMates.get(answer) ?? []), ...(soundMates.get(answer) ?? [])].filter((x) => allowed.includes(x))
+  return optionsWith(answer, allowed, mates, 3)
+}
+
+/** 有真人录音的音节才拿来“听音拼字”，TTS 的只给转写 */
+const humanAudio = (t: string) => {
+  const s = syllableMap.get(t)
+  return s?.audioStatus === 'human' ? s.audio : undefined
+}
+
+function buildQuestion(kc: KC, s: WordSyl, known: Set<KC>): Scored {
+  const slots: { role: string; options: string[]; answer: string }[] = []
+  for (const p of partsOf(s)) {
+    if (p.role === '基字') {
+      slots.push({ role: '基字', answer: p.ch, options: slotOptions('基字', p.ch, known) })
+      const vowels = VOWELS.map((v) => v[0]).filter((v) => known.has('V:' + v))
+      const answer = s.vowel ?? NO_VOWEL
+      slots.push({ role: '元音', answer, options: optionsWith(answer, [NO_VOWEL, ...vowels], [], 3) })
+    } else slots.push({ role: p.role, answer: p.ch, options: slotOptions(p.role, p.ch, known) })
+  }
+  const explain = partsOf(s).map((p) => `${p.ch}（${p.role}）`).join(' + ') + (s.vowel ? `，元音 ${s.vowel}` : '，没有元音符号')
+  return { kind: 'build', kc, target: s.tibetan, wylie: s.wylie, audio: humanAudio(s.tibetan), slots, answer: slots.map((x) => x.answer).join('|'), explain }
+}
+
+function dictation(kc: KC, syls: string[], audio: string, pool: string[], explain: string): Scored {
+  const extra = shuffle(pool.filter((x) => !syls.includes(x))).slice(0, 2)
+  return { kind: 'order', kc, ask: '听这个词，挑出音节按顺序排好（有两块是多余的）', audio, pieces: shuffle([...syls, ...extra]), answer: syls.join('་'), need: syls.length, explain }
+}
+
+function spotError(kc: KC, s: WordSyl): Scored | undefined {
+  const parts = partsOf(s)
+  const others = parts.map((_, k) => k).filter((k) => parts[k].role !== '基字')
+  if (parts.length < 2 || !others.length) return
+  const wrong = pick(others)
+  const shown = parts.map((p, k) => (k === wrong ? '基字' : p.role))
+  return {
+    kind: 'spotError', kc, prompt: s.tibetan, parts: parts.map((p) => p.ch), shown, roles: parts.map((p) => p.role), answer: wrong,
+    audio: audioOf(s.tibetan), explain: `${parts[wrong].ch} 是${parts[wrong].role}，不是基字。${rootReason(s)}`,
+  }
+}
+
+/** 这个知识点能不能出回忆题；能就出一道 */
+export function recallFor(kc: KC, known: Set<KC> = ALL): Scored | undefined {
+  const [type, val] = [kc.slice(0, 1), kc.slice(2)]
+  if (type === 'W') {
+    const w = wordMap.get(val)
+    if (!w) return
+    if (w.syllables.length >= 2) {
+      const pool = words.filter((x) => known.has('W:' + x.tibetan)).flatMap((x) => x.syllables.map((y) => y.tibetan))
+      return dictation(kc, w.syllables.map((y) => y.tibetan), w.audio, pool.length >= 4 ? pool : words.flatMap((x) => x.syllables.map((y) => y.tibetan)), `${w.tibetan}（${w.wylie}）：${w.gloss}`)
+    }
+    return buildQuestion(kc, w.syllables[0], known)
+  }
+  if (type === 'D') {
+    const w = amdoWordById.get(val)
+    if (!w) return
+    const syls = sylsOf(w.tib)
+    if (syls.length < 2) return
+    const pool = amdoWords.filter((x) => x !== w && (!x.kcs || x.kcs.every((k) => known.has(k)))).flatMap((x) => sylsOf(x.tib))
+    return dictation(kc, syls, w.audio, pool, `${w.tib}：${w.zh}`)
+  }
+  if (type === 'S') {
+    const s = syllableMap.get(val)
+    if (!s) return
+    return Math.random() < 0.5 ? buildQuestion(kc, s, known) : (spotError(kc, s) ?? buildQuestion(kc, s, known))
+  }
+  if (type === 'R') {
+    const r = RULES[kc]
+    const cands = [...words.filter((w) => known.has('W:' + w.tibetan)).flatMap((w) => w.syllables), ...usableSyl.filter((x) => known.has('S:' + x.tibetan))].filter(r.has)
+    const s = cands.length ? pick(cands) : syllableOf(r.example)
+    return s && spotError(kc, s)
+  }
+}
+
 // ───────────────────────── 关卡 ─────────────────────────
 //
 // 像 Duolingo 一样，每个单元拆成一串小关卡，一次只学 2–3 个新东西：
@@ -709,7 +812,7 @@ export function buildLevel(levelId: string, seen: Set<KC>, weak: KC[] = []): { q
     const fresh = items.filter((k) => !seen.has(k))
     const first = withIntros(items, seen, known, true)
     // 第二轮每个知识点换一种考法，不要一关里同一种题连着出
-    const second = shuffle([...items.map((k, j) => questionFor(k, 1 + (j % 3), known)), ...review(Math.max(4, 10 - fresh.length * 2))])
+    const second = shuffle([...items.map((k, j) => (j % 2 === 0 && recallFor(k, known)) || questionFor(k, 1 + (j % 3), known)), ...review(Math.max(4, 10 - fresh.length * 2))])
     const qs: Question[] = [...first, ...second]
     if (lv.line && lv.kcs.includes('X:' + lv.line)) {
       const x = 'X:' + lv.line
