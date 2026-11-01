@@ -2,10 +2,10 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { db } from './db.ts'
 import { Drill } from './Alphabet.tsx'
 import Lesson from './Lesson.tsx'
-import { levelById, questionFor, unitByN, type Question } from './course.ts'
+import { levelById, questionFor, unitByN, type Question, type Track } from './course.ts'
 import { dueKCs } from './progress.ts'
 import { spotCheckSession } from './session.ts'
-import { REVIEW_SIZE, levelFor, loadPlan, markStep, stepHasWork, stepLabel, type DayPlan, type StepKey } from './practice.ts'
+import { PER_DAY, REVIEW_SIZE, levelFor, loadPlan, markStep, stepHasWork, stepLabel, type DayPlan, type StepKey } from './practice.ts'
 
 type Running =
   | { key: StepKey; kind: 'drill' }
@@ -21,6 +21,8 @@ export default function Practice({ auto, onExit }: { auto: boolean; onExit: () =
   const [run, setRun] = useState<Running | null>(null)
   const [what, setWhat] = useState<Record<StepKey, string>>({})
   const completed = useRef(false)
+  // 这一步里已经做完几关（诵读开篇一步连着做两关）
+  const levelsDone = useRef(0)
 
   /** 找到下一步还有事可做的；没事可做的（复习没到期之类）直接记成做完 */
   const nextStep = useCallback(async () => {
@@ -35,6 +37,7 @@ export default function Practice({ auto, onExit }: { auto: boolean; onExit: () =
 
   const start = useCallback(async (key: StepKey) => {
     completed.current = false
+    levelsDone.current = 0
     if (key === 'drill') return setRun({ key, kind: 'drill' })
     if (key === 'review') {
       const due = await dueKCs(REVIEW_SIZE)
@@ -66,6 +69,16 @@ export default function Practice({ auto, onExit }: { auto: boolean; onExit: () =
     const r = run!
     setRun(null)
     if (!completed.current) return advance(false) // 中途退出：回到清单
+    if (r.kind === 'level') {
+      // 这条线今天还能再做一关，并且刚才那关过了（下一关已经换了）：同一步里接着做
+      levelsDone.current++
+      const next = await levelFor(r.key)
+      if (next && next !== r.level && levelsDone.current < PER_DAY[r.key.split(':')[1] as Track]) {
+        completed.current = false
+        setWhat((w) => ({ ...w, [r.key]: levelTitle(next) }))
+        return setRun({ key: r.key, kind: 'level', level: next })
+      }
+    }
     await markStep(r.key)
     await advance(true)
   }
@@ -74,7 +87,7 @@ export default function Practice({ auto, onExit }: { auto: boolean; onExit: () =
   }
 
   if (run?.kind === 'drill') return <Drill onExit={finishStep} onComplete={onComplete} />
-  if (run?.kind === 'level') return <Lesson level={run.level} onExit={finishStep} onComplete={onComplete} exitLabel="继续" />
+  if (run?.kind === 'level') return <Lesson key={run.level} level={run.level} onExit={finishStep} onComplete={onComplete} exitLabel="继续" />
   if (run?.kind === 'questions')
     return <Lesson questions={run.questions} title={run.title} onFinish={run.onFinish} onExit={finishStep} onComplete={onComplete} exitLabel="继续" />
   if (!plan) return <section className="lesson">载入中…</section>
