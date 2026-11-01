@@ -38,8 +38,8 @@ export default defineConfig({
             options: { cacheName: 'book-audio', expiration: { maxEntries: 12000 }, cacheableResponse: { statuses: [200] } },
           },
           {
-            // 章节文本有改动时，下次打开就换成新的
-            urlPattern: ({ url }) => /\/book\/ch\d+\.json$/.test(url.pathname),
+            // 章节文本、词表有改动时，下次打开就换成新的
+            urlPattern: ({ url }) => /\/book\/(ch\d+|gloss)\.json$/.test(url.pathname),
             handler: 'StaleWhileRevalidate',
             options: { cacheName: 'book-text', cacheableResponse: { statuses: [200] } },
           },

@@ -11,11 +11,12 @@ import Practice from './Practice.tsx'
 import { AlphabetView, Drill } from './Alphabet.tsx'
 import { loadPlan } from './practice.ts'
 import { ensureChecks, getPathState, type LevelState, type UnitState } from './progress.ts'
-import { PATH, letterAudio, wordMap, type Level, type Question, type Track } from './course.ts'
+import { PATH, letterAudio, type Level, type Question, type Track } from './course.ts'
 import { type Session } from './session.ts'
 import { linesOf, yitongOf, type Token } from './reading.ts'
 import { chapters } from './book.ts'
-import { BookChapter } from './BookReader.tsx'
+import { BookChapter, GlossBlock } from './BookReader.tsx'
+import { glossOf, loadGloss, type WordGloss } from './gloss.ts'
 import AmdoView from './Amdo.tsx'
 
 type Tab = 'path' | 'alphabet' | 'amdo' | 'reader' | 'review' | 'settings'
@@ -333,7 +334,10 @@ function WordSheet({ w, onPick, onClose }: { w: Token; onPick: (s: Syllable) => 
   useEffect(() => {
     play(w.audio)
   }, [w])
-  const gloss = wordMap.get(w.tibetan)?.gloss
+  const [g, setG] = useState<WordGloss | null>(null)
+  useEffect(() => {
+    loadGloss().then((d) => setG(glossOf(d, w.tibetan)), () => setG({}))
+  }, [w])
   return (
     <div className="sheet" onClick={onClose}>
       <div className="card" onClick={(e) => e.stopPropagation()}>
@@ -341,7 +345,7 @@ function WordSheet({ w, onPick, onClose }: { w: Token; onPick: (s: Syllable) => 
           {w.tibetan}
         </div>
         <div className="pron center big-pron">{w.yitong ?? yitongOf(w.tibetan)}</div>
-        {gloss && <p className="center gloss-big">{gloss}</p>}
+        <GlossBlock g={g ?? {}} loading={!g} />
         <div className="small muted center">点音节看结构</div>
         <div className="parts">
           {w.tibetan.split('་').map((s, k) => (
