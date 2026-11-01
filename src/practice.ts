@@ -13,6 +13,7 @@ import { dayKey } from './daily.ts'
  * 5. 诵读开篇的下一关（一关一句或半句；没过就停在这关，明天再来）
  * 6. 安多会话的下一关（新句子一关 3–4 句）
  * 当天第一次打开时排好，之后一整天不变；没到期的复习、抽查到时自动跳过。
+ * 一天大约 DAILY_BUDGET 题：复习多的日子先省掉会话、开篇的新内容（做完后可以点“再学一点”加回来）。
  */
 export type StepKey = string // 'drill' | 'check:<id>' | 'review' | 'next:<线>'
 
@@ -21,7 +22,9 @@ export const PER_DAY: Record<Track, number> = { spell: 1, read: 1, talk: 1 }
 const CHECKS_PER_DAY = 2
 export const REVIEW_SIZE = 15
 
-export type DayPlan = { date: string; steps: StepKey[]; done: StepKey[] }
+/** failed：做完了但这一关没过的步骤（清单上标“未过，明天再来”） */
+/** extra：因为今天复习多、超出总量而先省掉的新内容，做完后可以点“再学一点”加回来 */
+export type DayPlan = { date: string; steps: StepKey[]; done: StepKey[]; failed?: StepKey[]; extra?: StepKey[] }
 const KEY = 'practice-day'
 
 export async function loadPlan(): Promise<DayPlan> {
@@ -33,26 +36,53 @@ export async function loadPlan(): Promise<DayPlan> {
     const done = [...new Set(saved.done.map((k) => k.replace(/^(next:\w+):\d+$/, '$1')))]
     return { ...saved, steps, done }
   }
-  const plan: DayPlan = { date: today, steps: await buildSteps(), done: [] }
+  const plan: DayPlan = { date: today, done: [], ...(await buildSteps()) }
   await db.settings.put({ key: KEY, value: plan })
   return plan
 }
 
-export async function markStep(key: StepKey) {
+export async function markStep(key: StepKey, failed = false) {
   const plan = await loadPlan()
   if (!plan.done.includes(key)) plan.done.push(key)
+  if (failed && !plan.failed?.includes(key)) plan.failed = [...(plan.failed ?? []), key]
   await db.settings.put({ key: KEY, value: plan })
   return plan
 }
 
-async function buildSteps(): Promise<StepKey[]> {
+/**
+ * 一天大约做多少题。字卡、抽查、到期复习一定做；剩下的额度按 拼读 → 诵读开篇 → 安多会话 的顺序排新内容，
+ * 排不下的放进 extra（做完后可以点“再学一点”）。拼读至少留一关，免得复习多的日子主线停下来。
+ */
+export const DAILY_BUDGET = 65
+/** 每一步大约多少题（含介绍卡） */
+const COST: Record<string, number> = { drill: 20, check: 10, 'next:spell': 15, 'next:read': 16, 'next:talk': 10 }
+
+async function buildSteps(): Promise<{ steps: StepKey[]; extra: StepKey[] }> {
   const steps: StepKey[] = ['drill']
   // 以前就通过、还没排抽查的单元先排上
   await ensureChecks((await getPathState()).units)
-  for (const c of (await dueChecks()).slice(0, CHECKS_PER_DAY)) steps.push('check:' + c.id)
+  const checks = (await dueChecks()).slice(0, CHECKS_PER_DAY)
+  for (const c of checks) steps.push('check:' + c.id)
   steps.push('review')
-  for (const track of ['spell', 'read', 'talk'] as Track[]) steps.push(`next:${track}`)
-  return steps
+  let used = COST.drill + checks.length * COST.check + (await dueKCs(REVIEW_SIZE)).length
+  const extra: StepKey[] = []
+  for (const track of ['spell', 'read', 'talk'] as Track[]) {
+    const key = `next:${track}`
+    if (track === 'spell' || used + COST[key] <= DAILY_BUDGET) {
+      steps.push(key)
+      used += COST[key]
+    } else extra.push(key)
+  }
+  return { steps, extra }
+}
+
+/** 今天的都做完了，再加一步新内容 */
+export async function addExtra(): Promise<DayPlan> {
+  const plan = await loadPlan()
+  const key = plan.extra?.shift()
+  if (key && !plan.steps.includes(key)) plan.steps.push(key)
+  await db.settings.put({ key: KEY, value: plan })
+  return plan
 }
 
 /**

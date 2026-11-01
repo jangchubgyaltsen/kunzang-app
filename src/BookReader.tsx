@@ -1,4 +1,5 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
+import { wylieOn } from './prefs.ts'
 import { buildChapterQuiz } from './bookQuiz.ts'
 import type { Question } from './course.ts'
 import { onTrack, play, playRange, playSeq, stop } from './audio.ts'
@@ -155,7 +156,7 @@ export function BookChapter({ info, onPick, onQuiz }: { info: ChapterInfo; onPic
           接着上次读的地方 →
         </button>
       )}
-      {showZh && zh.size === 0 && <p className="muted small">还没有这部分的中文译文。请在“设置”里导入全书中文译文包。</p>}
+      {showZh && zh.size === 0 && <p className="muted small">还没有这部分的中文译文。请在“我的”页最下面导入全书中文译文包。</p>}
       <div className="lines book">
         {ch.paras.slice(0, shown).map((p) => {
           const withAudio = p.sents.filter((s) => !s.noAudio)
@@ -271,7 +272,7 @@ function BookWordSheet({ w, s, zh, dict, onPick, onClose }: { w: BookWord; s: Bo
             return (
               <button key={k} className="part" disabled={!syl} onClick={() => syl && onPick(syl)}>
                 <div className="tib">{x}</div>
-                <div className="small">{syl?.wylie ?? ''}</div>
+                {wylieOn() && <div className="small">{syl?.wylie ?? ''}</div>}
               </button>
             )
           })}

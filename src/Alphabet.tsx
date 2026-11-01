@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { play } from './audio.ts'
 import {
-  ALL_CARDS, CV_MARKS, CV_PRON, CV_SOURCE, FAST_MS, FLUENT_DAYS, HOOK_PAIRS, LETTER_NOTE, PRON, ROWS, SHAPE_PAIRS, SOUND_PAIRS, VOWEL_INFO,
-  buildDaily, cardCounts, letterUnlocked, loadSession, saveSession, splitOf, cvAudioOf, isFluent, isLookalike, isSoundPair, loadStats, markDailyDone, optionsFor, record,
+  ALL_CARDS, CV_MARKS, CV_PRON, CV_SOURCE, EARLY_DAYS, EARLY_NEW, FAST_MS, FLUENT_DAYS, HOOK_PAIRS, LETTER_NOTE, PRON, ROWS, SHAPE_PAIRS, SOUND_PAIRS, VOWEL_INFO,
+  buildDaily, cardCounts, modeFor, letterUnlocked, loadSession, saveSession, splitOf, cvAudioOf, isFluent, isLookalike, isSoundPair, loadStats, markDailyDone, optionsFor, record,
   type DrillItem, type Stat, type Step,
 } from './alphabet.ts'
 import { letterAudio } from './course.ts'
+import { db } from './db.ts'
 import './alphabet.css'
 
 const LETTER_POOL = ROWS.flat()
@@ -174,6 +175,8 @@ export function Drill({ onExit, onComplete, all = false }: { onExit: () => void;
   const [i, setI] = useState(0)
   const [picked, setPicked] = useState<DrillItem | null>(null)
   const [ms, setMs] = useState(0)
+  // 第一次选错的那个：先给提示、划掉，再选一次
+  const [struck, setStruck] = useState<DrillItem | null>(null)
   const [log, setLog] = useState<Log>([])
   const shownAt = useRef(0)
 
@@ -187,7 +190,11 @@ export function Drill({ onExit, onComplete, all = false }: { onExit: () => void;
         setQueue(saved.steps)
         setI(saved.i)
         setLog(saved.log.map((x) => ({ it: saved.steps.find((st) => st.it.key === x.key)?.it ?? saved.steps[0].it, ok: x.ok, ms: x.ms })))
-      } else setQueue(buildDaily(s, all))
+      } else {
+        // 刚开始的几天每天新卡少一点
+        const days = await db.checkins.count()
+        setQueue(buildDaily(s, all, days < EARLY_DAYS ? EARLY_NEW : Infinity))
+      }
     })()
   }, [all])
   // 每走一步记下进度
@@ -198,7 +205,15 @@ export function Drill({ onExit, onComplete, all = false }: { onExit: () => void;
   const it = step?.it
   const done = !!stats && queue.length > 0 && i >= queue.length
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const opts = useMemo(() => (it && !step.intro ? optionsFor(it, step.mode) : []), [i, it?.key])
+  // 已经见过的卡：以前答过的，加上今天这一组里已经看过介绍的
+  const known = useMemo(() => {
+    const k = new Set(Object.keys(stats ?? {}).filter((x) => stats![x].seen))
+    queue.slice(0, i).forEach((x) => x.intro && k.add(x.it.key))
+    return k
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [i, queue.length, !!stats])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const opts = useMemo(() => (it && !step.intro ? optionsFor(it, step.mode, all ? undefined : known) : []), [i, it?.key])
   useEffect(() => {
     shownAt.current = performance.now()
     if (step && (step.intro || step.mode === 'hear')) play(step.it.audio)
@@ -216,35 +231,53 @@ export function Drill({ onExit, onComplete, all = false }: { onExit: () => void;
 
   const go = () => {
     setPicked(null)
+    setStruck(null)
     setI((k) => k + 1)
   }
   const answer = async (choice: DrillItem) => {
     const ok = choice.key === it.key
     const t = Math.round(performance.now() - shownAt.current)
+    // 第一次选错：不揭晓，给一句提示、划掉这个，再选一次（和关卡里一样）；只剩两个选项时直接揭晓
+    // 答错的过 3 题再来一次，换一种考法；同一张卡今天最多补练两次
+    const requeue = () =>
+      setQueue((q) =>
+        q.filter((x) => x.retry && x.it.key === it.key).length >= 2
+          ? q
+          : [...q.slice(0, i + 4), { it, mode: modeFor(it, step.mode === 'read' ? 'hear' : 'read'), retry: true }, ...q.slice(i + 4)],
+      )
+    if (!ok && !struck && opts.length >= 3) {
+      setStruck(choice)
+      play(choice.audio)
+      requeue()
+      return
+    }
     setMs(t)
     setPicked(choice)
     if (step.mode === 'read' || !ok) play(it.audio)
-    const st = await record(it.key, ok, t)
+    const st = await record(it.key, ok, t, !!struck)
     setStats((s) => ({ ...s, [it.key]: st }))
-    setLog((l) => [...l, { it, ok, ms: t }])
-    // 答错的过 3 题再来一次，换一种考法
-    if (!ok) setQueue((q) => [...q.slice(0, i + 4), { it, mode: step.mode === 'read' ? 'hear' : 'read' }, ...q.slice(i + 4)])
-    if (ok && t <= FAST_MS) setTimeout(go, 800)
+    setLog((l) => [...l, { it, ok: ok && !struck, ms: t }])
+    // 看了提示的已经在上面排过补练了
+    if (!ok && !struck) requeue()
+    if (ok && !struck && t <= FAST_MS) setTimeout(go, 800)
   }
 
   const revealed = picked !== null
   const ok = revealed ? picked.key === it.key : null
-  const progress = Math.round((i / queue.length) * 100)
+  // 进度只算今天这一组本来的题；答错加的补练不算，免得越答越长
+  const total = queue.filter((x) => !x.retry).length
+  const passed = queue.slice(0, i).filter((x) => !x.retry).length
+  const progress = Math.round((passed / total) * 100)
   const top = (
     <div className="lesson-top">
       <button className="link" onClick={onExit}>✕</button>
       <div className="bar"><div style={{ width: progress + '%' }} /></div>
-      <span className="small muted">{i + 1} / {queue.length}</span>
+      <span className="small muted">{step.retry ? '补练' : `${passed + 1} / ${total}`}</span>
     </div>
   )
   const ans = (x: DrillItem) => (
     <div className="drill-ans">
-      <span className="drill-pron">{x.pron}</span>
+      <span className={'drill-pron' + (x.key.startsWith('V:') ? ' tib' : '') + (x.src === 2 ? ' guessed' : '')}>{x.pron}</span>
       {x.hanzi && <span className={'drill-hz' + (x.key.startsWith('V:') ? ' tib' : '')}>{x.hanzi}</span>}
       {x.src !== undefined && <span className="small muted">{CV_SOURCE[x.src]}</span>}
       {LETTER_NOTE[x.tib] && <span className="small muted">{LETTER_NOTE[x.tib]}</span>}
@@ -268,19 +301,19 @@ export function Drill({ onExit, onComplete, all = false }: { onExit: () => void;
     )
 
   const hear = step.mode === 'hear'
-  const why = picked && !ok
-    ? isSoundPair(it.base, picked.base) && it.base !== picked.base
+  const whyOf = (x: DrillItem) =>
+    isSoundPair(it.base, x.base) && it.base !== x.base
       ? '书上专门比较这两个字的发音，再听一遍'
-      : isLookalike(it.base, picked.base)
+      : isLookalike(it.base, x.base)
         ? '这两个字长得像，对比一下'
-        : it.base === picked.base
+        : it.base === x.base
           ? '同一个字母，元音不一样'
           : '再看一眼'
-    : ''
+  const why = picked && !ok ? whyOf(picked) : ''
   return (
     <section className="lesson drill">
       {top}
-      <div className="intro-label center">{hear ? '听音选字' : '看字选读音'}</div>
+      <div className="intro-label center">{hear ? '听音选字' : it.key.startsWith('V:') ? '看符号选名称' : '看字选读音'}</div>
       {hear ? (
         <div className={'drill-card tap' + (ok === true ? ' ok' : ok === false ? ' bad' : '')} onClick={() => play(it.audio)}>
           {revealed ? <div className={"tib huge" + (it.key.startsWith("V:") ? " vowel-big" : "")}>{it.tib}</div> : <button className="play-big">▶</button>}
@@ -298,12 +331,19 @@ export function Drill({ onExit, onComplete, all = false }: { onExit: () => void;
         {opts.map((o) => {
           const cls = !revealed ? '' : o.key === it.key ? ' right' : o.key === picked?.key ? ' wrong' : ' dim'
           return (
-            <button key={o.key} className={'opt drill-opt' + cls + (hear ? ' tib-opt' : '')} disabled={revealed} onClick={() => answer(o)}>
-              {hear ? <span className="tib">{o.tib}</span> : <span>{o.pron}{o.hanzi ? <> <span className={o.key.startsWith('V:') ? 'tib' : ''}>{o.hanzi}</span></> : ''}</span>}
+            <button key={o.key} className={'opt drill-opt' + cls + (hear ? ' tib-opt' : '') + (struck?.key === o.key && !revealed ? ' struck' : '')} disabled={revealed || struck?.key === o.key} onClick={() => answer(o)}>
+              {hear ? <span className="tib">{o.tib}</span> : <span className={o.key.startsWith('V:') ? 'tib' : ''}>{o.pron}{o.hanzi ? <> <span>{o.hanzi}</span></> : ''}</span>}
             </button>
           )
         })}
       </div>
+      {struck && !revealed && (
+        <div className="feedback hint">
+          <div className="fb-title">
+            不是 <span className="tib">{struck.tib}</span>（{struck.pron}）。{whyOf(struck).replace('对比一下', '再看看').replace('再听一遍', '再听一遍题目')}，再选一次。
+          </div>
+        </div>
+      )}
       {ok === false && picked && (
         <div className="feedback bad">
           <div className="fb-title">{why}</div>
@@ -324,10 +364,11 @@ export function Drill({ onExit, onComplete, all = false }: { onExit: () => void;
           <div className="small">过几题还会再考这张卡。</div>
         </div>
       )}
-      {revealed && (ok === false || ms > FAST_MS) && (
+      {revealed && (ok === false || ms > FAST_MS || struck) && (
         <>
-          {ok === true && <p className="small muted center">答对了，但用了 {(ms / 1000).toFixed(1)} 秒。3 秒内答对才算一眼认出。</p>}
-          <button className="primary" onClick={go}>继续</button>
+          {ok === true && struck && <p className="small muted center">看了提示才选对，过几题再考一次。</p>}
+          {ok === true && !struck && <p className="small muted center">答对了，但用了 {(ms / 1000).toFixed(1)} 秒。3 秒内答对才算一眼认出。</p>}
+          <button className="primary sticky-go" onClick={go}>继续</button>
         </>
       )}
     </section>

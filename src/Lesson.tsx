@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Rating, type Grade } from 'ts-fsrs'
 import { TALK_BASE, buildLevel, kcLabel, levelById, partsOf, questionFor, readQuestion, unitByN, type Intro, type KC, type Question, type Scored, type Shadow } from './course.ts'
 import { syllableMap } from './content.ts'
+import { wylieOn } from './prefs.ts'
 import { finishLevel, recordAnswer, seenKCs, speedMedians, speedRating, weakKCs } from './progress.ts'
 import { hintFor, type Hint } from './hints.ts'
 import { play, playSeq } from './audio.ts'
@@ -20,7 +21,8 @@ type Props = {
   /** 自定义结算（例如抽查），返回是否通过 */
   onFinish?: (accuracy: number) => Promise<Result>
   /** 做完最后一题时调用（中途 ✕ 退出不调用） */
-  onComplete?: () => void
+  /** 做完一组时调用；passed：这一关过没过 */
+  onComplete?: (passed: boolean) => void
   /** 结算页按钮的字，默认“返回” */
   exitLabel?: string
   /** 给了就记住做到第几题：今天中途退出，下次打开同一个 resumeKey 从退出的地方接着做 */
@@ -123,7 +125,7 @@ export default function Lesson({ level, questions, title, onExit, onFinish, onCo
     const accuracy = vals.filter(Boolean).length / Math.max(1, vals.length)
     const r = onFinish ? await onFinish(accuracy) : level ? await finishLevel(level, accuracy) : { passed: accuracy >= 0.8 }
     setDone({ accuracy, ...r })
-    onComplete?.()
+    onComplete?.(r.passed)
   }
 
   const progress = Math.round((i / queue.length) * 100)
@@ -252,7 +254,7 @@ export default function Lesson({ level, questions, title, onExit, onFinish, onCo
               {guessed ? '记下了：这题过不久再考' : '其实是猜的'}
             </button>
           )}
-          <button className="primary" onClick={next}>继续</button>
+          <button className="primary sticky-go" onClick={next}>继续</button>
         </div>
       )}
     </section>
@@ -328,8 +330,8 @@ function Prompt({ q }: { q: Scored }) {
     case 'build':
       return (
         <div className="prompt">
-          <div className="ask">{q.audio ? '听读音，看转写，给每个位置选字，拼出这个音节' : '看转写，给每个位置选字，拼出这个音节'}</div>
-          <div className="latin-big">{q.wylie}</div>
+          <div className="ask">{!wylieOn() ? '听读音，给每个位置选字，拼出这个音节' : q.audio ? '听读音，看转写，给每个位置选字，拼出这个音节' : '看转写，给每个位置选字，拼出这个音节'}</div>
+          {wylieOn() && <div className="latin-big">{q.wylie}</div>}
           {q.audio && <button className="play-big" onClick={() => play(q.audio!)}>▶</button>}
         </div>
       )
