@@ -1,4 +1,5 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
+import { wylieOn } from './prefs.ts'
 import { buildChapterQuiz } from './bookQuiz.ts'
 import type { Question } from './course.ts'
 import { onTrack, play, playRange, playSeq, stop } from './audio.ts'
@@ -271,7 +272,7 @@ function BookWordSheet({ w, s, zh, dict, onPick, onClose }: { w: BookWord; s: Bo
             return (
               <button key={k} className="part" disabled={!syl} onClick={() => syl && onPick(syl)}>
                 <div className="tib">{x}</div>
-                <div className="small">{syl?.wylie ?? ''}</div>
+                {wylieOn() && <div className="small">{syl?.wylie ?? ''}</div>}
               </button>
             )
           })}

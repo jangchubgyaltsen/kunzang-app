@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { play } from './audio.ts'
 import {
   ALL_CARDS, CV_MARKS, CV_PRON, CV_SOURCE, EARLY_DAYS, EARLY_NEW, FAST_MS, FLUENT_DAYS, HOOK_PAIRS, LETTER_NOTE, PRON, ROWS, SHAPE_PAIRS, SOUND_PAIRS, VOWEL_INFO,
-  buildDaily, cardCounts, letterUnlocked, loadSession, saveSession, splitOf, cvAudioOf, isFluent, isLookalike, isSoundPair, loadStats, markDailyDone, optionsFor, record,
+  buildDaily, cardCounts, modeFor, letterUnlocked, loadSession, saveSession, splitOf, cvAudioOf, isFluent, isLookalike, isSoundPair, loadStats, markDailyDone, optionsFor, record,
   type DrillItem, type Stat, type Step,
 } from './alphabet.ts'
 import { letterAudio } from './course.ts'
@@ -241,7 +241,7 @@ export function Drill({ onExit, onComplete, all = false }: { onExit: () => void;
     setStats((s) => ({ ...s, [it.key]: st }))
     setLog((l) => [...l, { it, ok, ms: t }])
     // 答错的过 3 题再来一次，换一种考法
-    if (!ok) setQueue((q) => [...q.slice(0, i + 4), { it, mode: step.mode === 'read' ? 'hear' : 'read', retry: true }, ...q.slice(i + 4)])
+    if (!ok) setQueue((q) => [...q.slice(0, i + 4), { it, mode: modeFor(it, step.mode === 'read' ? 'hear' : 'read'), retry: true }, ...q.slice(i + 4)])
     if (ok && t <= FAST_MS) setTimeout(go, 800)
   }
 
@@ -260,7 +260,7 @@ export function Drill({ onExit, onComplete, all = false }: { onExit: () => void;
   )
   const ans = (x: DrillItem) => (
     <div className="drill-ans">
-      <span className="drill-pron">{x.pron}</span>
+      <span className={'drill-pron' + (x.key.startsWith('V:') ? ' tib' : '') + (x.src === 2 ? ' guessed' : '')}>{x.pron}</span>
       {x.hanzi && <span className={'drill-hz' + (x.key.startsWith('V:') ? ' tib' : '')}>{x.hanzi}</span>}
       {x.src !== undefined && <span className="small muted">{CV_SOURCE[x.src]}</span>}
       {LETTER_NOTE[x.tib] && <span className="small muted">{LETTER_NOTE[x.tib]}</span>}
@@ -296,7 +296,7 @@ export function Drill({ onExit, onComplete, all = false }: { onExit: () => void;
   return (
     <section className="lesson drill">
       {top}
-      <div className="intro-label center">{hear ? '听音选字' : '看字选读音'}</div>
+      <div className="intro-label center">{hear ? '听音选字' : it.key.startsWith('V:') ? '看符号选名称' : '看字选读音'}</div>
       {hear ? (
         <div className={'drill-card tap' + (ok === true ? ' ok' : ok === false ? ' bad' : '')} onClick={() => play(it.audio)}>
           {revealed ? <div className={"tib huge" + (it.key.startsWith("V:") ? " vowel-big" : "")}>{it.tib}</div> : <button className="play-big">▶</button>}
@@ -315,7 +315,7 @@ export function Drill({ onExit, onComplete, all = false }: { onExit: () => void;
           const cls = !revealed ? '' : o.key === it.key ? ' right' : o.key === picked?.key ? ' wrong' : ' dim'
           return (
             <button key={o.key} className={'opt drill-opt' + cls + (hear ? ' tib-opt' : '')} disabled={revealed} onClick={() => answer(o)}>
-              {hear ? <span className="tib">{o.tib}</span> : <span>{o.pron}{o.hanzi ? <> <span className={o.key.startsWith('V:') ? 'tib' : ''}>{o.hanzi}</span></> : ''}</span>}
+              {hear ? <span className="tib">{o.tib}</span> : <span className={o.key.startsWith('V:') ? 'tib' : ''}>{o.pron}{o.hanzi ? <> <span>{o.hanzi}</span></> : ''}</span>}
             </button>
           )
         })}

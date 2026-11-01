@@ -62,3 +62,5 @@
 .split .tib { font-size: 1.3em; }
 .split-row { margin: 6px 0; }
 .vowel-big { padding-top: 0.6em; line-height: 1.6; }
+/* 按规律推出来、还没核对的注音：灰一点 */
+.drill-pron.guessed { color: var(--muted); font-style: italic; }

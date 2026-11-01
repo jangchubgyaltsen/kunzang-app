@@ -1,4 +1,4 @@
-import { LETTERS, VOWELS, cvAudio, letterAudio, shuffle } from './course.ts'
+import { LETTERS, VOWELS, VOWEL_RULE, cvAudio, letterAudio, shuffle } from './course.ts'
 import { Rating, State, type Card } from 'ts-fsrs'
 import { db } from './db.ts'
 import { recordAnswer, reviveCard } from './progress.ts'
@@ -53,12 +53,12 @@ export const cvItem = (s: string): DrillItem => ({
   key: 'CV:' + s, tib: s, pron: CV_PRON[s][0], src: CV_PRON[s][1], wylie: wylieOf.get(s[0])!.replace(/a$/, '') + vowelLatin.get(s[1]), audio: cvAudioOf(s), base: s[0],
 })
 
-/** 单独的元音符号：写成 ◌ི，读音是转写字母（i u e o），录音放 ཨ 加这个元音 */
+/** 单独的元音符号：写成 ◌ི，考的是认符号、叫得出名字；读音跟着字母变，见 note。录音放 ཨ 加这个元音 */
 export const vowelItem = (m: string): DrillItem => {
   const v = VOWEL_INFO.find((x) => x.mark === m)!
   return {
-    key: 'V:' + m, tib: '◌' + m, pron: vowelLatin.get(m)!, hanzi: v.name, wylie: vowelLatin.get(m)!, audio: cvAudioOf('ཨ' + m), base: '◌',
-    note: `写在字母${v.pos}面，叫 ${v.name}。和 ཨ 拼成 ཨ${m}，安多话读 ${CV_PRON['ཨ' + m][0]}`,
+    key: 'V:' + m, tib: '◌' + m, pron: v.name, wylie: vowelLatin.get(m)!, audio: cvAudioOf('ཨ' + m), base: '◌',
+    note: `叫 ${v.name}，${VOWEL_RULE[m]}`,
   }
 }
 
@@ -76,7 +76,7 @@ export const ALL_CARDS: DrillItem[] = [...BASIC_CARDS, ...CV_CARDS]
 export function splitOf(it: DrillItem): { parts: [string, string][]; result: string } | undefined {
   if (!it.key.startsWith('CV:')) return
   const v = VOWEL_INFO.find((x) => x.mark === it.tib[1])!
-  return { parts: [[it.base, PRON[it.base][0]], ['◌' + v.mark, `${vowelLatin.get(v.mark)} · ${v.name}`]], result: it.pron }
+  return { parts: [[it.base, PRON[it.base][0]], ['◌' + v.mark, v.name]], result: it.pron }
 }
 
 /** 两个字是不是书上成对比较的：形近，或发音相近 */
@@ -171,6 +171,9 @@ export async function record(key: string, ok: boolean, ms: number): Promise<Stat
   return toStat(card)
 }
 
+/** 注音是按规律推出来的组合（来源 2），不拿来考“看字选读音”，只考听音选字 */
+export const modeFor = (it: DrillItem, m: Mode): Mode => (it.src === 2 ? 'hear' : m)
+
 /** 字卡练习里的一步：新卡先看一遍（intro），然后看字选注音（read）或听音选字（hear）；retry 是答错后加的补练，不算进度 */
 export type Step = { it: DrillItem; intro?: boolean; mode: Mode; retry?: boolean }
 
@@ -215,7 +218,7 @@ export function cardCounts(stats: Record<string, Stat>) {
 export function buildDaily(stats: Record<string, Stat>, all = false, newCap = Infinity): Step[] {
   const t = endOfToday()
   const open = unlocked(stats)
-  if (all) return noRepeat(shuffle(open).map((it, i) => ({ it, mode: i % 2 ? 'hear' : 'read' })))
+  if (all) return noRepeat(shuffle(open).map((it, i) => ({ it, mode: modeFor(it, i % 2 ? 'hear' : 'read') })))
   const seen = ALL_CARDS.filter((x) => stats[x.key]?.seen)
   const unseen = open.filter((x) => !stats[x.key]?.seen)
   const dueAll = seen
@@ -229,7 +232,7 @@ export function buildDaily(stats: Record<string, Stat>, all = false, newCap = In
     .filter((x) => !picked.has(x.key))
     .sort((a, b) => (stats[a.key].at ?? 0) - (stats[b.key].at ?? 0))
     .slice(0, Math.max(0, DAILY_CARDS - picked.size))
-  const old = shuffle([...due, ...extra].map((it): Step => ({ it, mode: (stats[it.key]?.seen ?? 0) % 2 ? 'hear' : 'read' })))
+  const old = shuffle([...due, ...extra].map((it): Step => ({ it, mode: modeFor(it, (stats[it.key]?.seen ?? 0) % 2 ? 'hear' : 'read') })))
   // 新卡 4 张一组：看完一组的介绍马上考这一组，旧卡穿插在各组之间
   const groups: DrillItem[][] = []
   for (let k = 0; k < fresh.length; k += GROUP) groups.push(fresh.slice(k, k + GROUP))
@@ -238,7 +241,7 @@ export function buildDaily(stats: Record<string, Stat>, all = false, newCap = In
   groups.forEach((g, k) => {
     out.push(...old.slice(k * share, (k + 1) * share))
     out.push(...g.map((it): Step => ({ it, intro: true, mode: 'read' })))
-    const q = noRepeat(shuffle(g.map((it, j): Step => ({ it, mode: j % 2 ? 'hear' : 'read' }))))
+    const q = noRepeat(shuffle(g.map((it, j): Step => ({ it, mode: modeFor(it, j % 2 ? 'hear' : 'read') }))))
     // 刚看完介绍的那张不紧接着考
     if (q.length > 1 && q[0].it.key === g[g.length - 1].key) q.push(q.shift()!)
     out.push(...q)

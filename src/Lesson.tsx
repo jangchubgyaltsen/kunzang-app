@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Rating, type Grade } from 'ts-fsrs'
 import { TALK_BASE, buildLevel, kcLabel, levelById, partsOf, questionFor, readQuestion, unitByN, type Intro, type KC, type Question, type Scored, type Shadow } from './course.ts'
 import { syllableMap } from './content.ts'
+import { wylieOn } from './prefs.ts'
 import { finishLevel, recordAnswer, seenKCs, speedMedians, speedRating, weakKCs } from './progress.ts'
 import { hintFor, type Hint } from './hints.ts'
 import { play, playSeq } from './audio.ts'
@@ -329,8 +330,8 @@ function Prompt({ q }: { q: Scored }) {
     case 'build':
       return (
         <div className="prompt">
-          <div className="ask">{q.audio ? '听读音，看转写，给每个位置选字，拼出这个音节' : '看转写，给每个位置选字，拼出这个音节'}</div>
-          <div className="latin-big">{q.wylie}</div>
+          <div className="ask">{!wylieOn() ? '听读音，给每个位置选字，拼出这个音节' : q.audio ? '听读音，看转写，给每个位置选字，拼出这个音节' : '看转写，给每个位置选字，拼出这个音节'}</div>
+          {wylieOn() && <div className="latin-big">{q.wylie}</div>}
           {q.audio && <button className="play-big" onClick={() => play(q.audio!)}>▶</button>}
         </div>
       )

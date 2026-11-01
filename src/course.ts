@@ -1,4 +1,5 @@
 import { passages, passageTitles, realAudioOf, syllables, syllableMap, type Syllable } from './content.ts'
+import { wylieOn } from './prefs.ts'
 import { lineById, linesOf, readLines, tokenMap, yitongOf, type ReadLine } from './reading.ts'
 import wordsRaw from './words.json'
 import { CV_PRON, CV_SOURCE, PRON, shapeMates, soundMates } from './pron.ts'
@@ -42,17 +43,17 @@ type Rule = { name: string; intro: string; example: string; has: (s: WordSyl) =>
 export const RULES: Record<string, Rule> = {
   'R:suf': {
     name: '后加字',
-    intro: '两个字母并排、都没有元音和叠字时，第一个是基字，第二个是后加字。后加字跟在基字后面，读音很轻。',
+    intro: '两个字母并排、都没有元音和叠字时，第一个是基字，第二个是后加字。安多话里后加字要读出来，做韵尾：ག 收 k、ང 收 ng、ད 收 t、ན 收 n、བ 收 p、མ 收 m、ར 收 r、ལ 收 l，ས 收得很轻。跟着录音读。',
     example: 'གང', has: (s) => !!s.suffix,
   },
   'R:pre': {
     name: '前加字',
-    intro: 'ག ད བ མ འ 可以写在基字前面，叫前加字。前加字不带元音，在安多话里常常只是轻轻带出一点音。',
+    intro: 'ག ད བ མ འ 可以写在基字前面，叫前加字。前加字不带元音，但安多话里常常读出来，变成声母前面一个短短的音：ག ད བ 多读成轻的 h 或 r，མ འ 在浊音前多读成鼻音 m、n（如 འགྲོ 读 ndro）。跟着录音读。',
     example: 'བདག', has: (s) => !!s.prefix,
   },
   'R:sup': {
     name: '上加字',
-    intro: 'ར ལ ས 可以写在另一个字母的头顶，叫上加字。写在头顶的不是基字，基字在它下面。',
+    intro: 'ར ལ ས 可以写在另一个字母的头顶，叫上加字。写在头顶的不是基字，基字在它下面。安多话里上加字也常读出来，像前加字一样在声母前带一个短音（如 རྒྱལ 开头能听到一个短短的 r）。跟着录音读。',
     example: 'སྣང', has: (s) => !!s.superscript,
   },
   'R:sub': {
@@ -231,7 +232,7 @@ export function kcLabel(kc: KC) {
 }
 
 /** 《一本通》第 12–16 页：元音和字母拼起来以后的读法 */
-const VOWEL_RULE: Record<string, string> = {
+export const VOWEL_RULE: Record<string, string> = {
   'ི': '写在上面。安多话里 ི 常常读得像 e：མི me、ཀི ge；在 ཅ ཆ ཇ ཞ ཡ 后面读 i（ཞི xi）。',
   'ུ': '写在下面。安多话里 ུ 也常读得像 e：ཀུ ge、སུ se，所以 ཀི 和 ཀུ 听起来差不多；ཕུ pu 保留 u。',
   'ེ': '写在上面。多读 ei：མེ mei；在 ཅ ཆ ཇ ཞ 后面读 ie（ཆེ qie），ཏ ད 后面读 i（དེ di）。',
@@ -245,7 +246,7 @@ export function introFor(kc: KC): Intro {
   if (type === 'L') {
     const shape = [...(shapeMates.get(val) ?? [])], sound = [...(soundMates.get(val) ?? [])]
     const note = [
-      `转写 ${letterWylie.get(val)}。`,
+      wylieOn() ? `转写 ${letterWylie.get(val)}。` : '',
       sound.length ? `书上让和 ${sound.join(' ')} 比较发音。` : '',
       shape.length ? `形近字：${shape.join(' ')}。` : '',
     ].join('')
@@ -261,11 +262,11 @@ export function introFor(kc: KC): Intro {
   if (type === 'R') {
     const r = RULES[kc]
     const s = syllableOf(r.example)!
-    return { kind: 'intro', kc, label: '新规则：' + r.name, big: r.example, sub: s.wylie, note: r.intro, parts: partsOf(s), audio: audioOf(r.example) }
+    return { kind: 'intro', kc, label: '新规则：' + r.name, big: r.example, sub: wylieOn() ? s.wylie : undefined, note: r.intro, parts: partsOf(s), audio: audioOf(r.example) }
   }
   if (type === 'W') {
     const w = wordMap.get(val)!
-    return { kind: 'intro', kc, label: '新词', big: w.tibetan, sub: w.wylie, pron: w.yitong, note: w.gloss, audio: w.audio }
+    return { kind: 'intro', kc, label: '新词', big: w.tibetan, sub: wylieOn() ? w.wylie : undefined, pron: w.yitong, note: w.gloss, audio: w.audio }
   }
   if (type === 'A') {
     const s = sentenceById.get(val)!
@@ -281,14 +282,14 @@ export function introFor(kc: KC): Intro {
   }
   if (type === 'T') {
     const t = tokenMap.get(val)!
-    return { kind: 'intro', kc, label: '原文里的词', big: t.tibetan, sub: wylieOf(t.tibetan), pron: t.yitong, audio: t.audio, note: glossOf(t.tibetan) }
+    return { kind: 'intro', kc, label: '原文里的词', big: t.tibetan, sub: wylieOn() ? wylieOf(t.tibetan) : undefined, pron: t.yitong, audio: t.audio, note: glossOf(t.tibetan) }
   }
   if (type === 'X') {
     const l = lineById.get(val)!
     return { kind: 'intro', kc, label: '整句', big: l.words.map((w) => w.tibetan).join('་'), pron: l.words.map((w) => w.yitong).join(' '), audio: l.audio }
   }
   const s = syllableMap.get(val)!
-  return { kind: 'intro', kc, label: '音节', big: s.tibetan, sub: s.wylie, audio: s.audio, parts: partsOf(s) }
+  return { kind: 'intro', kc, label: '音节', big: s.tibetan, sub: wylieOn() ? s.wylie : undefined, audio: s.audio, parts: partsOf(s) }
 }
 
 const wylieOf = (t: string) => t.split('་').map((x) => syllableMap.get(x)?.wylie ?? '?').join(' ')
@@ -307,6 +308,20 @@ function audioOf(t: string) {
 
 /** 出一道题。known 是学习者已经认识的知识点，用来挑干扰项和例子；不传就用全部。 */
 export function questionFor(kc: KC, variant?: number, known: Set<KC> = ALL): Scored {
+  const q = questionFor0(kc, variant, known)
+  if (wylieOn() || !isWylieQuestion(q)) return q
+  // 转写关着：换成这个知识点的其他问法
+  for (let k = 0; k < 5; k++) {
+    const r = questionFor0(kc, (variant ?? 0) + 1 + k, known)
+    if (!isWylieQuestion(r)) return r
+  }
+  return q
+}
+
+/** 要认 Wylie 转写才能答的题（字母“怎么读”这类用的是注音，不算） */
+const isWylieQuestion = (q: Question) => (q.kind === 'glyph2wylie' || q.kind === 'wylie2glyph') && !q.ask
+
+function questionFor0(kc: KC, variant?: number, known: Set<KC> = ALL): Scored {
   // 随机出题时（复习、练一练、小测、抽查），三分之一换成要自己拼、自己排的回忆题
   if (variant === undefined && Math.random() < 1 / 3) {
     const r = recallFor(kc, known)
@@ -328,7 +343,7 @@ export function questionFor(kc: KC, variant?: number, known: Set<KC> = ALL): Sco
     // 注音一样的字（ཀ ག 都注 ga）放在“看字选注音”的选项里分不出来
     const diffPron = (l: string) => PRON[l][0] !== p
     const explain =
-      `${val} 读 ${p}（${hz}），转写 ${letterWylie.get(val)}。` +
+      `${val} 读 ${p}（${hz}）${wylieOn() ? `，转写 ${letterWylie.get(val)}` : ''}。` +
       (sound.length ? `书上让和 ${sound.join(' ')} 比较发音${sound.some((x) => !diffPron(x)) ? '，注音一样，读音不同，听录音分辨' : ''}。` : '') +
       (shape.length ? `形近字：${shape.join(' ')}。` : '')
     switch (v % 4) {
@@ -596,7 +611,9 @@ const humanAudio = (t: string) => {
   return s?.audioStatus === 'human' ? s.audio : undefined
 }
 
-function buildQuestion(kc: KC, s: WordSyl, known: Set<KC>): Scored {
+function buildQuestion(kc: KC, s: WordSyl, known: Set<KC>): Scored | undefined {
+  // 转写关着时，没有真人录音就没法知道要拼哪个音节
+  if (!wylieOn() && !humanAudio(s.tibetan)) return
   const slots: { role: string; options: string[]; answer: string }[] = []
   for (const p of partsOf(s)) {
     if (p.role === '基字') {

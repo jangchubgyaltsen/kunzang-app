@@ -18,6 +18,7 @@ import { chapters } from './book.ts'
 import { BookChapter, GlossBlock } from './BookReader.tsx'
 import { glossOf, loadGloss, type WordGloss } from './gloss.ts'
 import AmdoView from './Amdo.tsx'
+import { setWylie, wylieOn } from './prefs.ts'
 
 type Tab = 'path' | 'alphabet' | 'amdo' | 'reader' | 'review' | 'settings'
 export default function App() {
@@ -285,9 +286,11 @@ function OpeningReader({ passageId, onSelect }: { passageId: string; onSelect: (
         <button className={'pill' + (showPron ? ' on' : '')} aria-pressed={showPron} onClick={() => setShowPron(!showPron)}>
           注音
         </button>
-        <button className={'pill' + (showWylie ? ' on' : '')} aria-pressed={showWylie} onClick={() => setShowWylie(!showWylie)}>
-          Wylie
-        </button>
+        {wylieOn() && (
+          <button className={'pill' + (showWylie ? ' on' : '')} aria-pressed={showWylie} onClick={() => setShowWylie(!showWylie)}>
+            Wylie
+          </button>
+        )}
         <button className={'pill' + (showZh ? ' on' : '')} aria-pressed={showZh} onClick={() => setShowZh(!showZh)}>
           中文
         </button>
@@ -351,7 +354,7 @@ function WordSheet({ w, onPick, onClose }: { w: Token; onPick: (s: Syllable) => 
           {w.tibetan.split('་').map((s, k) => (
             <button key={k} className="part" onClick={() => syllableMap.get(s) && onPick(syllableMap.get(s)!)}>
               <div className="tib">{s}</div>
-              <div className="small">{syllableMap.get(s)?.wylie}</div>
+              {wylieOn() && <div className="small">{syllableMap.get(s)?.wylie}</div>}
             </button>
           ))}
         </div>
@@ -392,7 +395,7 @@ function SyllableCard({ s, onClose }: { s: Syllable; onClose: () => void }) {
     <div className="sheet" onClick={onClose}>
       <div className="card" onClick={(e) => e.stopPropagation()}>
         <div className="tib huge tap" onClick={() => play(s.audio)}>{s.tibetan}</div>
-        <div className="wylie center">{s.wylie}</div>
+        {wylieOn() && <div className="wylie center">{s.wylie}</div>}
         <div className="parts">
           {PARTS.filter(([k]) => s[k]).map(([k, label]) => (
             <div key={k} className={'part tap' + (k === 'root' ? ' root' : '')} onClick={() => k !== 'vowel' && say(String(s[k]))}>
@@ -410,6 +413,27 @@ function SyllableCard({ s, onClose }: { s: Syllable; onClose: () => void }) {
         </div>
       </div>
     </div>
+  )
+}
+
+function WylieSetting() {
+  const [on, setOn] = useState(wylieOn())
+  return (
+    <>
+      <h2>Wylie 转写</h2>
+      <p className="small muted">用拉丁字母拼写藏文的方法（如 ཀློང་ཆེན 写成 klong chen）。只学念诵和读懂的话用不上，默认不显示，也不出转写题。</p>
+      <label className="small">
+        <input
+          type="checkbox"
+          checked={on}
+          onChange={(e) => {
+            setWylie(e.target.checked)
+            setOn(e.target.checked)
+          }}
+        />{' '}
+        显示转写、出转写题
+      </label>
+    </>
   )
 }
 
@@ -469,6 +493,7 @@ function SettingsView() {
         </label>
       </div>
       {msg && <p>{msg}</p>}
+      <WylieSetting />
       <SoundCheck />
       <h2>重新开始</h2>
       <p className="small muted">清空全部学习进度：路径关卡、字卡和复习记录、抽查、签到。中文译文和标记的问题保留。建议先导出一份备份。</p>
