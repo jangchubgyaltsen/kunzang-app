@@ -20,7 +20,8 @@ type Props = {
   /** 自定义结算（例如抽查），返回是否通过 */
   onFinish?: (accuracy: number) => Promise<Result>
   /** 做完最后一题时调用（中途 ✕ 退出不调用） */
-  onComplete?: () => void
+  /** 做完一组时调用；passed：这一关过没过 */
+  onComplete?: (passed: boolean) => void
   /** 结算页按钮的字，默认“返回” */
   exitLabel?: string
   /** 给了就记住做到第几题：今天中途退出，下次打开同一个 resumeKey 从退出的地方接着做 */
@@ -123,7 +124,7 @@ export default function Lesson({ level, questions, title, onExit, onFinish, onCo
     const accuracy = vals.filter(Boolean).length / Math.max(1, vals.length)
     const r = onFinish ? await onFinish(accuracy) : level ? await finishLevel(level, accuracy) : { passed: accuracy >= 0.8 }
     setDone({ accuracy, ...r })
-    onComplete?.()
+    onComplete?.(r.passed)
   }
 
   const progress = Math.round((i / queue.length) * 100)
@@ -252,7 +253,7 @@ export default function Lesson({ level, questions, title, onExit, onFinish, onCo
               {guessed ? '记下了：这题过不久再考' : '其实是猜的'}
             </button>
           )}
-          <button className="primary" onClick={next}>继续</button>
+          <button className="primary sticky-go" onClick={next}>继续</button>
         </div>
       )}
     </section>

@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { play } from './audio.ts'
 import {
-  ALL_CARDS, CV_MARKS, CV_PRON, CV_SOURCE, FAST_MS, FLUENT_DAYS, HOOK_PAIRS, LETTER_NOTE, PRON, ROWS, SHAPE_PAIRS, SOUND_PAIRS, VOWEL_INFO,
+  ALL_CARDS, CV_MARKS, CV_PRON, CV_SOURCE, EARLY_DAYS, EARLY_NEW, FAST_MS, FLUENT_DAYS, HOOK_PAIRS, LETTER_NOTE, PRON, ROWS, SHAPE_PAIRS, SOUND_PAIRS, VOWEL_INFO,
   buildDaily, cardCounts, letterUnlocked, loadSession, saveSession, splitOf, cvAudioOf, isFluent, isLookalike, isSoundPair, loadStats, markDailyDone, optionsFor, record,
   type DrillItem, type Stat, type Step,
 } from './alphabet.ts'
 import { letterAudio } from './course.ts'
+import { db } from './db.ts'
 import './alphabet.css'
 
 const LETTER_POOL = ROWS.flat()
@@ -187,7 +188,11 @@ export function Drill({ onExit, onComplete, all = false }: { onExit: () => void;
         setQueue(saved.steps)
         setI(saved.i)
         setLog(saved.log.map((x) => ({ it: saved.steps.find((st) => st.it.key === x.key)?.it ?? saved.steps[0].it, ok: x.ok, ms: x.ms })))
-      } else setQueue(buildDaily(s, all))
+      } else {
+        // 刚开始的几天每天新卡少一点
+        const days = await db.checkins.count()
+        setQueue(buildDaily(s, all, days < EARLY_DAYS ? EARLY_NEW : Infinity))
+      }
     })()
   }, [all])
   // 每走一步记下进度
@@ -198,7 +203,15 @@ export function Drill({ onExit, onComplete, all = false }: { onExit: () => void;
   const it = step?.it
   const done = !!stats && queue.length > 0 && i >= queue.length
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const opts = useMemo(() => (it && !step.intro ? optionsFor(it, step.mode) : []), [i, it?.key])
+  // 已经见过的卡：以前答过的，加上今天这一组里已经看过介绍的
+  const known = useMemo(() => {
+    const k = new Set(Object.keys(stats ?? {}).filter((x) => stats![x].seen))
+    queue.slice(0, i).forEach((x) => x.intro && k.add(x.it.key))
+    return k
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [i, queue.length, !!stats])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const opts = useMemo(() => (it && !step.intro ? optionsFor(it, step.mode, all ? undefined : known) : []), [i, it?.key])
   useEffect(() => {
     shownAt.current = performance.now()
     if (step && (step.intro || step.mode === 'hear')) play(step.it.audio)
@@ -228,18 +241,21 @@ export function Drill({ onExit, onComplete, all = false }: { onExit: () => void;
     setStats((s) => ({ ...s, [it.key]: st }))
     setLog((l) => [...l, { it, ok, ms: t }])
     // 答错的过 3 题再来一次，换一种考法
-    if (!ok) setQueue((q) => [...q.slice(0, i + 4), { it, mode: step.mode === 'read' ? 'hear' : 'read' }, ...q.slice(i + 4)])
+    if (!ok) setQueue((q) => [...q.slice(0, i + 4), { it, mode: step.mode === 'read' ? 'hear' : 'read', retry: true }, ...q.slice(i + 4)])
     if (ok && t <= FAST_MS) setTimeout(go, 800)
   }
 
   const revealed = picked !== null
   const ok = revealed ? picked.key === it.key : null
-  const progress = Math.round((i / queue.length) * 100)
+  // 进度只算今天这一组本来的题；答错加的补练不算，免得越答越长
+  const total = queue.filter((x) => !x.retry).length
+  const passed = queue.slice(0, i).filter((x) => !x.retry).length
+  const progress = Math.round((passed / total) * 100)
   const top = (
     <div className="lesson-top">
       <button className="link" onClick={onExit}>✕</button>
       <div className="bar"><div style={{ width: progress + '%' }} /></div>
-      <span className="small muted">{i + 1} / {queue.length}</span>
+      <span className="small muted">{step.retry ? '补练' : `${passed + 1} / ${total}`}</span>
     </div>
   )
   const ans = (x: DrillItem) => (
@@ -327,7 +343,7 @@ export function Drill({ onExit, onComplete, all = false }: { onExit: () => void;
       {revealed && (ok === false || ms > FAST_MS) && (
         <>
           {ok === true && <p className="small muted center">答对了，但用了 {(ms / 1000).toFixed(1)} 秒。3 秒内答对才算一眼认出。</p>}
-          <button className="primary" onClick={go}>继续</button>
+          <button className="primary sticky-go" onClick={go}>继续</button>
         </>
       )}
     </section>

@@ -93,13 +93,19 @@ const sameVowel = (a: DrillItem, b: DrillItem) => (a.tib[1] ?? '') === (b.tib[1]
 export type Mode = 'read' | 'hear'
 
 /** 四个选项：答案 + 书上成对比较的字 + 同一个字母的其他组合 + 其他 */
-export function optionsFor(it: DrillItem, mode: Mode): DrillItem[] {
+export function optionsFor(it: DrillItem, mode: Mode, known?: Set<string>): DrillItem[] {
+  // 干扰项只用已经见过的卡（known）；见过的不够两个，才拿没见过的补到两个
+  const usable = (xs: DrillItem[]) => {
+    if (!known) return xs
+    const k = xs.filter((x) => x.key === it.key || known.has(x.key))
+    return k.length >= 3 ? k : [...k, ...xs.filter((x) => !k.includes(x))]
+  }
   if (it.key.startsWith('V:')) {
     // 元音：在另外三个元音里选；听音时 ཨི ཨུ 安多话都读 e，听不出来，不同时出现
     const heard = (x: DrillItem) => CV_PRON['ཨ' + x.tib[1]][0]
-    return shuffle([it, ...VOWEL_CARDS.filter((x) => x.key !== it.key && (mode === 'read' || heard(x) !== heard(it)))])
+    return shuffle([it, ...usable(VOWEL_CARDS).filter((x) => x.key !== it.key && (mode === 'read' || heard(x) !== heard(it))).slice(0, 3)])
   }
-  const all = it.key.startsWith('CV:') ? CV_CARDS : LETTER_CARDS
+  const all = usable(it.key.startsWith('CV:') ? CV_CARDS : LETTER_CARDS)
   const mates = all.filter((x) => sameVowel(x, it) && (isLookalike(it.base, x.base) || isSoundPair(it.base, x.base)))
   const sameBase = all.filter((x) => x.base === it.base)
   const picked: DrillItem[] = []
@@ -113,7 +119,9 @@ export function optionsFor(it: DrillItem, mode: Mode): DrillItem[] {
       } else if (x.pron === it.pron && !isSoundPair(it.base, x.base)) continue // 书上读音一样的（ཀི ཀུ 都是 ge、བ ཝ 都是 wa）听不出来；ཀ/ག 这种要专门练
       picked.push(x)
     }
-  return shuffle([it, ...picked])
+  // 见过的字还不多时（第一天），只出两三个选项，不拿没学的字凑数
+  const few = known ? picked.filter((x) => known.has(x.key)) : picked
+  return shuffle([it, ...(few.length >= 2 ? few : picked.slice(0, Math.max(2, few.length)))])
 }
 
 // ---- 熟练度和复习间隔 ----
@@ -163,8 +171,8 @@ export async function record(key: string, ok: boolean, ms: number): Promise<Stat
   return toStat(card)
 }
 
-/** 字卡练习里的一步：新卡先看一遍（intro），然后看字选注音（read）或听音选字（hear） */
-export type Step = { it: DrillItem; intro?: boolean; mode: Mode }
+/** 字卡练习里的一步：新卡先看一遍（intro），然后看字选注音（read）或听音选字（hear）；retry 是答错后加的补练，不算进度 */
+export type Step = { it: DrillItem; intro?: boolean; mode: Mode; retry?: boolean }
 
 const noRepeat = (q: Step[]) => {
   for (let i = 1; i < q.length; i++)
@@ -179,6 +187,11 @@ const noRepeat = (q: Step[]) => {
 export const DAILY_CARDS = 15
 /** 积压再多，每天也至少带这么多张新卡（正好一个字母和它的四个组合） */
 export const MIN_NEW = 5
+/** 刚开始的几天（做过字卡不到 EARLY_DAYS 天），每天新卡最多这么多张 */
+export const EARLY_NEW = 8
+export const EARLY_DAYS = 7
+/** 新卡几张一组：一组先看介绍，马上考这一组，再看下一组 */
+const GROUP = 4
 
 /** 到期没复习的卡有几张；新卡还剩几张没见过 */
 export function cardCounts(stats: Record<string, Stat>) {
@@ -192,14 +205,14 @@ export function cardCounts(stats: Record<string, Stat>) {
 }
 
 /**
- * 每天早上的字卡，一共 15 张，每张考一题（只从 unlocked 里出：先字母和元音，熟了再加组合）：
+ * 每天早上的字卡，一共 15 张，每张考一题（只从 unlocked 里出：先字母和元音，熟了再加组合；刚开始几天新卡最多 newCap 张）：
  * 1. 到期的卡（答错过的、到了复习日子的）优先，记得越不牢（FSRS 稳定度越低）越先考，看字选注音和听音选字轮着来；
  * 2. 剩下的位置按学的顺序带新卡（字母和元音在前，组合在后），先看一遍再考；积压再多也至少带 5 张新卡（如果有能带的）；
  * 3. 两样加起来不到 15 张时（比如能考的都见过了），用最久没见的卡补够。
  * 答错的过几题再考一次，不占这 15 张。
  * all：现在能考的全部过一遍，每张一题。
  */
-export function buildDaily(stats: Record<string, Stat>, all = false): Step[] {
+export function buildDaily(stats: Record<string, Stat>, all = false, newCap = Infinity): Step[] {
   const t = endOfToday()
   const open = unlocked(stats)
   if (all) return noRepeat(shuffle(open).map((it, i) => ({ it, mode: i % 2 ? 'hear' : 'read' })))
@@ -208,7 +221,7 @@ export function buildDaily(stats: Record<string, Stat>, all = false): Step[] {
   const dueAll = seen
     .filter((x) => stats[x.key].due <= t)
     .sort((a, b) => stats[a.key].stability - stats[b.key].stability || stats[a.key].due - stats[b.key].due)
-  const nNew = Math.min(unseen.length, Math.max(MIN_NEW, DAILY_CARDS - dueAll.length))
+  const nNew = Math.min(unseen.length, newCap, Math.max(MIN_NEW, DAILY_CARDS - dueAll.length))
   const fresh = unseen.slice(0, nNew)
   const due = dueAll.slice(0, DAILY_CARDS - fresh.length)
   const picked = new Set([...due, ...fresh].map((x) => x.key))
@@ -216,16 +229,27 @@ export function buildDaily(stats: Record<string, Stat>, all = false): Step[] {
     .filter((x) => !picked.has(x.key))
     .sort((a, b) => (stats[a.key].at ?? 0) - (stats[b.key].at ?? 0))
     .slice(0, Math.max(0, DAILY_CARDS - picked.size))
-  const quiz: Step[] = [
-    ...[...due, ...extra].map((it): Step => ({ it, mode: (stats[it.key]?.seen ?? 0) % 2 ? 'hear' : 'read' })),
-    ...fresh.map((it, i): Step => ({ it, mode: i % 2 ? 'hear' : 'read' })),
-  ]
-  return [...fresh.map((it): Step => ({ it, intro: true, mode: 'read' })), ...noRepeat(shuffle(quiz))]
+  const old = shuffle([...due, ...extra].map((it): Step => ({ it, mode: (stats[it.key]?.seen ?? 0) % 2 ? 'hear' : 'read' })))
+  // 新卡 4 张一组：看完一组的介绍马上考这一组，旧卡穿插在各组之间
+  const groups: DrillItem[][] = []
+  for (let k = 0; k < fresh.length; k += GROUP) groups.push(fresh.slice(k, k + GROUP))
+  const share = Math.ceil(old.length / (groups.length + 1))
+  const out: Step[] = []
+  groups.forEach((g, k) => {
+    out.push(...old.slice(k * share, (k + 1) * share))
+    out.push(...g.map((it): Step => ({ it, intro: true, mode: 'read' })))
+    const q = noRepeat(shuffle(g.map((it, j): Step => ({ it, mode: j % 2 ? 'hear' : 'read' }))))
+    // 刚看完介绍的那张不紧接着考
+    if (q.length > 1 && q[0].it.key === g[g.length - 1].key) q.push(q.shift()!)
+    out.push(...q)
+  })
+  out.push(...old.slice(groups.length * share))
+  return out
 }
 
 // ---- 做到一半退出：记住今天这一组做到哪了，回来接着做 ----
 const SESSION_KEY = 'alphabet-session'
-type SavedStep = { key: string; intro?: boolean; mode: Mode }
+type SavedStep = { key: string; intro?: boolean; mode: Mode; retry?: boolean }
 export type DrillLog = { key: string; ok: boolean; ms: number }[]
 type Session = { date: string; steps: SavedStep[]; i: number; log: DrillLog }
 const cardByKey = new Map(ALL_CARDS.map((x) => [x.key, x]))
@@ -234,11 +258,11 @@ const cardByKey = new Map(ALL_CARDS.map((x) => [x.key, x]))
 export async function loadSession(): Promise<{ steps: Step[]; i: number; log: DrillLog } | undefined> {
   const s = (await db.settings.get(SESSION_KEY))?.value as Session | undefined
   if (!s || s.date !== today() || s.i >= s.steps.length) return
-  const steps = s.steps.filter((x) => cardByKey.has(x.key)).map((x) => ({ it: cardByKey.get(x.key)!, intro: x.intro, mode: x.mode }))
+  const steps = s.steps.filter((x) => cardByKey.has(x.key)).map((x) => ({ it: cardByKey.get(x.key)!, intro: x.intro, mode: x.mode, retry: x.retry }))
   return { steps, i: Math.min(s.i, steps.length), log: s.log ?? [] }
 }
 export async function saveSession(steps: Step[], i: number, log: DrillLog) {
-  const value: Session = { date: today(), steps: steps.map((x) => ({ key: x.it.key, intro: x.intro, mode: x.mode })), i, log }
+  const value: Session = { date: today(), steps: steps.map((x) => ({ key: x.it.key, intro: x.intro, mode: x.mode, retry: x.retry })), i, log }
   await db.settings.put({ key: SESSION_KEY, value })
 }
 

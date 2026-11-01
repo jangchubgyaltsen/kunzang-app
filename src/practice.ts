@@ -21,7 +21,8 @@ export const PER_DAY: Record<Track, number> = { spell: 1, read: 1, talk: 1 }
 const CHECKS_PER_DAY = 2
 export const REVIEW_SIZE = 15
 
-export type DayPlan = { date: string; steps: StepKey[]; done: StepKey[] }
+/** failed：做完了但这一关没过的步骤（清单上标“未过，明天再来”） */
+export type DayPlan = { date: string; steps: StepKey[]; done: StepKey[]; failed?: StepKey[] }
 const KEY = 'practice-day'
 
 export async function loadPlan(): Promise<DayPlan> {
@@ -38,9 +39,10 @@ export async function loadPlan(): Promise<DayPlan> {
   return plan
 }
 
-export async function markStep(key: StepKey) {
+export async function markStep(key: StepKey, failed = false) {
   const plan = await loadPlan()
   if (!plan.done.includes(key)) plan.done.push(key)
+  if (failed && !plan.failed?.includes(key)) plan.failed = [...(plan.failed ?? []), key]
   await db.settings.put({ key: KEY, value: plan })
   return plan
 }

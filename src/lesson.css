@@ -81,3 +81,5 @@ button.recording { border-color: #c62828; color: #c62828; }
 .build-opts .piece.right { border-color: #2e7d32; background: #e8f5e9; }
 .build-opts .piece.wrong { border-color: #c62828; background: #fdecea; }
 .build-opts .piece.dim { opacity: .45; }
+/* 答完题的“继续”贴在屏幕底部，反馈很长时也不用先往下滚 */
+.sticky-go { position: sticky; bottom: 12px; z-index: 2; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12); }

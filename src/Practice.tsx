@@ -21,6 +21,8 @@ export default function Practice({ auto, onExit }: { auto: boolean; onExit: () =
   const [run, setRun] = useState<Running | null>(null)
   const [what, setWhat] = useState<Record<StepKey, string>>({})
   const completed = useRef(false)
+  // 刚做完的这一关过没过
+  const lastPassed = useRef(true)
   // 这一步里已经做完几关（PER_DAY 可以让一条线一步连着做几关）
   const levelsDone = useRef(0)
 
@@ -79,11 +81,12 @@ export default function Practice({ auto, onExit }: { auto: boolean; onExit: () =
         return setRun({ key: r.key, kind: 'level', level: next })
       }
     }
-    await markStep(r.key)
+    await markStep(r.key, r.kind === 'level' && !lastPassed.current)
     await advance(true)
   }
-  const onComplete = () => {
+  const onComplete = (passed = true) => {
     completed.current = true
+    lastPassed.current = passed
   }
 
   if (run?.kind === 'drill') return <Drill onExit={finishStep} onComplete={onComplete} />
@@ -103,6 +106,7 @@ export default function Practice({ auto, onExit }: { auto: boolean; onExit: () =
             <span className="mark">{plan.done.includes(k) ? '✓' : k === left[0] ? '▸' : '·'}</span>
             <span>{stepLabel(k)}</span>
             {what[k] && <span className="small muted"> · {what[k]}</span>}
+            {plan.failed?.includes(k) && <span className="small warn"> · 这关没过，明天接着练</span>}
           </li>
         ))}
       </ol>
