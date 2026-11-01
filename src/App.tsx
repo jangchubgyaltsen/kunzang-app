@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { passages, passageTitles, syllableMap, type Syllable } from './content.ts'
 import { audioStatus, play, playSeq } from './audio.ts'
 import { say } from './sound.ts'
-import { db, exportData, importData, importTranslationPack } from './db.ts'
+import { db, exportData, importData, importTranslationPack, resetProgress } from './db.ts'
 import { migrate } from './migrate.ts'
 import Lesson from './Lesson.tsx'
 import Review from './Review.tsx'
@@ -464,6 +464,18 @@ function SettingsView() {
       </div>
       {msg && <p>{msg}</p>}
       <SoundCheck />
+      <h2>重新开始</h2>
+      <p className="small muted">清空全部学习进度：路径关卡、字卡和复习记录、抽查、签到。中文译文和标记的问题保留。建议先导出一份备份。</p>
+      <button
+        className="danger"
+        onClick={async () => {
+          if (!confirm('确定要清空全部学习进度吗？清空后无法撤销，除非从备份恢复。')) return
+          await resetProgress()
+          location.reload()
+        }}
+      >
+        重置学习进度
+      </button>
       <h2>中文译文</h2>
       <p className="small muted">中文译文有版权，不随网站发布。导入一次后只保存在这台设备上。</p>
       <label className="button">

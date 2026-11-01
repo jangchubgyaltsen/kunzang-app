@@ -80,7 +80,7 @@ export type Question =
   /** ask：题目上方的提示语（不给就用默认的）；seq：认读一行字时依次播放的录音 */
   | { kind: 'glyph2wylie'; kc: KC; prompt: string; options: string[]; answer: string; audio?: string; explain: string; ask?: string; seq?: string[] }
   | { kind: 'wylie2glyph'; kc: KC; prompt: string; options: string[]; answer: string; audio?: string; explain: string; ask?: string }
-  | { kind: 'findRoot'; kc: KC; prompt: string; parts: string[]; answer: number; audio?: string; explain: string }
+  | { kind: 'findRoot'; kc: KC; prompt: string; parts: string[]; roles?: string[]; answer: number; audio?: string; explain: string }
   /** zh：选项是中文意思（听会话选意思） */
   | { kind: 'listen'; kc: KC; audio: string; options: string[]; answer: string; explain: string; zh?: boolean; ask?: string }
   | { kind: 'meaning'; kc: KC; prompt: string; options: string[]; answer: string; audio?: string; explain: string }
@@ -544,7 +544,7 @@ export function questionFor(kc: KC, variant?: number, known: Set<KC> = ALL): Sco
 function rootQuestion(kc: KC, s: WordSyl): Scored {
   const parts = partsOf(s)
   return {
-    kind: 'findRoot', kc, prompt: s.tibetan, parts: parts.map((p) => p.ch),
+    kind: 'findRoot', kc, prompt: s.tibetan, parts: parts.map((p) => p.ch), roles: parts.map((p) => p.role),
     answer: parts.findIndex((p) => p.role === '基字'), audio: audioOf(s.tibetan), explain: rootReason(s),
   }
 }

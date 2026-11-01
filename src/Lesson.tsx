@@ -1,7 +1,9 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { Rating, type Grade } from 'ts-fsrs'
 import { TALK_BASE, buildLevel, kcLabel, levelById, partsOf, questionFor, unitByN, type Intro, type KC, type Question, type Scored, type Shadow } from './course.ts'
 import { syllableMap } from './content.ts'
-import { finishLevel, recordAnswer, seenKCs, weakKCs } from './progress.ts'
+import { finishLevel, recordAnswer, seenKCs, speedMedians, speedRating, weakKCs } from './progress.ts'
+import { hintFor, type Hint } from './hints.ts'
 import { play, playSeq } from './audio.ts'
 import { say } from './sound.ts'
 import ShadowCard from './Shadow.tsx'
@@ -33,6 +35,25 @@ export default function Lesson({ level, questions, title, onExit, onFinish, onCo
   const [firstTry, setFirstTry] = useState<Map<string, boolean>>(new Map())
   const [misses, setMisses] = useState<Map<string, number>>(new Map())
   const [done, setDone] = useState<Done | null>(null)
+  /** 第一次答错后划掉的选项和给的提示；再选一次 */
+  const [struck, setStruck] = useState<(string | number)[]>([])
+  const [hint, setHint] = useState<Hint | null>(null)
+  const [guessed, setGuessed] = useState(false)
+  const medians = useRef<Map<string, number>>(new Map())
+  const shownAt = useRef(0)
+  /** 一次就答对的那题先不写进记录，等点“继续”（中途可以改成“是猜的”） */
+  const pending = useRef<{ kc: KC; ok: boolean; rating: Grade; src?: string; kind: string; ms: number } | null>(null)
+  const flush = async () => {
+    const p = pending.current
+    pending.current = null
+    if (p) await recordAnswer(p.kc, p.ok, unit, p.src, p.rating, { kind: p.kind, ms: p.ms })
+  }
+  useEffect(() => {
+    speedMedians().then((m) => (medians.current = m))
+    // 中途退出也把最后一题记上
+    return () => void flush()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   useEffect(() => {
     if (!questions && level)
@@ -45,6 +66,7 @@ export default function Lesson({ level, questions, title, onExit, onFinish, onCo
 
   const q = queue?.[i]
   useEffect(() => {
+    shownAt.current = performance.now()
     if (q && (q.kind === 'listen' || q.kind === 'intro') && q.audio) play(q.audio)
   }, [q])
 
@@ -53,7 +75,11 @@ export default function Lesson({ level, questions, title, onExit, onFinish, onCo
   if (!q) return null
 
   const next = async () => {
+    await flush()
     setChosen(null)
+    setStruck([])
+    setHint(null)
+    setGuessed(false)
     if (i + 1 < queue.length) return setI(i + 1)
     const vals = [...firstTry.values()]
     const accuracy = vals.filter(Boolean).length / Math.max(1, vals.length)
@@ -92,22 +118,54 @@ export default function Lesson({ level, questions, title, onExit, onFinish, onCo
   const isRight = (c: string | number) => c === q.answer
   const answered = chosen !== null
 
+  const miss = () => {
+    const m = (misses.get(q.kc) ?? 0) + 1
+    setMisses(new Map(misses).set(q.kc, m))
+    // 补救：同一知识点换一种题型，排到后面再练一次
+    if (m <= 2) setQueue([...queue, questionFor(q.kc, m, known)])
+  }
+
   const choose = async (c: string | number) => {
-    if (answered) return
-    setChosen(c)
+    if (answered || struck.includes(c)) return
     const ok = isRight(c)
+    const ms = Math.round(performance.now() - shownAt.current)
+    const optionCount = q.kind === 'findRoot' ? q.parts.length : q.kind === 'order' ? 0 : q.options.length
+    // 第一次答错：给一句针对这个错项的提示，划掉它，再选一次（剩的选项不到两个、排序题就直接给答案）
+    if (!ok && !struck.length && optionCount - 1 >= 2) {
+      const h = hintFor(q, c)
+      setStruck([c])
+      setHint(h)
+      setFirstTry(new Map(firstTry).set(q.kc + q.kind, false))
+      say(labelOf(q, c))
+      if (h.audio?.length) setTimeout(() => playSeq(h.audio!), 700)
+      return
+    }
+    setChosen(c)
     // 答对读题目本身，答错读你选的那个，让耳朵也记住区别
     if (ok && q.kind === 'glyph2wylie' && q.seq) playSeq(q.seq)
     else if (ok && q.audio) play(q.audio)
     else say(labelOf(q, c))
-    await recordAnswer(q.kc, ok, unit)
     if (!firstTry.has(q.kc + q.kind)) setFirstTry(new Map(firstTry).set(q.kc + q.kind, ok))
-    if (!ok) {
-      const m = (misses.get(q.kc) ?? 0) + 1
-      setMisses(new Map(misses).set(q.kc, m))
-      // 补救：同一知识点换一种题型，排到后面再练一次
-      if (m <= 2) setQueue([...queue, questionFor(q.kc, m, known)])
+    // 记下第一个选错的选项和它的误区类别，以后统计哪类错误最多
+    const first = struck.length ? { pick: String(labelOf(q, struck[0])), miss: hint?.cat } : ok ? {} : { pick: String(labelOf(q, c)), miss: hintFor(q, c).cat }
+    const extra = { kind: q.kind, ms, ...first }
+    if (struck.length) {
+      // 提示后才答对：算没答对，但比完全不会好一点，记 Hard
+      await recordAnswer(q.kc, false, unit, 'hint', ok ? Rating.Hard : Rating.Again, extra)
+      miss()
+    } else if (ok) {
+      pending.current = { kc: q.kc, ok: true, rating: speedRating(ms, medians.current.get(q.kind)), kind: q.kind, ms }
+    } else {
+      await recordAnswer(q.kc, false, unit, undefined, Rating.Again, extra)
+      miss()
     }
+  }
+
+  const markGuess = () => {
+    if (!pending.current) return
+    // 猜对的不算会：记 Hard，作答记录算没答对，过不久再考
+    pending.current = { ...pending.current, ok: false, rating: Rating.Hard, src: 'guess' }
+    setGuessed(true)
   }
 
   const repeated = (misses.get(q.kc) ?? 0) >= 2
@@ -116,17 +174,33 @@ export default function Lesson({ level, questions, title, onExit, onFinish, onCo
     <section className="lesson">
       {top}
       <Prompt q={q} />
-      {q.kind === 'order' ? <OrderPieces key={i} q={q} locked={answered} onDone={choose} /> : <Options q={q} chosen={chosen} onChoose={choose} />}
+      {q.kind === 'order' ? <OrderPieces key={i} q={q} locked={answered} onDone={choose} /> : <Options q={q} chosen={chosen} struck={struck} onChoose={choose} />}
+      {hint && !answered && (
+        <div className="feedback hint">
+          <div className="fb-title">再选一次</div>
+          <div className="explain">{withTib(hint.text)}</div>
+        </div>
+      )}
       {answered && (
         <div className={'feedback ' + (isRight(chosen) ? 'ok' : 'bad')}>
-          <div className="fb-title">{isRight(chosen) ? '答对了' : `正确答案：${labelOf(q, q.answer)}`}</div>
+          <div className="fb-title">{isRight(chosen) ? (struck.length ? '对了，看了提示才选对' : '答对了') : `正确答案：${labelOf(q, q.answer)}`}</div>
           <div className="explain">{q.explain}</div>
           {!isRight(chosen) && repeated && <Basics q={q} />}
+          {isRight(chosen) && !struck.length && (
+            <button className="link small" disabled={guessed} onClick={markGuess}>
+              {guessed ? '记下了：这题过不久再考' : '其实是猜的'}
+            </button>
+          )}
           <button className="primary" onClick={next}>继续</button>
         </div>
       )}
     </section>
   )
+}
+
+/** 提示里夹着的藏文用藏文字体显示，不然在中文里太小 */
+function withTib(t: string) {
+  return t.split(/([\u0F00-\u0FFF]+)/).map((x, k) => (k % 2 ? <span key={k} className="tib">{x}</span> : x))
 }
 
 // 会话整句：字号小一点，选项一行一个
@@ -247,15 +321,15 @@ function OrderPieces({ q, locked, onDone }: { q: Extract<Scored, { kind: 'order'
   )
 }
 
-function Options({ q, chosen, onChoose }: { q: Exclude<Scored, { kind: 'order' }>; chosen: string | number | null; onChoose: (c: string | number) => void }) {
+function Options({ q, chosen, struck, onChoose }: { q: Exclude<Scored, { kind: 'order' }>; chosen: string | number | null; struck: (string | number)[]; onChoose: (c: string | number) => void }) {
   const items: (string | number)[] = q.kind === 'findRoot' ? q.parts.map((_, k) => k) : q.options
   const cls = (c: string | number) =>
-    chosen === null ? '' : c === q.answer ? ' right' : c === chosen ? ' wrong' : ' dim'
+    chosen === null ? (struck.includes(c) ? ' struck' : '') : c === q.answer ? ' right' : c === chosen || struck.includes(c) ? ' wrong' : ' dim'
   const style = (q.kind === 'meaning' || (q.kind === 'listen' && q.zh) ? ' gloss' : q.kind === 'glyph2wylie' ? ' latin' : ' tib') + (long(q) ? ' long' : '')
   return (
     <div className={'options' + (q.kind === 'findRoot' ? ' row' : '') + (long(q) ? ' one' : '')}>
       {items.map((c) => (
-        <button key={String(c)} className={'opt' + style + cls(c)} onClick={() => onChoose(c)}>
+        <button key={String(c)} className={'opt' + style + cls(c)} disabled={chosen === null && struck.includes(c)} onClick={() => onChoose(c)}>
           {labelOf(q, c)}
         </button>
       ))}

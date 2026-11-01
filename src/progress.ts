@@ -1,5 +1,5 @@
-import { createEmptyCard, fsrs, Rating, type Card, type Grade } from 'ts-fsrs'
-import { db } from './db.ts'
+import { createEmptyCard, fsrs, Rating, State, type Card, type Grade } from 'ts-fsrs'
+import { db, type Attempt } from './db.ts'
 import { PATH, levelById, unitByN, type KC } from './course.ts'
 
 const scheduler = fsrs()
@@ -22,16 +22,39 @@ export async function kcMastered(kc: KC) {
 
 /**
  * 记一次作答，更新这个知识点的 FSRS 卡片。字卡、路径、复习、抽查都走这里，同一个知识点只有一份记录。
- * rating 不给就按对错：对 Good，错 Again。
+ * rating 不给就按对错：对 Good，错 Again。Easy 只给已经进入复习阶段的卡，新卡最多 Good。
  */
-export async function recordAnswer(kc: KC, ok: boolean, unit?: number, src?: string, rating?: Grade) {
+export async function recordAnswer(kc: KC, ok: boolean, unit?: number, src?: string, rating?: Grade, extra?: Pick<Attempt, 'kind' | 'ms' | 'pick' | 'miss'>) {
   const now = new Date()
-  await db.attempts.add({ kc, ok, at: now.getTime(), unit, src })
+  await db.attempts.add({ kc, ok, at: now.getTime(), unit, src, ...extra })
   const row = await db.cards.get(kc)
   const card: Card = row ? reviveCard(row.card) : createEmptyCard(now)
-  const next = scheduler.next(card, now, ok ? (rating ?? Rating.Good) : Rating.Again).card
+  let r: Grade = rating ?? (ok ? Rating.Good : Rating.Again)
+  if (r === Rating.Easy && card.state !== State.Review) r = Rating.Good
+  const next = scheduler.next(card, now, r).card
   await db.cards.put({ kc, due: next.due.getTime(), card: next })
   return next
+}
+
+/**
+ * 每种题型一次答对通常要多久（最近 500 次作答的中位数，至少 10 次才算）。
+ * 用来给 FSRS 分档：明显比平时快记 Easy，明显慢记 Hard。
+ */
+export async function speedMedians(): Promise<Map<string, number>> {
+  const recent = await db.attempts.orderBy('at').reverse().limit(500).toArray()
+  const by = new Map<string, number[]>()
+  for (const a of recent) if (a.ok && a.kind && a.ms && !a.src) by.set(a.kind, [...(by.get(a.kind) ?? []), a.ms])
+  const out = new Map<string, number>()
+  for (const [k, v] of by) if (v.length >= 10) out.set(k, v.sort((a, b) => a - b)[Math.floor(v.length / 2)])
+  return out
+}
+
+/** 一次就答对时按速度分档：比中位数快很多 Easy，慢一倍以上 Hard，其余 Good；没有足够记录就 Good */
+export function speedRating(ms: number, median?: number): Grade {
+  if (!median) return Rating.Good
+  if (ms > median * 2) return Rating.Hard
+  if (ms < median * 0.6) return Rating.Easy
+  return Rating.Good
 }
 
 export function reviveCard(c: unknown): Card {

@@ -4,7 +4,11 @@ import { unitByN } from './course.ts'
 export type Flag = { id?: number; kind: 'syllable' | 'line'; ref: string; note: string; createdAt: number }
 export type Setting = { key: string; value: unknown }
 export type Translation = { id: string; chinese: string }
-export type Attempt = { id?: number; kc: string; ok: boolean; at: number; unit?: number; src?: string }
+/**
+ * 一次作答。kind：题型；ms：从出题到作答的毫秒数；pick：选了哪个错项；miss：误区类别（见 hints.ts）。
+ * src：drill 字卡，hint 提示后才答对，guess 自己说是猜的。
+ */
+export type Attempt = { id?: number; kc: string; ok: boolean; at: number; unit?: number; src?: string; kind?: string; ms?: number; pick?: string; miss?: string }
 export type CardRow = { kc: string; due: number; card: unknown }
 export type UnitResult = { n: number; passedAt?: number; best: number }
 export type Checkin = { date: string; game: string; score: number; total: number; at: number }
@@ -104,4 +108,18 @@ export async function importTranslationPack(data: { app?: string; passages?: Rec
   const rows = Object.entries({ ...data.passages, ...data.book }).map(([id, chinese]) => ({ id, chinese }))
   await db.translations.bulkPut(rows)
   return rows.length
+}
+
+/** 学习进度相关的设置项（今日练习、字卡签到、旧版字卡记录、小游戏最高分） */
+const PROGRESS_SETTINGS = ['practice-day', 'alphabet-daily', 'alphabet-stats', 'best-root']
+
+/**
+ * 重置学习进度：作答记录、复习卡片、关卡、抽查、签到全部清空。
+ * 保留：中文译文、标记的问题、阅读位置、迁移标记（清空后不需要再迁移）。
+ */
+export async function resetProgress() {
+  await db.transaction('rw', [db.settings, db.attempts, db.cards, db.units, db.checkins, db.levels, db.checks], async () => {
+    await Promise.all([db.attempts.clear(), db.cards.clear(), db.units.clear(), db.checkins.clear(), db.levels.clear(), db.checks.clear()])
+    await db.settings.bulkDelete(PROGRESS_SETTINGS)
+  })
 }
