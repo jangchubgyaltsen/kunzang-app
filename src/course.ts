@@ -805,6 +805,15 @@ function withIntros(kcs: KC[], seen: Set<KC>, known: Set<KC>, ask: boolean) {
   return out
 }
 
+/**
+ * 诵读线（开篇原文）的题只考“听”和“意思”：听音选词、看词选意思、看意思选词，排整句词序。
+ * 不出转写题，也不出听写拼音节：学的人可能还在拼读线的前几个单元，这些词里大多数字还没学过。
+ */
+export function readQuestion(k: KC, j: number, known: Set<KC> = ALL_WITH_TEXT): Scored {
+  if (k.startsWith('W:')) return questionFor(k, [0, 1, 3][j % 3], known)
+  return questionFor(k, 0, known) // T: 听音选词；X: 排整句词序
+}
+
 /** 组一关的题。seen：已经练过的知识点；weak：最近常错的，优先拿来复习。 */
 export function buildLevel(levelId: string, seen: Set<KC>, weak: KC[] = []): { questions: Question[]; known: Set<KC> } {
   const lv = levelById.get(levelId)!
@@ -815,19 +824,28 @@ export function buildLevel(levelId: string, seen: Set<KC>, weak: KC[] = []): { q
   const weakKnown = weak.filter((k) => known.has(k) && seen.has(k) && !lv.kcs.includes(k))
   const review = (n: number) => [...new Set([...weakKnown.slice(0, 2), ...shuffle(earlierInUnit)])].slice(0, n).map((k) => questionFor(k, undefined, known))
 
-  if (lv.kind === 'learn' || lv.kind === 'line') {
+  if (lv.kind === 'line') {
+    // 诵读一关：每个新词先看介绍卡、马上答一题；再从这句和本段前面的词里挑几个换种问法；最后听整句排词序、跟读
     const items = lv.kcs.filter((k) => !k.startsWith('X:'))
-    const fresh = items.filter((k) => !seen.has(k))
-    const first = withIntros(items, seen, known, true)
-    // 第二轮每个知识点换一种考法，不要一关里同一种题连着出
-    const second = shuffle([...items.map((k, j) => (j % 2 === 0 && recallFor(k, known)) || questionFor(k, 1 + (j % 3), known)), ...review(Math.max(4, 10 - fresh.length * 2))])
-    const qs: Question[] = [...first, ...second]
+    const first = items.flatMap((k) => [...(seen.has(k) ? [] : [introFor(k)]), readQuestion(k, 0, known)])
+    const again = shuffle(items).slice(0, 3)
+    const back = shuffle(earlierInUnit.filter((k) => !items.includes(k))).slice(0, 2)
+    const qs: Question[] = [...first, ...shuffle([...again, ...back]).map((k, j) => readQuestion(k, j + 1, known))]
     if (lv.line && lv.kcs.includes('X:' + lv.line)) {
       const x = 'X:' + lv.line
       if (!seen.has(x)) qs.push(introFor(x))
       qs.push(questionFor(x, 0, known), { kind: 'shadow', kc: x, line: lineById.get(lv.line)! })
     }
     return { questions: qs, known }
+  }
+
+  if (lv.kind === 'learn') {
+    const items = lv.kcs.filter((k) => !k.startsWith('X:'))
+    const fresh = items.filter((k) => !seen.has(k))
+    const first = withIntros(items, seen, known, true)
+    // 第二轮每个知识点换一种考法，不要一关里同一种题连着出
+    const second = shuffle([...items.map((k, j) => (j % 2 === 0 && recallFor(k, known)) || questionFor(k, 1 + (j % 3), known)), ...review(Math.max(4, 10 - fresh.length * 2))])
+    return { questions: [...first, ...second], known }
   }
 
   if (lv.kind === 'talk') {
@@ -851,7 +869,8 @@ export function buildLevel(levelId: string, seen: Set<KC>, weak: KC[] = []): { q
   const xs = lv.kcs.filter((k) => k.startsWith('X:'))
   const rest = shuffle(lv.kcs.filter((k) => !k.startsWith('X:'))).slice(0, Math.max(8, 14 - xs.length))
   const unseen = [...xs, ...rest].filter((k) => !seen.has(k))
-  return { questions: [...withIntros(unseen, seen, known, false), ...shuffle([...rest.map((k) => questionFor(k, undefined, known)), ...xs.map((k) => questionFor(k, 0, known))])], known }
+  const ask = (k: KC, j: number) => (u.track === 'read' ? readQuestion(k, j, known) : questionFor(k, undefined, known))
+  return { questions: [...withIntros(unseen, seen, known, false), ...shuffle([...rest.map(ask), ...xs.map((k) => questionFor(k, 0, known))])], known }
 }
 
 /** 定时抽查：从一个单元里抽题，优先抽最近答错的。 */
@@ -861,5 +880,5 @@ export function buildSpotCheck(unit: number, weak: KC[] = []): Question[] {
   const pool = [...new Set(u.levels.flatMap((l) => l.kcs))]
   const inPool = new Set(pool)
   const picked = [...new Set([...weak.filter((k) => inPool.has(k)).slice(0, 4), ...shuffle(pool)])].slice(0, 10)
-  return shuffle(picked.map((k) => questionFor(k, k.startsWith('X:') ? 0 : undefined, known)))
+  return shuffle(picked.map((k, j) => (u.track === 'read' ? readQuestion(k, j, known) : questionFor(k, k.startsWith('X:') ? 0 : undefined, known))))
 }
