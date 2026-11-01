@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { Rating, type Grade } from 'ts-fsrs'
 import { TALK_BASE, buildLevel, kcLabel, levelById, partsOf, questionFor, readQuestion, unitByN, type Intro, type KC, type Question, type Scored, type Shadow } from './course.ts'
 import { syllableMap } from './content.ts'
@@ -27,6 +27,8 @@ type Props = {
   exitLabel?: string
   /** 给了就记住做到第几题：今天中途退出，下次打开同一个 resumeKey 从退出的地方接着做 */
   resumeKey?: string
+  /** 做完后的小结页底部换成这个（今日练习里显示“下一步是什么”） */
+  footer?: ReactNode
 }
 type Saved = { day: string; level?: string; queue: Question[]; known?: KC[]; i: number; firstTry: [string, boolean][]; misses: [string, number][] }
 const today = () => new Date().toLocaleDateString('sv')
@@ -35,7 +37,7 @@ const resumeId = (k: string) => 'lesson-resume:' + k
 export const clearResume = (k: string) => db.settings.delete(resumeId(k))
 type Done = { accuracy: number } & Result
 
-export default function Lesson({ level, questions, title, onExit, onFinish, onComplete, exitLabel, resumeKey }: Props) {
+export default function Lesson({ level, questions, title, onExit, onFinish, onComplete, exitLabel, resumeKey, footer }: Props) {
   const lv = level ? levelById.get(level) : undefined
   const unit = lv?.unit
   const [queue, setQueue] = useState<Question[] | null>(resumeKey ? null : (questions ?? null))
@@ -111,7 +113,7 @@ export default function Lesson({ level, questions, title, onExit, onFinish, onCo
   }, [q])
 
   if (!queue) return <section className="lesson">载入中…</section>
-  if (done) return <Summary level={level} done={done} firstTry={firstTry} onExit={onExit} exitLabel={exitLabel} />
+  if (done) return <Summary level={level} done={done} firstTry={firstTry} onExit={onExit} exitLabel={exitLabel} footer={footer} />
   if (!q) return null
 
   const next = async () => {
@@ -500,7 +502,7 @@ function Basics({ q }: { q: Scored }) {
   )
 }
 
-function Summary({ level, done, firstTry, onExit, exitLabel = '返回' }: { level?: string; done: Done; firstTry: Map<string, boolean>; onExit: () => void; exitLabel?: string }) {
+function Summary({ level, done, firstTry, onExit, exitLabel = '返回', footer }: { level?: string; done: Done; firstTry: Map<string, boolean>; onExit: () => void; exitLabel?: string; footer?: ReactNode }) {
   const wrong = useMemo(
     () => [...new Set([...firstTry.entries()].filter(([, ok]) => !ok).map(([k]) => kcLabel(k.replace(/(glyph2wylie|wylie2glyph|findRoot|listen|meaning2word|meaning|order)$/, ''))))],
     [firstTry],
@@ -527,7 +529,7 @@ function Summary({ level, done, firstTry, onExit, exitLabel = '返回' }: { leve
       )}
       {done.unitDone && u && <p>明天会有第一次抽查，之后第 3、7、14、30 天各抽查一次，帮你把这个单元记牢。</p>}
       {lv && done.passed && !done.unitDone && <p>下一关已解锁。</p>}
-      <button className="primary" onClick={onExit}>{exitLabel}</button>
+      {footer ?? <button className="primary" onClick={onExit}>{exitLabel}</button>}
     </section>
   )
 }

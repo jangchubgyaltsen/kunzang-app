@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { play } from './audio.ts'
 import {
   ALL_CARDS, CV_MARKS, CV_PRON, CV_SOURCE, EARLY_DAYS, EARLY_NEW, FAST_MS, FLUENT_DAYS, HOOK_PAIRS, LETTER_NOTE, PRON, ROWS, SHAPE_PAIRS, SOUND_PAIRS, VOWEL_INFO,
@@ -169,7 +169,7 @@ function Pair({ a, b }: { a: string; b: string }) {
 type Log = { it: DrillItem; ok: boolean; ms: number }[]
 
 /** 每日字卡：新卡先看一遍，再看字选注音、听音选字；答错的过 3 题再来一次 */
-export function Drill({ onExit, onComplete, all = false }: { onExit: () => void; onComplete?: () => void; all?: boolean }) {
+export function Drill({ onExit, onComplete, all = false, footer }: { onExit: () => void; onComplete?: () => void; all?: boolean; footer?: ReactNode }) {
   const [stats, setStats] = useState<Record<string, Stat> | null>(null)
   const [queue, setQueue] = useState<Step[]>([])
   const [i, setI] = useState(0)
@@ -227,7 +227,7 @@ export function Drill({ onExit, onComplete, all = false }: { onExit: () => void;
   }, [done, all])
 
   if (!stats || !queue.length) return <section className="lesson">载入中…</section>
-  if (done) return <DrillSummary log={log} stats={stats} onExit={onExit} />
+  if (done) return <DrillSummary log={log} stats={stats} onExit={onExit} footer={footer} />
 
   const go = () => {
     setPicked(null)
@@ -392,7 +392,7 @@ function Split({ it }: { it: DrillItem }) {
   )
 }
 
-function DrillSummary({ log, stats, onExit }: { log: Log; stats: Record<string, Stat>; onExit: () => void }) {
+function DrillSummary({ log, stats, onExit, footer }: { log: Log; stats: Record<string, Stat>; onExit: () => void; footer?: ReactNode }) {
   const right = log.filter((x) => x.ok)
   const fast = right.filter((x) => x.ms <= FAST_MS)
   const avg = right.length ? right.reduce((n, x) => n + x.ms, 0) / right.length / 1000 : 0
@@ -424,7 +424,7 @@ function DrillSummary({ log, stats, onExit }: { log: Log; stats: Record<string, 
           </div>
         </>
       )}
-      <button className="primary" onClick={onExit}>好</button>
+      {footer ?? <button className="primary" onClick={onExit}>好</button>}
     </section>
   )
 }
