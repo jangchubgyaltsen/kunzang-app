@@ -7,6 +7,7 @@ import { hintFor, type Hint } from './hints.ts'
 import { play, playSeq } from './audio.ts'
 import { say } from './sound.ts'
 import ShadowCard from './Shadow.tsx'
+import { db } from './db.ts'
 import './lesson.css'
 
 type Result = { passed: boolean; unitDone?: boolean }
@@ -22,13 +23,20 @@ type Props = {
   onComplete?: () => void
   /** 结算页按钮的字，默认“返回” */
   exitLabel?: string
+  /** 给了就记住做到第几题：今天中途退出，下次打开同一个 resumeKey 从退出的地方接着做 */
+  resumeKey?: string
 }
+type Saved = { day: string; level?: string; queue: Question[]; known?: KC[]; i: number; firstTry: [string, boolean][]; misses: [string, number][] }
+const today = () => new Date().toLocaleDateString('sv')
+const resumeId = (k: string) => 'lesson-resume:' + k
+/** 今日练习换了一天或做完了，清掉存的进度 */
+export const clearResume = (k: string) => db.settings.delete(resumeId(k))
 type Done = { accuracy: number } & Result
 
-export default function Lesson({ level, questions, title, onExit, onFinish, onComplete, exitLabel }: Props) {
+export default function Lesson({ level, questions, title, onExit, onFinish, onComplete, exitLabel, resumeKey }: Props) {
   const lv = level ? levelById.get(level) : undefined
   const unit = lv?.unit
-  const [queue, setQueue] = useState<Question[] | null>(questions ?? null)
+  const [queue, setQueue] = useState<Question[] | null>(resumeKey ? null : (questions ?? null))
   const [known, setKnown] = useState<Set<KC> | undefined>()
   const [i, setI] = useState(0)
   const [chosen, setChosen] = useState<string | number | null>(null)
@@ -58,13 +66,34 @@ export default function Lesson({ level, questions, title, onExit, onFinish, onCo
   }, [])
 
   useEffect(() => {
-    if (!questions && level)
-      Promise.all([seenKCs(), weakKCs()]).then(([seen, weak]) => {
-        const l = buildLevel(level, seen, weak)
-        setQueue(l.questions)
-        setKnown(l.known)
-      })
-  }, [level, questions])
+    ;(async () => {
+      // 今天做到一半退出过同一关：接着做
+      if (resumeKey) {
+        const saved = (await db.settings.get(resumeId(resumeKey)))?.value as Saved | undefined
+        if (saved && saved.day === today() && saved.level === level && saved.i < saved.queue.length) {
+          setQueue(saved.queue)
+          if (saved.known) setKnown(new Set(saved.known))
+          setI(saved.i)
+          setFirstTry(new Map(saved.firstTry))
+          setMisses(new Map(saved.misses))
+          return
+        }
+      }
+      if (questions) return setQueue(questions)
+      if (!level) return
+      const [seen, weak] = await Promise.all([seenKCs(), weakKCs()])
+      const l = buildLevel(level, seen, weak)
+      setQueue(l.questions)
+      setKnown(l.known)
+    })()
+  }, [level, questions, resumeKey])
+  // 每走一步记下进度；做完就清掉
+  useEffect(() => {
+    if (!resumeKey || !queue) return
+    if (done) return void clearResume(resumeKey)
+    const v: Saved = { day: today(), level, queue, known: known && [...known], i, firstTry: [...firstTry], misses: [...misses] }
+    void db.settings.put({ key: resumeId(resumeKey), value: v })
+  }, [resumeKey, level, queue, known, i, firstTry, misses, done])
 
   const q = queue?.[i]
   useEffect(() => {
