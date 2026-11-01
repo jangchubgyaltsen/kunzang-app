@@ -166,8 +166,9 @@ const endOfToday = () => {
 }
 
 /** 记一次字卡作答，写进 FSRS，返回更新后的记录 */
-export async function record(key: string, ok: boolean, ms: number): Promise<Stat> {
-  const card = await recordAnswer(key, ok, undefined, 'drill', !ok ? Rating.Again : ms <= FAST_MS ? Rating.Good : Rating.Hard, { ms })
+export async function record(key: string, ok: boolean, ms: number, hinted = false): Promise<Stat> {
+  // 看了提示才选对的记 Hard
+  const card = await recordAnswer(key, ok, undefined, 'drill', !ok ? Rating.Again : ms <= FAST_MS && !hinted ? Rating.Good : Rating.Hard, { ms })
   return toStat(card)
 }
 

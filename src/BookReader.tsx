@@ -156,7 +156,7 @@ export function BookChapter({ info, onPick, onQuiz }: { info: ChapterInfo; onPic
           接着上次读的地方 →
         </button>
       )}
-      {showZh && zh.size === 0 && <p className="muted small">还没有这部分的中文译文。请在“设置”里导入全书中文译文包。</p>}
+      {showZh && zh.size === 0 && <p className="muted small">还没有这部分的中文译文。请在“我的”页最下面导入全书中文译文包。</p>}
       <div className="lines book">
         {ch.paras.slice(0, shown).map((p) => {
           const withAudio = p.sents.filter((s) => !s.noAudio)

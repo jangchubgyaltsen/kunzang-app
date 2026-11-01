@@ -1,6 +1,8 @@
 import { LETTERS, letterAudio, cvAudio, wordMap, words, type Scored } from './course.ts'
 import { CV_PRON, PRON, shapeMates, soundMates } from './pron.ts'
 import { amdoSentences, amdoWords } from './amdo.ts'
+import { syllableMap } from './content.ts'
+import { tokenMap } from './reading.ts'
 
 /**
  * 误区表：答错第一次时，按“选了哪个错项”给一句针对性的提示，不直接给答案，然后让人再选一次。
@@ -27,7 +29,7 @@ const ROOT_HINT: Record<string, [string, string]> = {
   前加字: ['root-pre', '写在最前面、不带元音，是前加字。基字在它后面。'],
   上加字: ['root-sup', '写在头顶，是上加字。基字在它下面。'],
   下加字: ['root-sub', '挂在脚下，是下加字。基字在它上面。'],
-  后加字: ['root-suf', '跟在基字后面，是后加字，读得很轻。'],
+  后加字: ['root-suf', '跟在基字后面，是后加字，做韵尾。'],
   再后加字: ['root-post', '写在最后，是再后加字。'],
 }
 
@@ -115,5 +117,28 @@ export function hintFor(q: Scored, chosen: string | number): Hint {
   const gloss = tibGloss.get(c)
   if (gloss) return { cat: 'word', text: `你选的 ${c} 意思是“${gloss}”。`, audio: wordMap.get(c) ? [wordMap.get(c)!.audio] : undefined }
 
+  // 认读一行字母：指出哪一个读错了
+  if (q.kind === 'glyph2wylie' && q.seq && typeof q.answer === 'string') {
+    const want = q.answer.split(' '), got = c.split(' ')
+    const k = want.findIndex((x, j) => x !== got[j])
+    const ch = q.prompt.split('་')[k]
+    if (k >= 0 && ch) return { cat: 'other', text: `第 ${k + 1} 个字 ${ch} 读错了，其余都对。`, audio: [letterAudio(ch)] }
+  }
+
+  // 听音选藏文：比音节数和开头，告诉人往哪里听
+  if (q.kind === 'listen' && /[\u0F40-\u0FBC]/.test(c) && typeof q.answer === 'string') {
+    const a = q.answer.split('་').filter(Boolean), b = c.split('་').filter(Boolean)
+    const audio = audioOf(c)
+    if (a.length !== b.length) return { cat: 'listen', text: `你选的 ${c} 有 ${b.length} 个音节，再数一数听到的有几个。`, audio }
+    if (a[0] === b[0]) return { cat: 'listen', text: `开头一样，${a.length > 1 ? '后面的音节' : '韵尾'}不同。先听你选的，再听一遍题目，注意后半。`, audio }
+    return { cat: 'listen', text: `开头就不一样。先听你选的 ${c}，再听一遍题目，注意第一个音。`, audio }
+  }
+
   return { cat: 'other', text: '再想一想。' + (q.audio ? '可以再听一遍。' : '') }
+}
+
+/** 一段藏文的录音（词、原文里的词、音节），找不到就不给 */
+function audioOf(t: string): string[] | undefined {
+  const a = wordMap.get(t)?.audio ?? tokenMap.get(t)?.audio ?? syllableMap.get(t)?.audio ?? amdoWords.find((w) => w.tib === t)?.audio
+  return a ? [a] : undefined
 }

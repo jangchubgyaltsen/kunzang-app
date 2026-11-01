@@ -14,10 +14,11 @@ export const PASS_ACCURACY = 0.8
 export async function kcMastered(kc: KC) {
   const all = await db.attempts.where('kc').equals(kc).sortBy('at')
   if (all.length < 3) return false
-  const last = all.slice(-5)
-  const okRate = last.filter((a) => a.ok).length / last.length
+  // 最近 7 次至少对 6 次（不到 7 次的按已有的算，最多错 1 次），并且隔天还答对过
+  const last = all.slice(-7)
+  const wrong = last.filter((a) => !a.ok).length
   const spaced = all.some((a) => a.ok && a.at - all[0].at >= DAY)
-  return okRate >= 0.8 && spaced
+  return wrong <= 1 && spaced
 }
 
 /**

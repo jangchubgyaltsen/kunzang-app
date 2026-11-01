@@ -20,9 +20,14 @@ import { glossOf, loadGloss, type WordGloss } from './gloss.ts'
 import AmdoView from './Amdo.tsx'
 import { setWylie, wylieOn } from './prefs.ts'
 
-type Tab = 'path' | 'alphabet' | 'amdo' | 'reader' | 'review' | 'settings'
+type Tab = 'path' | 'reader' | 'library' | 'me'
+// 资料库里分两块：字母表、安多会话教材
+type Shelf = 'alphabet' | 'amdo'
 export default function App() {
   const [tab, setTab] = useState<Tab>('path')
+  const [shelf, setShelf] = useState<Shelf>('alphabet')
+  // 第一次打开：先看一屏欢迎页，再开始今日练习
+  const [welcome, setWelcome] = useState(() => localStorage.getItem('welcomed') !== '1')
   const [passageId, setPassageId] = useState('title')
   const [session, setSession] = useState<Session | null>(null)
   // 字母页手动开的字卡。负数表示 150 张全部过一遍
@@ -30,8 +35,9 @@ export default function App() {
   // 今日练习：每天打开 App 先自动进这个（字卡 → 复习 → 拼读 → 开篇 → 会话），全部做完之前每次打开都会弹出
   const [practice, setPractice] = useState<{ auto: boolean } | null>(null)
   useEffect(() => {
+    if (welcome) return
     loadPlan().then((p) => p.done.length < p.steps.length && setPractice((x) => x ?? { auto: true }))
-  }, [])
+  }, [welcome])
   const busy = session !== null || drill !== 0 || practice !== null
 
   // 原文页看的是哪一章：'00' 是开篇（逐词版），其余是正文各章
@@ -50,6 +56,20 @@ export default function App() {
     setTab('reader')
   }
 
+  if (welcome)
+    return (
+      <div className="app">
+        <main>
+          <Welcome
+            onStart={() => {
+              localStorage.setItem('welcomed', '1')
+              setWelcome(false)
+            }}
+          />
+        </main>
+      </div>
+    )
+
   return (
     <div className="app">
       <main>
@@ -61,27 +81,35 @@ export default function App() {
           ))}
         {practice !== null && <Practice auto={practice.auto} onExit={() => setPractice(null)} />}
         {drill !== 0 && <Drill key={drill} all={drill < 0} onExit={() => setDrill(0)} />}
-        {!busy && tab === 'alphabet' && <AlphabetView key={drill} onStart={(all) => setDrill(all ? -Date.now() : Date.now())} />}
+        {!busy && tab === 'library' && (
+          <div className="chips">
+            <button className={shelf === 'alphabet' ? 'on' : ''} onClick={() => setShelf('alphabet')}>
+              字母表
+            </button>
+            <button className={shelf === 'amdo' ? 'on' : ''} onClick={() => setShelf('amdo')}>
+              安多会话教材
+            </button>
+          </div>
+        )}
+        {!busy && tab === 'library' && shelf === 'alphabet' && <AlphabetView key={drill} onStart={(all) => setDrill(all ? -Date.now() : Date.now())} />}
         {!busy && tab === 'path' && (
           <PathView onOpen={openPassage} onStart={setSession} onPractice={() => setPractice({ auto: false })} />
         )}
         {!busy && tab === 'reader' && (
           <ReaderView passageId={passageId} onSelect={setPassageId} chapterId={chapterId} onChapter={pickChapter} onQuiz={(questions, title) => setSession({ questions, title })} />
         )}
-        {!busy && tab === 'amdo' && <AmdoView onStart={setSession} />}
-        {!busy && tab === 'review' && <Review onStart={setSession} />}
-        {!busy && tab === 'settings' && <SettingsView />}
+        {!busy && tab === 'library' && shelf === 'amdo' && <AmdoView onStart={setSession} />}
+        {!busy && tab === 'me' && <Review onStart={setSession} />}
+        {!busy && tab === 'me' && <SettingsView />}
       </main>
       {!busy && (
         <nav className="tabs">
           {(
             [
-              ['path', '路径'],
-              ['alphabet', '字母'],
-              ['amdo', '资料库'],
+              ['path', '今天'],
               ['reader', '原文'],
-              ['review', '复习'],
-              ['settings', '设置'],
+              ['library', '资料库'],
+              ['me', '我的'],
             ] as [Tab, string][]
           ).map(([k, label]) => (
             <button key={k} className={tab === k ? 'on' : ''} onClick={() => setTab(k)}>
@@ -322,7 +350,7 @@ function OpeningReader({ passageId, onSelect }: { passageId: string; onSelect: (
           </div>
         ))}
         {showZh && chinese && p.lines.length !== zhLines.length && <div className="zh">{chinese}</div>}
-        {showZh && !chinese && <p className="muted small">还没有中文译文。请在“设置”里导入中文译文包。</p>}
+        {showZh && !chinese && <p className="muted small">还没有中文译文。请在“我的”页最下面导入中文译文包。</p>}
       </div>
       <p className="muted small">
         读音为安多音 TTS 自动生成：整句是连读，点词听的是从整句里切出来的那一段。注音是一本通式，按对照表规律推出来，尚未逐个核对。点词看意思和音节结构。
@@ -434,6 +462,34 @@ function WylieSetting() {
         显示转写、出转写题
       </label>
     </>
+  )
+}
+
+/** 第一次打开时的欢迎页：一句话说清这个 App 怎么用 */
+function Welcome({ onStart }: { onStart: () => void }) {
+  return (
+    <section className="welcome">
+      <div className="tib huge center">ཀུན་བཟང་</div>
+      <h1 className="center">普贤上师言教 · 藏文学习</h1>
+      <p>从零开始学安多音的藏文拼读，最后能跟着念、读懂《普贤上师言教》的原文。</p>
+      <ul>
+        <li>
+          <b>每天打开就是“今日练习”</b>：字卡、复习、拼读一关，再加一点原文和安多会话，大约 15–20 分钟。字卡做完就算签到。
+        </li>
+        <li>
+          <b>开着声音</b>：读音都靠听。字母、元音和会话是老师的真人录音。
+        </li>
+        <li>
+          <b>答错没关系</b>：第一次选错会给提示再选一次，错过的过几天会再出。
+        </li>
+        <li>
+          <b>记录只存在这台设备上</b>：可以在“我的”里导出备份。
+        </li>
+      </ul>
+      <button className="primary" onClick={onStart}>
+        开始第一天
+      </button>
+    </section>
   )
 }
 
