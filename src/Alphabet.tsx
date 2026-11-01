@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { play } from './audio.ts'
 import {
-  ALL_CARDS, CV_MARKS, CV_PRON, CV_SOURCE, FAST_MS, FLUENT_AT, HOOK_PAIRS, LETTER_NOTE, PRON, ROWS, SHAPE_PAIRS, SOUND_PAIRS, VOWEL_INFO,
-  buildDaily, cardCounts, cvAudioOf, isFluent, isLookalike, isSoundPair, loadStats, markDailyDone, optionsFor, record, saveStats,
+  ALL_CARDS, CV_MARKS, CV_PRON, CV_SOURCE, FAST_MS, FLUENT_DAYS, HOOK_PAIRS, LETTER_NOTE, PRON, ROWS, SHAPE_PAIRS, SOUND_PAIRS, VOWEL_INFO,
+  buildDaily, cardCounts, cvAudioOf, isFluent, isLookalike, isSoundPair, loadStats, markDailyDone, optionsFor, record,
   type DrillItem, type Stat, type Step,
 } from './alphabet.ts'
 import { letterAudio } from './course.ts'
@@ -31,7 +31,7 @@ export function AlphabetView({ onStart }: { onStart: (all?: boolean) => void }) 
     <section className="alpha">
       <h1>字母表</h1>
       <p className="muted small">
-        30 个字母，四个一行。按行出声念，点字听读音。一眼认出（3 秒内连续答对 {FLUENT_AT} 次）的字会亮金色，现在 {fluent} / 30。
+        30 个字母，四个一行。按行出声念，点字听读音。记牢了的字（字卡和路径里都算，复习间隔到了 {FLUENT_DAYS} 天以上）会亮金色，现在 {fluent} / 30。
       </p>
       <div className="toggles">
         <button className={'pill' + (hide ? ' on' : '')} aria-pressed={hide} onClick={() => { setHide(!hide); setShown(new Set()) }}>
@@ -60,10 +60,10 @@ export function AlphabetView({ onStart }: { onStart: (all?: boolean) => void }) 
       <h2>每日字卡</h2>
       <p className="muted small">
         30 个字母加 120 个字母 + 元音组合，一共 150 张卡。每天第一次打开 App 先考这个：到期的卡看字选注音、听音选字轮着考，
-        选项里放的是书上成对比较的形近字和发音相近的字；答错的当天再考，一眼认出的隔几天再考。新卡按字母表顺序每天带 15 张。
+        选项里放的是书上成对比较的形近字和发音相近的字；答错的当天再考，答得越快越稳，隔的天数越长。新卡按字母表顺序每天带 15 张，拼读路径也按这个顺序学字母，两边共用一份记录。
       </p>
       <p className="small">
-        今天到期 <b>{counts.due}</b> 张 · 还没见过 <b>{counts.fresh}</b> 张 · 已经一眼认出 <b>{counts.fluent}</b> / 150 张
+        今天到期 <b>{counts.due}</b> 张 · 还没见过 <b>{counts.fresh}</b> 张 · 已经记牢 <b>{counts.fluent}</b> / 150 张
       </p>
       <div className="actions col alpha-go">
         <button className="primary" onClick={() => onStart()}>开始今天的字卡</button>
@@ -210,10 +210,8 @@ export function Drill({ onExit, onComplete, all = false }: { onExit: () => void;
     setMs(t)
     setPicked(choice)
     if (step.mode === 'read' || !ok) play(it.audio)
-    const s = { ...stats }
-    record(s, it.key, ok, t)
-    setStats(s)
-    await saveStats(s)
+    const st = await record(it.key, ok, t)
+    setStats((s) => ({ ...s, [it.key]: st }))
     setLog((l) => [...l, { it, ok, ms: t }])
     // 答错的过 3 题再来一次，换一种考法
     if (!ok) setQueue((q) => [...q.slice(0, i + 4), { it, mode: step.mode === 'read' ? 'hear' : 'read' }, ...q.slice(i + 4)])
@@ -328,7 +326,7 @@ function DrillSummary({ log, stats, onExit }: { log: Log; stats: Record<string, 
       <h1>每日字卡</h1>
       <div className="big-number">
         {fluent}
-        <span className="small muted"> / 150 张一眼认出</span>
+        <span className="small muted"> / 150 张记牢了</span>
       </div>
       <p className="muted">其中字母 {letters} / 30 个；还有 {fresh} 张新卡没见过。</p>
       <p className="muted">

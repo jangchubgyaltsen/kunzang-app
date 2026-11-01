@@ -1,5 +1,7 @@
 import { LETTERS, VOWELS, cvAudio, letterAudio, shuffle } from './course.ts'
+import { Rating, State, type Card } from 'ts-fsrs'
 import { db } from './db.ts'
+import { recordAnswer, reviveCard } from './progress.ts'
 import { CV_PRON, PRON, shapeMates, soundMates } from './pron.ts'
 
 // 字母表和每日字卡的数据。注音体系见 pron.ts（《安多藏语一本通》）。
@@ -89,45 +91,37 @@ export function optionsFor(it: DrillItem, mode: Mode): DrillItem[] {
 }
 
 // ---- 熟练度和复习间隔 ----
-// 看到后 3 秒内答对算“一眼认出”，连续 3 次算熟。
-// 复习间隔按盒子走：一眼认出升一盒，答错回到第 0 盒（当天再考），答对但慢留在原盒。
+// 字卡和路径、复习共用同一份 FSRS 记录（db.cards），键就是 L:ཀ、CV:ཀི。
+// 看到后 3 秒内答对算“一眼认出”，记 Good；答对但慢记 Hard；答错记 Again。
+// FSRS 算出的记忆稳定度到 4 天以上，就算熟了（字母表上亮金色）。
 
 export const FAST_MS = 3000
-export const FLUENT_AT = 3
-const GAP_DAYS = [0, 1, 2, 4, 7, 15, 30]
-export type Stat = { fast: number; seen: number; ok: number; lastMs?: number; at?: number; box?: number; due?: string }
-const KEY = 'alphabet-stats'
+export const FLUENT_DAYS = 4
+/** 一张字卡的记录，从 FSRS 卡片里读出来 */
+export type Stat = { seen: number; due: number; stability: number; review: boolean; at?: number }
+
+const toStat = (c: Card): Stat => ({
+  seen: c.reps, due: new Date(c.due).getTime(), stability: c.stability, review: c.state === State.Review,
+  at: c.last_review ? new Date(c.last_review).getTime() : undefined,
+})
 
 export async function loadStats(): Promise<Record<string, Stat>> {
-  return ((await db.settings.get(KEY))?.value as Record<string, Stat>) ?? {}
+  const rows = await db.cards.where('kc').startsWithAnyOf('L:', 'CV:').toArray()
+  return Object.fromEntries(rows.map((r) => [r.kc, toStat(reviveCard(r.card))]))
 }
-export async function saveStats(s: Record<string, Stat>) {
-  await db.settings.put({ key: KEY, value: s })
-}
-export const isFluent = (s?: Stat) => (s?.fast ?? 0) >= FLUENT_AT
+export const isFluent = (s?: Stat) => !!s && s.review && s.stability >= FLUENT_DAYS
 
 export const today = () => new Date().toLocaleDateString('sv')
-const addDays = (n: number) => {
+const endOfToday = () => {
   const d = new Date()
-  d.setDate(d.getDate() + n)
-  return d.toLocaleDateString('sv')
+  d.setHours(23, 59, 59, 999)
+  return d.getTime()
 }
-/** 旧版练习留下的记录没有盒子，按连续一眼认出的次数补上 */
-const boxOf = (s: Stat) => s.box ?? Math.min(s.fast, GAP_DAYS.length - 1)
-const dueOf = (s: Stat) => s.due ?? (s.at ? new Date(s.at + GAP_DAYS[boxOf(s)] * 864e5).toLocaleDateString('sv') : today())
 
-export function record(stats: Record<string, Stat>, key: string, ok: boolean, ms: number) {
-  const s = stats[key] ?? { fast: 0, seen: 0, ok: 0 }
-  const box = s.seen ? boxOf(s) : 0
-  s.seen++
-  if (ok) s.ok++
-  const fast = ok && ms <= FAST_MS
-  s.fast = fast ? s.fast + 1 : 0
-  s.box = !ok ? 0 : fast ? Math.min(box + 1, GAP_DAYS.length - 1) : Math.max(box, 1)
-  s.due = addDays(GAP_DAYS[s.box])
-  s.lastMs = ms
-  s.at = Date.now()
-  stats[key] = s
+/** 记一次字卡作答，写进 FSRS，返回更新后的记录 */
+export async function record(key: string, ok: boolean, ms: number): Promise<Stat> {
+  const card = await recordAnswer(key, ok, undefined, 'drill', ms <= FAST_MS ? Rating.Good : Rating.Hard)
+  return toStat(card)
 }
 
 /** 字卡练习里的一步：新卡先看一遍（intro），然后看字选注音（read）或听音选字（hear） */
@@ -148,9 +142,9 @@ const DUE_MAX = 60
 
 /** 到期没复习的卡有几张；新卡还剩几张没见过 */
 export function cardCounts(stats: Record<string, Stat>) {
-  const t = today()
+  const t = endOfToday()
   const seen = ALL_CARDS.filter((x) => stats[x.key]?.seen)
-  return { due: seen.filter((x) => dueOf(stats[x.key]) <= t).length, fresh: ALL_CARDS.length - seen.length, fluent: ALL_CARDS.filter((x) => isFluent(stats[x.key])).length }
+  return { due: seen.filter((x) => stats[x.key].due <= t).length, fresh: ALL_CARDS.length - seen.length, fluent: ALL_CARDS.filter((x) => isFluent(stats[x.key])).length }
 }
 
 /**
@@ -160,12 +154,12 @@ export function cardCounts(stats: Record<string, Stat>) {
  * all：150 张全部过一遍，每张一题。
  */
 export function buildDaily(stats: Record<string, Stat>, all = false): Step[] {
-  const t = today()
+  const t = endOfToday()
   if (all) return noRepeat(shuffle(ALL_CARDS).map((it, i) => ({ it, mode: i % 2 ? 'hear' : 'read' })))
   const seen = ALL_CARDS.filter((x) => stats[x.key]?.seen)
   const due = seen
-    .filter((x) => dueOf(stats[x.key]) <= t)
-    .sort((a, b) => boxOf(stats[a.key]) - boxOf(stats[b.key]) || dueOf(stats[a.key]).localeCompare(dueOf(stats[b.key])))
+    .filter((x) => stats[x.key].due <= t)
+    .sort((a, b) => stats[a.key].stability - stats[b.key].stability || stats[a.key].due - stats[b.key].due)
     .slice(0, DUE_MAX)
   // 积压太多时少带新卡
   const nNew = due.length >= 40 ? 0 : due.length >= 20 ? 5 : NEW_PER_DAY
@@ -173,7 +167,7 @@ export function buildDaily(stats: Record<string, Stat>, all = false): Step[] {
   // 一张都不到期、也没有新卡时，挑最久没见的 10 张复习
   const extra = due.length || fresh.length ? [] : [...seen].sort((a, b) => (stats[a.key].at ?? 0) - (stats[b.key].at ?? 0)).slice(0, 10)
   const quiz: Step[] = [
-    ...[...due, ...extra].map((it): Step => ({ it, mode: boxOf(stats[it.key]) % 2 ? 'hear' : 'read' })),
+    ...[...due, ...extra].map((it): Step => ({ it, mode: (stats[it.key]?.seen ?? 0) % 2 ? 'hear' : 'read' })),
     ...fresh.flatMap((it): Step[] => [{ it, mode: 'read' }, { it, mode: 'hear' }]),
   ]
   return [...fresh.map((it): Step => ({ it, intro: true, mode: 'read' })), ...noRepeat(shuffle(quiz))]

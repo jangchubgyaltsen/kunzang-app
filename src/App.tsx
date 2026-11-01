@@ -3,6 +3,7 @@ import { passages, passageTitles, syllableMap, type Syllable } from './content.t
 import { audioStatus, play, playSeq } from './audio.ts'
 import { say } from './sound.ts'
 import { db, exportData, importData, importTranslationPack } from './db.ts'
+import { migrate } from './migrate.ts'
 import Lesson from './Lesson.tsx'
 import Review from './Review.tsx'
 import Today from './Today.tsx'
@@ -443,6 +444,7 @@ function SettingsView() {
   const doImport = async (file: File) => {
     try {
       await importData(JSON.parse(await file.text()))
+      await migrate()
       setMsg('已恢复备份。')
     } catch (e) {
       setMsg('恢复失败：' + (e as Error).message)
