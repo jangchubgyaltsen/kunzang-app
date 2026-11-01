@@ -87,9 +87,9 @@ export default function Practice({ auto, onExit }: { auto: boolean; onExit: () =
   }
 
   if (run?.kind === 'drill') return <Drill onExit={finishStep} onComplete={onComplete} />
-  if (run?.kind === 'level') return <Lesson key={run.level} level={run.level} onExit={finishStep} onComplete={onComplete} exitLabel="继续" />
+  if (run?.kind === 'level') return <Lesson key={run.level} level={run.level} onExit={finishStep} onComplete={onComplete} exitLabel="继续" resumeKey={run.key} />
   if (run?.kind === 'questions')
-    return <Lesson questions={run.questions} title={run.title} onFinish={run.onFinish} onExit={finishStep} onComplete={onComplete} exitLabel="继续" />
+    return <Lesson questions={run.questions} title={run.title} onFinish={run.onFinish} onExit={finishStep} onComplete={onComplete} exitLabel="继续" resumeKey={run.key} />
   if (!plan) return <section className="lesson">载入中…</section>
 
   const left = plan.steps.filter((k) => !plan.done.includes(k))
