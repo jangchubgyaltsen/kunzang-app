@@ -634,17 +634,17 @@ function passageUnit(passage: string, n: number): PathUnit {
   }
 }
 
-/** 会话线：《安多方言会话教材》300 句，15 句一个单元，从第一天就能学，以听懂为先 */
+/** 会话线：《安多方言会话教材》300 句，15 句一个单元，从第一天就能学，以听懂为先。不在路径上单独显示，每天排进今日练习 */
 export const TALK_BASE = 31
 function talkUnit(set: { title: string; ids: string[] }, i: number): PathUnit {
   const n = TALK_BASE + i
   const ks = set.ids.map((x) => 'A:' + x)
-  const half = Math.ceil(ks.length / 2)
+  // 新句子每关 3–4 句，每天在今日练习里排一关
+  const hear = chunk(ks, 4)
   const id = (s: string) => `a${i + 1}-${s}`
   const first = sentenceById.get(set.ids[0])!
   const levels: Level[] = [
-    { id: id('h1'), unit: n, kind: 'talk', stage: 'hear', title: '听懂 · 前半', kcs: ks.slice(0, half) },
-    { id: id('h2'), unit: n, kind: 'talk', stage: 'hear', title: '听懂 · 后半', kcs: ks.slice(half) },
+    ...hear.map((g, j): Level => ({ id: id('h' + (j + 1)), unit: n, kind: 'talk', stage: 'hear', title: `听懂 ${j + 1}/${hear.length}`, kcs: g })),
     { id: id('r'), unit: n, kind: 'talk', stage: 'read', title: '认读', kcs: ks },
     { id: id('s'), unit: n, kind: 'talk', stage: 'say', title: '说：排出整句', kcs: ks },
     { id: id('t'), unit: n, kind: 'test', title: '单元小测', kcs: ks },

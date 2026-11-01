@@ -184,6 +184,10 @@ const DAILY_KEY = 'alphabet-daily'
 export async function dailyDue() {
   return (await db.settings.get(DAILY_KEY))?.value !== today()
 }
-export async function markDailyDone() {
-  await db.settings.put({ key: DAILY_KEY, value: today() })
+/** 做完当天的字卡：记下“今天做过了”，同时算签到（一天一次，重做只留更好的成绩） */
+export async function markDailyDone(score = 0, total = 0) {
+  const date = today()
+  await db.settings.put({ key: DAILY_KEY, value: date })
+  const prev = await db.checkins.get(date)
+  if (!prev || score > prev.score) await db.checkins.put({ date, game: 'drill', score, total, at: prev?.at ?? Date.now() })
 }

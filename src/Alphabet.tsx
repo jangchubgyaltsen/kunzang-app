@@ -165,7 +165,7 @@ function Pair({ a, b }: { a: string; b: string }) {
 type Log = { it: DrillItem; ok: boolean; ms: number }[]
 
 /** 每日字卡：新卡先看一遍，再看字选注音、听音选字；答错的过 3 题再来一次 */
-export function Drill({ onExit, all = false }: { onExit: () => void; all?: boolean }) {
+export function Drill({ onExit, onComplete, all = false }: { onExit: () => void; onComplete?: () => void; all?: boolean }) {
   const [stats, setStats] = useState<Record<string, Stat> | null>(null)
   const [queue, setQueue] = useState<Step[]>([])
   const [i, setI] = useState(0)
@@ -190,7 +190,11 @@ export function Drill({ onExit, all = false }: { onExit: () => void; all?: boole
     if (step && (step.intro || step.mode === 'hear')) play(step.it.audio)
   }, [i, step])
   useEffect(() => {
-    if (done && !all) void markDailyDone()
+    if (!done) return
+    onComplete?.()
+    // 每天的字卡做完就算签到
+    if (!all) void markDailyDone(log.filter((x) => x.ok).length, log.length)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [done, all])
 
   if (!stats || !queue.length) return <section className="lesson">载入中…</section>

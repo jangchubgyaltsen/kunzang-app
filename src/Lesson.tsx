@@ -16,10 +16,14 @@ type Props = {
   onExit: () => void
   /** 自定义结算（例如抽查），返回是否通过 */
   onFinish?: (accuracy: number) => Promise<Result>
+  /** 做完最后一题时调用（中途 ✕ 退出不调用） */
+  onComplete?: () => void
+  /** 结算页按钮的字，默认“返回” */
+  exitLabel?: string
 }
 type Done = { accuracy: number } & Result
 
-export default function Lesson({ level, questions, title, onExit, onFinish }: Props) {
+export default function Lesson({ level, questions, title, onExit, onFinish, onComplete, exitLabel }: Props) {
   const lv = level ? levelById.get(level) : undefined
   const unit = lv?.unit
   const [queue, setQueue] = useState<Question[] | null>(questions ?? null)
@@ -45,7 +49,7 @@ export default function Lesson({ level, questions, title, onExit, onFinish }: Pr
   }, [q])
 
   if (!queue) return <section className="lesson">载入中…</section>
-  if (done) return <Summary level={level} done={done} firstTry={firstTry} onExit={onExit} />
+  if (done) return <Summary level={level} done={done} firstTry={firstTry} onExit={onExit} exitLabel={exitLabel} />
   if (!q) return null
 
   const next = async () => {
@@ -55,6 +59,7 @@ export default function Lesson({ level, questions, title, onExit, onFinish }: Pr
     const accuracy = vals.filter(Boolean).length / Math.max(1, vals.length)
     const r = onFinish ? await onFinish(accuracy) : level ? await finishLevel(level, accuracy) : { passed: accuracy >= 0.8 }
     setDone({ accuracy, ...r })
+    onComplete?.()
   }
 
   const progress = Math.round((i / queue.length) * 100)
@@ -280,7 +285,7 @@ function Basics({ q }: { q: Scored }) {
   )
 }
 
-function Summary({ level, done, firstTry, onExit }: { level?: string; done: Done; firstTry: Map<string, boolean>; onExit: () => void }) {
+function Summary({ level, done, firstTry, onExit, exitLabel = '返回' }: { level?: string; done: Done; firstTry: Map<string, boolean>; onExit: () => void; exitLabel?: string }) {
   const wrong = useMemo(
     () => [...new Set([...firstTry.entries()].filter(([, ok]) => !ok).map(([k]) => kcLabel(k.replace(/(glyph2wylie|wylie2glyph|findRoot|listen|meaning2word|meaning|order)$/, ''))))],
     [firstTry],
@@ -307,7 +312,7 @@ function Summary({ level, done, firstTry, onExit }: { level?: string; done: Done
       )}
       {done.unitDone && u && <p>明天会有第一次抽查，之后第 3、7、14、30 天各抽查一次，帮你把这个单元记牢。</p>}
       {lv && done.passed && !done.unitDone && <p>下一关已解锁。</p>}
-      <button className="primary" onClick={onExit}>返回</button>
+      <button className="primary" onClick={onExit}>{exitLabel}</button>
     </section>
   )
 }
