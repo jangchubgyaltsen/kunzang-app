@@ -27,6 +27,8 @@ export async function kcMastered(kc: KC) {
 export async function recordAnswer(kc: KC, ok: boolean, unit?: number, src?: string, rating?: Grade, extra?: Pick<Attempt, 'kind' | 'ms' | 'pick' | 'miss'>) {
   const now = new Date()
   await db.attempts.add({ kc, ok, at: now.getTime(), unit, src, ...extra })
+  // 全书段落题（B:）只记作答，不进复习
+  if (kc.startsWith('B:')) return createEmptyCard(now)
   const row = await db.cards.get(kc)
   const card: Card = row ? reviveCard(row.card) : createEmptyCard(now)
   let r: Grade = rating ?? (ok ? Rating.Good : Rating.Again)

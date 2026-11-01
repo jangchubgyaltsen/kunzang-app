@@ -143,7 +143,8 @@ export default function Lesson({ level, questions, title, onExit, onFinish, onCo
     const m = (misses.get(q.kc) ?? 0) + 1
     setMisses(new Map(misses).set(q.kc, m))
     // 补救：同一知识点换一种题型，排到后面再练一次
-    if (m <= 2) setQueue([...queue, questionFor(q.kc, m, known)])
+    // 全书段落题（B:）没有别的题型可换，不补练
+    if (m <= 2 && !q.kc.startsWith('B:')) setQueue([...queue, questionFor(q.kc, m, known)])
   }
 
   const choose = async (c: string | number) => {
@@ -233,7 +234,7 @@ function withTib(t: string) {
 }
 
 // 会话整句：字号小一点，选项一行一个
-const long = (q: Scored) => q.kc.startsWith('A:')
+const long = (q: Scored) => q.kc.startsWith('A:') || q.kc.startsWith('B:') || q.kind === 'pickWord'
 
 function labelOf(q: Scored, a: string | number) {
   if (q.kind === 'build') return a === q.answer ? q.target : String(a).replace(/\|/g, ' ')
@@ -325,8 +326,15 @@ function Prompt({ q }: { q: Scored }) {
     case 'meaning':
       return (
         <div className="prompt">
-          <div className="ask">{q.kc.startsWith('A:') ? '这句话是什么意思？' : '这个词是什么意思？'}</div>
+          <div className="ask">{q.kc.startsWith('B:') ? '这段话说的是什么？' : q.kc.startsWith('A:') ? '这句话是什么意思？' : '这个词是什么意思？'}</div>
           <div className={'tib tap ' + (long(q) ? 'big center' : 'huge')} onClick={() => (q.audio ? play(q.audio) : say(q.prompt))}>{q.prompt}</div>
+        </div>
+      )
+    case 'pickWord':
+      return (
+        <div className="prompt">
+          <div className="ask">这句原文里有下面哪个词？</div>
+          <div className="tib big center tap" onClick={() => q.audio && play(q.audio)}>{q.prompt}</div>
         </div>
       )
     case 'meaning2word':
