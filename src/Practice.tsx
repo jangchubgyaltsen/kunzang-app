@@ -5,7 +5,7 @@ import Lesson from './Lesson.tsx'
 import { levelById, questionFor, unitByN, type Question, type Track } from './course.ts'
 import { dueKCs } from './progress.ts'
 import { spotCheckSession } from './session.ts'
-import { PER_DAY, REVIEW_SIZE, levelFor, loadPlan, markStep, stepHasWork, stepLabel, type DayPlan, type StepKey } from './practice.ts'
+import { PER_DAY, REVIEW_SIZE, addExtra, levelFor, loadPlan, markStep, stepHasWork, stepLabel, type DayPlan, type StepKey } from './practice.ts'
 
 type Running =
   | { key: StepKey; kind: 'drill' }
@@ -115,7 +115,20 @@ export default function Practice({ auto, onExit }: { auto: boolean; onExit: () =
           {plan.done.length ? '继续' : '开始'}：{stepLabel(left[0])}
         </button>
       ) : (
-        <p className="practice-done">今天的练习都做完了。想多学，可以在路径上接着往下走。</p>
+        <>
+          <p className="practice-done">今天的练习都做完了。{plan.extra?.length ? '今天复习比较多，下面这些新内容先省掉了，有空可以接着学。' : '想多学，可以在路径上接着往下走。'}</p>
+          {!!plan.extra?.length && (
+            <button
+              className="primary"
+              onClick={async () => {
+                await addExtra()
+                await advance(true)
+              }}
+            >
+              再学一点：{stepLabel(plan.extra[0])}
+            </button>
+          )}
+        </>
       )}
       <button className="link" onClick={onExit}>
         回首页
