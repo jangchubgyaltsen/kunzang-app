@@ -21,7 +21,7 @@ export default function Practice({ auto, onExit }: { auto: boolean; onExit: () =
   const [run, setRun] = useState<Running | null>(null)
   const [what, setWhat] = useState<Record<StepKey, string>>({})
   const completed = useRef(false)
-  // 这一步里已经做完几关（诵读开篇一步连着做两关）
+  // 这一步里已经做完几关（PER_DAY 可以让一条线一步连着做几关）
   const levelsDone = useRef(0)
 
   /** 找到下一步还有事可做的；没事可做的（复习没到期之类）直接记成做完 */

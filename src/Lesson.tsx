@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Rating, type Grade } from 'ts-fsrs'
-import { TALK_BASE, buildLevel, kcLabel, levelById, partsOf, questionFor, unitByN, type Intro, type KC, type Question, type Scored, type Shadow } from './course.ts'
+import { TALK_BASE, buildLevel, kcLabel, levelById, partsOf, questionFor, readQuestion, unitByN, type Intro, type KC, type Question, type Scored, type Shadow } from './course.ts'
 import { syllableMap } from './content.ts'
 import { finishLevel, recordAnswer, seenKCs, speedMedians, speedRating, weakKCs } from './progress.ts'
 import { hintFor, type Hint } from './hints.ts'
@@ -144,7 +144,9 @@ export default function Lesson({ level, questions, title, onExit, onFinish, onCo
     setMisses(new Map(misses).set(q.kc, m))
     // 补救：同一知识点换一种题型，排到后面再练一次
     // 全书段落题（B:）没有别的题型可换，不补练
-    if (m <= 2 && !q.kc.startsWith('B:')) setQueue([...queue, questionFor(q.kc, m, known)])
+    // 诵读线的关只换成听音、意思这几种问法，不出转写题
+    const again = lv && unitByN.get(lv.unit)?.track === 'read' ? readQuestion(q.kc, m, known) : questionFor(q.kc, m, known)
+    if (m <= 2 && !q.kc.startsWith('B:')) setQueue([...queue, again])
   }
 
   const choose = async (c: string | number) => {
