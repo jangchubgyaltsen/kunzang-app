@@ -43,7 +43,7 @@ export const RULES: Record<string, Rule> = {
   'R:suf': {
     name: '后加字',
     intro: '两个字母并排、都没有元音和叠字时，第一个是基字，第二个是后加字。后加字跟在基字后面，读音很轻。',
-    example: 'ལམ', has: (s) => !!s.suffix,
+    example: 'གང', has: (s) => !!s.suffix,
   },
   'R:pre': {
     name: '前加字',
@@ -89,21 +89,27 @@ export type Scored = Exclude<Question, Intro | Shadow>
 
 const I = 'V:ི', U = 'V:ུ', E = 'V:ེ', O = 'V:ོ'
 
-/** 每个单元学几个新字母、元音或规则，然后马上用它们读开篇里的真实词语。 */
-const PLAN: { add: KC[]; intro: string }[] = [
-  { add: ['L:ལ', 'L:མ', 'R:suf', 'L:ན', 'L:ང', 'L:ག'], intro: '先学 5 个字母。每个字母自带元音 a。两个字母并排就能拼出第一个词。' },
-  { add: [I, 'L:ཟ', 'L:བ', 'L:ཐ', 'L:ར', 'L:ས'], intro: '第一个元音符号 ི，再加 5 个字母。' },
-  { add: [U, 'L:ཞ', 'L:ད', 'L:པ'], intro: '元音 ུ 和 3 个字母，开始读双音节词。' },
-  { add: [E, O, 'L:ཆ', 'L:འ'], intro: '元音 ེ ོ，四个元音就学全了。' },
-  { add: ['L:ཀ', 'L:ཙ', 'R:pre'], intro: '前加字：写在基字前面的 ག ད བ མ འ。' },
-  { add: ['L:ཡ', 'L:ཉ', 'R:sup'], intro: '上加字：写在头顶的 ར ལ ས。' },
-  { add: ['L:ཕ', 'L:ཚ', 'L:ཁ', 'R:sub'], intro: '下加字：挂在脚下的 ྱ ྲ ླ。这一单元的词很多，分几次练。' },
-  { add: ['L:ཏ', 'L:ཤ', 'L:ཇ', 'L:ཛ', 'R:post'], intro: '再后加字 ས，开篇里的长词基本都能读了。' },
-  { add: ['L:ཅ', 'L:ཧ', 'L:ཝ', 'L:ཨ'], intro: '最后 4 个字母，30 个字母全部学完。' },
+const L = (s: string): KC[] => [...s].map((c) => 'L:' + c)
+
+/**
+ * 每个单元学几个新字母、元音或规则，然后马上用它们读真实的词语。
+ * 字母按字母表的顺序（ཀ ཁ ག ང …）带，和每日字卡一致；规则等它用到的字母都学过了再学。
+ */
+const PLAN: { add: KC[]; intro: string; title: string }[] = [
+  { add: [...L('ཀཁགང'), I, 'R:suf'], title: 'ཀ ཁ ག ང · 元音 ◌ི · 后加字', intro: '字母表第一行 4 个字母，每个字母自带元音 a。再学第一个元音符号 ི，和两个字母并排的读法。' },
+  { add: [...L('ཅཆཇཉ'), U], title: 'ཅ ཆ ཇ ཉ · 元音 ◌ུ', intro: '字母表第二行，和元音 ུ。' },
+  { add: [...L('ཏཐདན'), E], title: 'ཏ ཐ ད ན · 元音 ◌ེ', intro: '字母表第三行，和元音 ེ。' },
+  { add: [...L('པཕབམ'), O], title: 'པ ཕ བ མ · 元音 ◌ོ', intro: '字母表第四行，和元音 ོ，四个元音就学全了。' },
+  { add: [...L('ཙཚཛཝ'), 'R:pre'], title: 'ཙ ཚ ཛ ཝ · 前加字', intro: '字母表第五行。前加字：写在基字前面的 ག ད བ མ འ。' },
+  { add: L('ཞཟའཡ'), title: 'ཞ ཟ འ ཡ', intro: '字母表第六行，开始读更多双音节词。' },
+  { add: [...L('རལཤས'), 'R:post'], title: 'ར ལ ཤ ས · 再后加字 ས', intro: '字母表第七行。再后加字 ས，跟在后加字的后面。' },
+  { add: [...L('ཧཨ'), 'R:sup'], title: 'ཧ ཨ · 上加字', intro: '最后 2 个字母，30 个字母全部学完。上加字：写在头顶的 ར ལ ས。' },
+  { add: ['R:sub'], title: '下加字', intro: '下加字：挂在脚下的 ྱ ྲ ླ。开篇里的长词基本都能读了，这一单元的词很多，分几次练。' },
 ]
 
 export type UnitDef = {
   n: number
+  title: string
   intro: string
   /** 必须都练过才能通过本单元：新字母、元音、规则和新词 */
   kcs: KC[]
@@ -136,11 +142,12 @@ export const UNITS: UnitDef[] = []
     const newWords = words.filter((w) => within(w.kcs, known) && !within(w.kcs, before)).map((w) => 'W:' + w.tibetan)
     const extra = usableSyl.filter((s) => within(sylKCs(s), known) && !within(sylKCs(s), before)).map((s) => 'S:' + s.tibetan)
     const oral = amdoWords.filter((w) => w.kcs && within(w.kcs, known) && !within(w.kcs, before)).map((w) => 'D:' + w.id)
-    UNITS.push({ n: i + 1, intro: p.intro, kcs: [...p.add, ...newWords], extra, oral, hear: hearCells(known, before) })
+    UNITS.push({ n: i + 1, title: p.title, intro: p.intro, kcs: [...p.add, ...newWords], extra, oral, hear: hearCells(known, before) })
   }
   const placed = new Set(UNITS.flatMap((u) => u.oral))
   UNITS.push({
     n: 10,
+    title: '综合：开篇全部音节和词',
     intro: '综合练习：开篇里的全部音节和词，找基字，认读音；教材里剩下的口语词也在这里。',
     kcs: [],
     extra: [...syllables.filter((s) => !s.needsCheck).map((s) => 'S:' + s.tibetan), ...words.map((w) => 'W:' + w.tibetan)],
@@ -240,7 +247,7 @@ export function introFor(kc: KC): Intro {
   if (type === 'V') {
     const [mark, , name] = VOWELS.find((x) => x[0] === val)!
     return {
-      kind: 'intro', kc, label: '新元音', big: 'མ' + mark, sub: CV_PRON['མ' + mark][0], audio: cvAudio('མ', mark),
+      kind: 'intro', kc, label: '新元音', big: 'ཀ' + mark, sub: CV_PRON['ཀ' + mark][0], audio: cvAudio('ཀ', mark),
       note: `${mark} 叫 ${name}。${VOWEL_RULE[mark]}`,
     }
   }
@@ -584,11 +591,16 @@ function unitOrder(u: UnitDef): KC[] {
   return out
 }
 
-const SPELL_TITLES = ['5 个字母 · 后加字', '元音 ◌ི · 5 个字母', '元音 ◌ུ · 3 个字母', '元音 ◌ེ ◌ོ', '前加字', '上加字', '下加字', '再后加字 ས', '最后 4 个字母', '综合：开篇全部音节和词']
-const SPELL_EXAMPLES = [
-  ['ལམ', 'ནང', 'མན་ངག'], ['མི', 'ཟབ', 'ཐར་ལམ'], ['ཞིང', 'དམ་པ', 'ཞལ་ལུང'], ['ཆོས', 'ཆེན་པོ', 'འོད་ཟེར'], ['བདག', 'གསལ', 'ཀུན་བཟང'],
-  ['སྣང', 'སྙིང་པོ', 'རྩ་བ'], ['བླ་མ', 'ཕྱག་འཚལ', 'རྒྱལ་བ'], ['སངས་རྒྱས', 'རིག་འཛིན', 'ཐུགས་རྗེ'], ['ལྷ', 'ཚེ་གཅིག'], ['བླ', 'མའི', 'སྐུའི'],
-]
+/** 路径上展示的例词：本单元能读的最短的几个开篇词，不够就用口语词补 */
+function spellExamples(u: UnitDef) {
+  if (u.n === 10) return ['བླ', 'མའི', 'སྐུའི']
+  const ws = u.kcs.filter((k) => k.startsWith('W:')).map((k) => k.slice(2)).sort((a, b) => a.length - b.length)
+  const oral = u.oral
+    .map((k) => amdoWordById.get(k.slice(2))?.tib.replace(/[།་\s]+$/, ''))
+    .filter((x): x is string => !!x && x.length > 1)
+    .sort((a, b) => a.length - b.length)
+  return [...new Set([...ws, ...oral])].slice(0, 3)
+}
 
 function spellUnit(u: UnitDef): PathUnit {
   const levels: Level[] = []
@@ -607,7 +619,7 @@ function spellUnit(u: UnitDef): PathUnit {
   chunk(u.oral, 10).forEach((g, i) => levels.push({ id: id('d' + (i + 1)), unit: u.n, kind: 'learn', title: '口语词 · 真人录音', kcs: g }))
   chunk(u.hear, 10).forEach((g, i) => levels.push({ id: id('h' + (i + 1)), unit: u.n, kind: 'practice', title: '听拼读 · 真人录音', kcs: g }))
   levels.push({ id: id('t'), unit: u.n, kind: 'test', title: '单元小测', kcs: [...u.kcs, ...u.extra, ...u.oral] })
-  return { n: u.n, track: 'spell', title: SPELL_TITLES[u.n - 1], intro: u.intro, examples: SPELL_EXAMPLES[u.n - 1], levels }
+  return { n: u.n, track: 'spell', title: u.title, intro: u.intro, examples: spellExamples(u), levels }
 }
 
 /** 原文单元：一段一个单元；一句一关，长句的词分两关学，最后一关听整句、排词序、跟读。 */

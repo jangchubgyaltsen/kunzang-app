@@ -1,4 +1,4 @@
-import { createEmptyCard, fsrs, Rating, type Card } from 'ts-fsrs'
+import { createEmptyCard, fsrs, Rating, type Card, type Grade } from 'ts-fsrs'
 import { db } from './db.ts'
 import { PATH, levelById, unitByN, type KC } from './course.ts'
 
@@ -20,16 +20,21 @@ export async function kcMastered(kc: KC) {
   return okRate >= 0.8 && spaced
 }
 
-export async function recordAnswer(kc: KC, ok: boolean, unit?: number, src?: string) {
+/**
+ * 记一次作答，更新这个知识点的 FSRS 卡片。字卡、路径、复习、抽查都走这里，同一个知识点只有一份记录。
+ * rating 不给就按对错：对 Good，错 Again。
+ */
+export async function recordAnswer(kc: KC, ok: boolean, unit?: number, src?: string, rating?: Grade) {
   const now = new Date()
   await db.attempts.add({ kc, ok, at: now.getTime(), unit, src })
   const row = await db.cards.get(kc)
   const card: Card = row ? reviveCard(row.card) : createEmptyCard(now)
-  const next = scheduler.next(card, now, ok ? Rating.Good : Rating.Again).card
+  const next = scheduler.next(card, now, ok ? (rating ?? Rating.Good) : Rating.Again).card
   await db.cards.put({ kc, due: next.due.getTime(), card: next })
+  return next
 }
 
-function reviveCard(c: unknown): Card {
+export function reviveCard(c: unknown): Card {
   const x = c as Card & { due: string | Date; last_review?: string | Date }
   return { ...x, due: new Date(x.due), last_review: x.last_review ? new Date(x.last_review) : undefined }
 }
@@ -141,8 +146,11 @@ export async function finishCheck(id: string, accuracy: number) {
   return passed
 }
 
+/** 字母（L:）和字母元音组合（CV:）由每日字卡负责复习，这里不出 */
+export const drillKC = (kc: KC) => kc.startsWith('L:') || kc.startsWith('CV:')
+
 export async function dueKCs(limit = 20): Promise<KC[]> {
-  return ((await db.cards.where('due').belowOrEqual(Date.now()).limit(limit).primaryKeys()) as KC[])
+  return (await db.cards.where('due').belowOrEqual(Date.now()).filter((r) => !drillKC(r.kc)).limit(limit).primaryKeys()) as KC[]
 }
 
 /** 最近答错较多的知识点，用于下一关优先出题。 */
