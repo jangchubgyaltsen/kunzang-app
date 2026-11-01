@@ -1,6 +1,6 @@
 import { db } from './db.ts'
 import { dailyDue } from './alphabet.ts'
-import { PATH, type Track } from './course.ts'
+import { PATH, levelById, unitByN, type Track } from './course.ts'
 import { dueChecks, dueKCs, ensureChecks, getPathState } from './progress.ts'
 import { dayKey } from './daily.ts'
 
@@ -116,4 +116,24 @@ export function stepLabel(key: StepKey) {
   if (key === 'review') return '到期复习'
   if (key.startsWith('check:')) return '单元抽查'
   return { spell: '拼读', read: '诵读开篇', talk: '安多会话' }[key.split(':')[1] as Track] ?? '练习'
+}
+
+/** 首页清单和每步小结里，一步的说明：做什么、大约几题、几分钟 */
+export type StepInfo = { label: string; detail: string; minutes: number }
+export async function stepInfo(key: StepKey): Promise<StepInfo> {
+  const label = stepLabel(key)
+  if (key === 'drill') return { label, detail: '字母和元音 · 做完就签到', minutes: 4 }
+  if (key === 'review') {
+    const n = (await dueKCs(REVIEW_SIZE)).length
+    return { label, detail: n ? `${n} 题 · 按遗忘曲线到期的` : '今天没有到期的', minutes: Math.max(1, Math.round(n / 5)) }
+  }
+  if (key.startsWith('check:')) {
+    const c = await db.checks.get(key.slice(6))
+    return { label, detail: c ? `单元 ${c.unit} · 10 题` : '10 题', minutes: 2 }
+  }
+  const id = await levelFor(key)
+  const lv = id ? levelById.get(id) : undefined
+  const u = lv ? unitByN.get(lv.unit) : undefined
+  const unitName = u ? (u.track === 'spell' ? `单元 ${u.n}` : u.title.replace(/^原文：/, '')) : ''
+  return { label, detail: lv ? `${unitName} · ${lv.title}` : '这条线学完了', minutes: Math.round((COST[key] ?? 10) / 5) }
 }

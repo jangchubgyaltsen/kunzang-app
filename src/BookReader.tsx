@@ -9,6 +9,8 @@ import { yitongOf } from './reading.ts'
 import { syllableMap, type Syllable } from './content.ts'
 import { glossOf, glossTerms, loadGloss, shortGloss, type WordGloss } from './gloss.ts'
 import { alignPara, findTerm, type AlignGroup } from './align.ts'
+import { useReaderPrefs } from './readerPrefs.ts'
+import { Icon } from './icons.tsx'
 
 const PAGE = 20 // 一次排出来的段落数，往下翻再接着排
 const POS_KEY = 'reader-pos'
@@ -33,10 +35,8 @@ export function BookChapter({ info, onPick, onQuiz }: { info: ChapterInfo; onPic
   const [ch, setCh] = useState<Chapter | null>(null)
   const [err, setErr] = useState('')
   const [shown, setShown] = useState(PAGE)
-  const [showPron, setShowPron] = useState(false)
-  const [showZh, setShowZh] = useState(true)
-  const [bySent, setBySent] = useState(true)
-  const [showGloss, setShowGloss] = useState(true)
+  const [prefs] = useReaderPrefs()
+  const { pron: showPron, zh: showZh, bySent, gloss: showGloss } = prefs
   const [dict, setDict] = useState<Dict | null>(null)
   const [zh, setZh] = useState<Map<string, string>>(new Map())
   const [playing, setPlaying] = useState<string | null>(null)
@@ -129,27 +129,11 @@ export function BookChapter({ info, onPick, onQuiz }: { info: ChapterInfo; onPic
 
   return (
     <>
-      <div className="toggles">
-        <button className={'pill' + (showPron ? ' on' : '')} aria-pressed={showPron} onClick={() => setShowPron(!showPron)}>
-          注音
-        </button>
-        <button className={'pill' + (showGloss ? ' on' : '')} aria-pressed={showGloss} onClick={() => setShowGloss(!showGloss)}>
-          释义
-        </button>
-        <button className={'pill' + (showZh ? ' on' : '')} aria-pressed={showZh} onClick={() => setShowZh(!showZh)}>
-          中文
-        </button>
-        {showZh && zh.size > 0 && (
-          <button className={'pill' + (bySent ? ' on' : '')} aria-pressed={bySent} onClick={() => setBySent(!bySent)}>
-            逐句对照
-          </button>
-        )}
-        <button className="pill play-all" onClick={download} disabled={dl.endsWith('%')}>
-          {dl === '' ? '⤓ 离线听本章' : dl}
-        </button>
-      </div>
       <p className="muted small">
-        <span className="tib">{info.tibetan}</span> · {ch.paras.length} 段 · {info.sents} 句
+        <span className="tib">{info.tibetan}</span> · {ch.paras.length} 段 · {info.sents} 句 ·{' '}
+        <button className="link small" onClick={download} disabled={dl.endsWith('%')}>
+          {dl === '' ? '离线听本章' : dl}
+        </button>
       </p>
       {resume && (
         <button className="resume" onClick={() => jumpTo(resume)}>
@@ -157,7 +141,7 @@ export function BookChapter({ info, onPick, onQuiz }: { info: ChapterInfo; onPic
         </button>
       )}
       {showZh && zh.size === 0 && <p className="muted small">还没有这部分的中文译文。请在“我的”页最下面导入全书中文译文包。</p>}
-      <div className="lines book">
+      <div className="lines book reading">
         {ch.paras.slice(0, shown).map((p) => {
           const withAudio = p.sents.filter((s) => !s.noAudio)
           return (
@@ -172,7 +156,7 @@ export function BookChapter({ info, onPick, onQuiz }: { info: ChapterInfo; onPic
                       playSeq(withAudio.map(sentAudio))
                     }}
                   >
-                    ▶ 整段
+                    <Icon name="play" size={14} /> 整段
                   </button>
                 )}
               </div>
@@ -190,7 +174,7 @@ export function BookChapter({ info, onPick, onQuiz }: { info: ChapterInfo; onPic
                           }}
                           aria-label="播放这一句"
                         >
-                          ▶
+                          <Icon name="play" size={16} />
                         </button>
                         <div className="syls">
                           {s.words.map((w, j) => (

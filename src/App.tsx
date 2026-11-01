@@ -1,7 +1,10 @@
-import { useEffect, useRef, useState, type CSSProperties } from 'react'
+import { useEffect, useState } from 'react'
 import { passages, passageTitles, syllableMap, type Syllable } from './content.ts'
-import { audioStatus, play, playSeq } from './audio.ts'
+import { audioStatus, onTrack, play, playSeq, stop } from './audio.ts'
 import { say } from './sound.ts'
+import { Icon } from './icons.tsx'
+import PathList from './PathList.tsx'
+import { useReaderPrefs } from './readerPrefs.ts'
 import { db, exportData, importData, importTranslationPack, resetProgress } from './db.ts'
 import { migrate } from './migrate.ts'
 import Lesson from './Lesson.tsx'
@@ -9,9 +12,7 @@ import Review from './Review.tsx'
 import Today from './Today.tsx'
 import Practice from './Practice.tsx'
 import { AlphabetView, Drill } from './Alphabet.tsx'
-import { loadPlan, stepLabel, type DayPlan } from './practice.ts'
-import { ensureChecks, getPathState, type LevelState, type UnitState } from './progress.ts'
-import { PATH, letterAudio, type Level, type Question, type Track } from './course.ts'
+import { letterAudio, type Question } from './course.ts'
 import { type Session } from './session.ts'
 import { linesOf, yitongOf, type Token } from './reading.ts'
 import { chapters } from './book.ts'
@@ -20,11 +21,18 @@ import { glossOf, loadGloss, type WordGloss } from './gloss.ts'
 import AmdoView from './Amdo.tsx'
 import { setWylie, wylieOn } from './prefs.ts'
 
-type Tab = 'path' | 'reader' | 'library' | 'me'
+type Tab = 'today' | 'path' | 'reader' | 'library' | 'me'
 // 资料库里分两块：字母表、安多会话教材
 type Shelf = 'alphabet' | 'amdo'
+const TABS: [Tab, string, Parameters<typeof Icon>[0]['name']][] = [
+  ['today', '今天', 'today'],
+  ['path', '路径', 'path'],
+  ['reader', '原文', 'book'],
+  ['library', '资料库', 'library'],
+  ['me', '我的', 'me'],
+]
 export default function App() {
-  const [tab, setTab] = useState<Tab>('path')
+  const [tab, setTab] = useState<Tab>('today')
   const [shelf, setShelf] = useState<Shelf>('alphabet')
   // 第一次打开：先看一屏欢迎页
   const [welcome, setWelcome] = useState(() => localStorage.getItem('welcomed') !== '1')
@@ -32,14 +40,11 @@ export default function App() {
   const [session, setSession] = useState<Session | null>(null)
   // 字母页手动开的字卡。负数表示 150 张全部过一遍
   const [drill, setDrill] = useState(0)
-  // 今日练习（字卡 → 复习 → 拼读 → 开篇 → 会话）。打开 App 停在路径页，没做完时弹一个提醒，点“开始”才进去
-  const [practice, setPractice] = useState<{ auto: boolean } | null>(null)
-  const [reminder, setReminder] = useState<DayPlan | null>(null)
-  useEffect(() => {
-    if (welcome) return
-    loadPlan().then((p) => p.done.length < p.steps.length && setReminder(p))
-  }, [welcome])
-  const busy = session !== null || drill !== 0 || practice !== null
+  // 今日练习：清单在首页「今天」上，点按钮进来一步接一步做
+  const [practice, setPractice] = useState(false)
+  // 首页从练习回来时重新读一遍清单
+  const [homeKey, setHomeKey] = useState(0)
+  const busy = session !== null || drill !== 0 || practice
 
   // 原文页看的是哪一章：'00' 是开篇（逐词版），其余是正文各章
   const [chapterId, setChapterId] = useState('00')
@@ -55,6 +60,10 @@ export default function App() {
     setPassageId(id)
     pickChapter('00')
     setTab('reader')
+  }
+  const go = (t: Tab) => {
+    setTab(t)
+    window.scrollTo(0, 0)
   }
 
   if (welcome)
@@ -80,7 +89,19 @@ export default function App() {
           ) : (
             <Lesson questions={session.questions} title={session.title} onFinish={session.onFinish} onExit={() => setSession(null)} />
           ))}
-        {practice !== null && <Practice auto={practice.auto} onExit={() => setPractice(null)} />}
+        {practice && (
+          <Practice
+            onExit={() => {
+              setPractice(false)
+              setHomeKey((k) => k + 1)
+              go('today')
+            }}
+            onRead={() => {
+              setPractice(false)
+              go('reader')
+            }}
+          />
+        )}
         {drill !== 0 && <Drill key={drill} all={drill < 0} onExit={() => setDrill(0)} />}
         {!busy && tab === 'library' && (
           <div className="chips">
@@ -93,9 +114,8 @@ export default function App() {
           </div>
         )}
         {!busy && tab === 'library' && shelf === 'alphabet' && <AlphabetView key={drill} onStart={(all) => setDrill(all ? -Date.now() : Date.now())} />}
-        {!busy && tab === 'path' && (
-          <PathView onOpen={openPassage} onStart={setSession} onPractice={() => setPractice({ auto: false })} />
-        )}
+        {!busy && tab === 'today' && <Today key={homeKey} onPractice={() => setPractice(true)} onPath={() => go('path')} />}
+        {!busy && tab === 'path' && <PathList onOpen={openPassage} onStart={setSession} />}
         {!busy && tab === 'reader' && (
           <ReaderView passageId={passageId} onSelect={setPassageId} chapterId={chapterId} onChapter={pickChapter} onQuiz={(questions, title) => setSession({ questions, title })} />
         )}
@@ -103,29 +123,12 @@ export default function App() {
         {!busy && tab === 'me' && <Review onStart={setSession} />}
         {!busy && tab === 'me' && <SettingsView />}
       </main>
-      {!busy && reminder && (
-        <PracticeReminder
-          plan={reminder}
-          onStart={() => {
-            setReminder(null)
-            setTab('path')
-            setPractice({ auto: true })
-          }}
-          onLater={() => setReminder(null)}
-        />
-      )}
       {!busy && (
         <nav className="tabs">
-          {(
-            [
-              ['path', '路径'],
-              ['reader', '原文'],
-              ['library', '资料库'],
-              ['me', '我的'],
-            ] as [Tab, string][]
-          ).map(([k, label]) => (
-            <button key={k} className={tab === k ? 'on' : ''} onClick={() => setTab(k)}>
-              {label}
+          {TABS.map(([k, label, icon]) => (
+            <button key={k} className={tab === k ? 'on' : ''} aria-current={tab === k ? 'page' : undefined} onClick={() => go(k)}>
+              <Icon name={icon} size={24} />
+              <span>{label}</span>
             </button>
           ))}
         </nav>
@@ -134,216 +137,196 @@ export default function App() {
   )
 }
 
-type PathState = Awaited<ReturnType<typeof getPathState>>
-// 路径上只显示拼读线；诵读开篇和安多会话每天排进今日练习
-const SIDE_TRACKS: [Track, string][] = [
-  ['read', '诵读开篇'],
-  ['talk', '安多会话'],
-]
-
-function PathView({ onOpen, onStart, onPractice }: { onOpen: (id: string) => void; onStart: (s: Session) => void; onPractice: () => void }) {
-  const [st, setSt] = useState<PathState | null>(null)
-  const [expanded, setExpanded] = useState<Set<number>>(new Set())
-  const currentRef = useRef<HTMLLIElement | null>(null)
-
-  useEffect(() => {
-    getPathState().then(async (s) => {
-      setSt(s)
-      await ensureChecks(s.units)
-    })
-  }, [])
-  useEffect(() => {
-    currentRef.current?.scrollIntoView({ block: 'center' })
-  }, [st])
-
-  const units = PATH.filter((u) => u.track === 'spell')
-  const unitState = new Map(st?.units.map((u) => [u.n, u]))
-  // 当前关：优先主线上的下一关；补课关（单元已通过后才加进来的）排在后面
-  const open = st ? units.flatMap((u) => u.levels).filter((l) => st.levels.get(l.id)?.status === 'available') : []
-  const current = open.find((l) => !st?.levels.get(l.id)?.optional) ?? open[0]
-
-  return (
-    <section>
-      <Today onPractice={onPractice} />
-      <p className="muted small">拼读路径：字母、元音和加字，一关只学两三个新东西。每天的今日练习会带你走一关，想多学可以在这里接着往下点。</p>
-      {st && (
-        <div className="side-tracks small muted">
-          {SIDE_TRACKS.map(([t, label]) => {
-            const ls = PATH.filter((u) => u.track === t).flatMap((u) => u.levels)
-            const done = ls.filter((l) => st.levels.get(l.id)?.status === 'passed').length
-            return (
-              <div key={t}>
-                {label}：{done} / {ls.length} 关 · 每天在今日练习里学一点
-              </div>
-            )
-          })}
-        </div>
-      )}
-      {units.map((u) => {
-        const us = unitState.get(u.n)
-        const done = us?.status === 'passed' || us?.status === 'mastered'
-        const show = !done || expanded.has(u.n)
-        return (
-          <div key={u.n} className={'unit-block' + (us?.status === 'locked' ? ' locked' : '')}>
-            <div className="unit-head">
-              <div>
-                <div className="small">单元 {u.n}</div>
-                <div className="unit-title">{u.title}</div>
-                {u.examples.length > 0 && (
-                  <div className="tib small">
-                    {u.examples.map((x) => (
-                      <span key={x} className="tap example" onClick={() => say(x)}>
-                        {x}
-                      </span>
-                    ))}
-                  </div>
-                )}
-                <UnitNote st={us} n={u.levels.filter((l) => st?.levels.get(l.id)?.status === 'passed').length} total={u.levels.length} />
-              </div>
-              <div className="unit-actions">
-                {u.passage && (
-                  <button className="link small" onClick={() => onOpen(u.passage!)}>
-                    读原文
-                  </button>
-                )}
-                {done && (
-                  <button
-                    className="link small"
-                    onClick={() => {
-                      const e = new Set(expanded)
-                      if (e.has(u.n)) e.delete(u.n)
-                      else e.add(u.n)
-                      setExpanded(e)
-                    }}
-                  >
-                    {show ? '收起' : '展开'}
-                  </button>
-                )}
-              </div>
-            </div>
-            {show && (
-              <ol className="path">
-                {u.levels.map((l, i) => {
-                  const ls = st?.levels.get(l.id)
-                  const isCur = current?.id === l.id
-                  return (
-                    <li
-                      key={l.id}
-                      ref={isCur ? currentRef : undefined}
-                      className={nodeClass(ls) + (isCur ? ' current' : '') + (l.kind === 'test' ? ' test' : '')}
-                      style={{ '--x': ZIGZAG[i % ZIGZAG.length] } as CSSProperties}
-                    >
-                      <button className="node" disabled={!ls || ls.status === 'locked'} onClick={() => onStart({ level: l.id })} aria-label={l.title}>
-                        {ls?.status === 'locked' ? '🔒' : nodeIcon(l, i)}
-                      </button>
-                      {(isCur || l.kind === 'test' || ls?.optional) && (
-                        <div className="small node-label">{isCur ? `开始：${l.title}` : l.optional ? l.title : ls?.optional ? `补课：${l.title}` : l.title}</div>
-                      )}
-                    </li>
-                  )
-                })}
-              </ol>
-            )}
-          </div>
-        )
-      })}
-    </section>
-  )
-}
-
-const ICON: Record<Level['kind'], string> = { learn: '', practice: '↻', read: '读', line: '句', test: '测', talk: '' }
-const STAGE_ICON = { hear: '听', read: '认', say: '说' }
-function nodeIcon(l: Level, i: number) {
-  if (l.kind === 'talk') return STAGE_ICON[l.stage ?? 'hear']
-  if (l.optional) return '选'
-  return l.kind === 'learn' ? String(i + 1) : ICON[l.kind]
-}
-
-function nodeClass(ls?: LevelState) {
-  if (!ls) return 'locked'
-  return { locked: 'locked', available: 'ready', passed: 'ready passed' }[ls.status]
-}
-
-function UnitNote({ st, n, total }: { st?: UnitState; n: number; total: number }) {
-  if (!st) return null
-  const text = {
-    locked: `${total} 关 · 完成前面的关卡后解锁`,
-    available: `${n} / ${total} 关`,
-    passed: `已通过 · 小测 ${Math.round((st.accuracy ?? 0) * 100)}%`,
-    mastered: '已掌握',
-  }[st.status]
-  return <div className="muted small">{text}</div>
-}
-
-// 节点左右错落的偏移量（相对节点宽度）
-const ZIGZAG = [0, 0.8, 1.2, 0.8, 0, -0.8, -1.2, -0.8]
-
+const POS_KEY = 'reader-pos'
+/**
+ * 原文页：顶上一个标题，点开是目录（开篇各段 + 14 章，写明读到哪）；显示设置收进“Aa”。
+ * 正文居中排，每个词下面是注音和意思；有声音在放时底部出一个播放条，可以停。
+ */
 function ReaderView({ passageId, onSelect, chapterId, onChapter, onQuiz }: { passageId: string; onSelect: (id: string) => void; chapterId: string; onChapter: (id: string) => void; onQuiz: (questions: Question[], title: string) => void }) {
   const info = chapters.find((c) => c.id === chapterId)
   const [picked, setPicked] = useState<Syllable | null>(null)
+  const [sheet, setSheet] = useState<'toc' | 'aa' | null>(null)
+  const [playing, setPlaying] = useState<string | null>(null)
+  useEffect(() => onTrack(setPlaying), [])
+  const pi = passages.findIndex((x) => x.id === passageId)
+  const title = info ? `第${CN_NUM[Number(info.id)]}章 · ${info.zh}` : passageTitles[passageId] ?? '开篇'
+  const sub = info ? `${info.paras} 段 · ${info.sents} 句` : `开篇 · 第 ${pi + 1} / ${passages.length} 段`
   return (
-    <section>
-      <div className="chips chapters">
-        <button className={!info ? 'on' : ''} onClick={() => onChapter('00')}>
-          开篇
+    <section className="reader">
+      <header className="reader-head">
+        <span className="head-side" />
+        <button className="reader-title" onClick={() => setSheet('toc')} aria-haspopup="dialog">
+          <span className="rt-main">
+            {title} <Icon name="down" size={14} />
+          </span>
+          <span className="small muted">{sub}</span>
         </button>
-        {chapters.map((c) => (
-          <button key={c.id} className={info?.id === c.id ? 'on' : ''} onClick={() => onChapter(c.id)}>
-            {Number(c.id)} · {c.zh}
-          </button>
-        ))}
-      </div>
-      {info ? <BookChapter key={info.id} info={info} onPick={setPicked} onQuiz={onQuiz} /> : <OpeningReader passageId={passageId} onSelect={onSelect} />}
+        <button className="aa" onClick={() => setSheet('aa')} aria-label="显示设置">
+          Aa
+        </button>
+      </header>
+      {info ? (
+        <BookChapter key={info.id} info={info} onPick={setPicked} onQuiz={onQuiz} />
+      ) : (
+        <OpeningReader passageId={passageId} onSelect={onSelect} onPick={setPicked} />
+      )}
       {picked && <SyllableCard s={picked} onClose={() => setPicked(null)} />}
+      {playing && (
+        <div className="player">
+          <span className="eq" aria-hidden="true">
+            <i />
+            <i />
+            <i />
+          </span>
+          <span className="grow small">正在播放</span>
+          <button className="stop" onClick={() => stop()} aria-label="停止播放">
+            <Icon name="stop" size={18} />
+          </button>
+        </div>
+      )}
+      {sheet === 'toc' && (
+        <Toc
+          chapterId={info?.id ?? '00'}
+          passageId={passageId}
+          onClose={() => setSheet(null)}
+          onPassage={(id) => {
+            onSelect(id)
+            onChapter('00')
+            setSheet(null)
+            window.scrollTo(0, 0)
+          }}
+          onChapter={(id) => {
+            onChapter(id)
+            setSheet(null)
+            window.scrollTo(0, 0)
+          }}
+        />
+      )}
+      {sheet === 'aa' && <DisplaySheet book={!!info} onClose={() => setSheet(null)} />}
     </section>
   )
 }
 
-function OpeningReader({ passageId, onSelect }: { passageId: string; onSelect: (id: string) => void }) {
-  const [showWylie, setShowWylie] = useState(false)
-  const [showPron, setShowPron] = useState(true)
-  const [showZh, setShowZh] = useState(true)
-  const [picked, setPicked] = useState<Syllable | null>(null)
+const CN_NUM = ['〇', '一', '二', '三', '四', '五', '六', '七', '八', '九', '十', '十一', '十二', '十三', '十四']
+
+/** 目录：开篇各段和 14 章，每章写明多少句、读到第几段 */
+function Toc({ chapterId, passageId, onClose, onPassage, onChapter }: { chapterId: string; passageId: string; onClose: () => void; onPassage: (id: string) => void; onChapter: (id: string) => void }) {
+  const [pos, setPos] = useState<Record<string, string>>({})
+  useEffect(() => {
+    db.settings.get(POS_KEY).then((r) => setPos((r?.value ?? {}) as Record<string, string>))
+  }, [])
+  const progress = (id: string, paras: number) => {
+    const at = pos[id]
+    return at ? Math.min(1, Number(at.slice(1)) / Math.max(1, paras)) : 0
+  }
+  return (
+    <div className="sheet" onClick={onClose}>
+      <div className="card toc" onClick={(e) => e.stopPropagation()} role="dialog" aria-label="目录">
+        <div className="grab" />
+        <div className="toc-head">
+          <h2>目录</h2>
+          <button className="link" onClick={onClose} aria-label="关闭">
+            <Icon name="close" />
+          </button>
+        </div>
+        <div className="toc-list">
+          <div className={'toc-ch' + (chapterId === '00' ? ' on' : '')}>
+            <div className="toc-row">
+              <span>开篇</span>
+              <span className="small muted">{passages.length} 段 · 有逐词注音</span>
+            </div>
+            {passages.map((x) => (
+              <button key={x.id} className={'toc-sub' + (chapterId === '00' && x.id === passageId ? ' on' : '')} onClick={() => onPassage(x.id)}>
+                {passageTitles[x.id] ?? x.id}
+              </button>
+            ))}
+          </div>
+          {chapters.map((c) => {
+            const p = progress(c.id, Number(pos[c.id] ? c.paras : 0) || c.paras)
+            return (
+              <button key={c.id} className={'toc-ch toc-row' + (chapterId === c.id ? ' on' : '')} onClick={() => onChapter(c.id)}>
+                <span className="grow">
+                  第{CN_NUM[Number(c.id)]}章 · {c.zh}
+                  {p > 0 && (
+                    <span className="meter thin">
+                      <i style={{ width: `${Math.max(4, p * 100)}%` }} />
+                    </span>
+                  )}
+                </span>
+                <span className="small muted">{c.sents} 句</span>
+              </button>
+            )
+          })}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/** Aa：显示哪几行 */
+function DisplaySheet({ book, onClose }: { book: boolean; onClose: () => void }) {
+  const [p, set] = useReaderPrefs()
+  const rows: [keyof typeof p, string, string, boolean][] = [
+    ['pron', '注音', book ? '只在开篇出现过的音节上有' : '一本通式注音', true],
+    ['gloss', '逐词释义', '每个词下面一行小字', book],
+    ['zh', '中文', '需要先在“我的”里导入译文包', true],
+    ['bySent', '逐句对照', '中文按句子放到对应的藏文下面', book && p.zh],
+    ['wylie', 'Wylie 转写', '', !book && wylieOn()],
+  ]
+  return (
+    <div className="sheet" onClick={onClose}>
+      <div className="card" onClick={(e) => e.stopPropagation()} role="dialog" aria-label="显示设置">
+        <div className="grab" />
+        <h2>显示</h2>
+        <div className="switches">
+          {rows
+            .filter((r) => r[3])
+            .map(([k, label, note]) => (
+              <label key={k} className="switch-row">
+                <span className="grow">
+                  <span>{label}</span>
+                  {note && <span className="small muted">{note}</span>}
+                </span>
+                <input type="checkbox" role="switch" checked={p[k]} onChange={(e) => set({ [k]: e.target.checked })} />
+              </label>
+            ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function OpeningReader({ passageId, onSelect, onPick }: { passageId: string; onSelect: (id: string) => void; onPick: (s: Syllable) => void }) {
+  const [prefs] = useReaderPrefs()
   const [word, setWord] = useState<Token | null>(null)
-  const p = passages.find((x) => x.id === passageId) ?? passages[0]
+  const pi = Math.max(0, passages.findIndex((x) => x.id === passageId))
+  const p = passages[pi]
   const rl = linesOf(p.id)
   const [chinese, setChinese] = useState<string | null>(null)
   useEffect(() => {
     db.translations.get(p.id).then((t) => setChinese(t?.chinese ?? null))
   }, [p.id])
   const zhLines = (chinese ?? '').split(/(?<=[，。！])/).filter(Boolean)
+  const prev = passages[pi - 1]
+  const next = passages[pi + 1]
+  const goto = (id: string) => {
+    onSelect(id)
+    window.scrollTo(0, 0)
+  }
 
   return (
     <>
-      <div className="chips">
-        {passages.map((x) => (
-          <button key={x.id} className={x.id === p.id ? 'on' : ''} onClick={() => onSelect(x.id)}>
-            {passageTitles[x.id] ?? x.id}
-          </button>
-        ))}
-      </div>
-      <div className="toggles">
-        <button className={'pill' + (showPron ? ' on' : '')} aria-pressed={showPron} onClick={() => setShowPron(!showPron)}>
-          注音
-        </button>
-        {wylieOn() && (
-          <button className={'pill' + (showWylie ? ' on' : '')} aria-pressed={showWylie} onClick={() => setShowWylie(!showWylie)}>
-            Wylie
-          </button>
-        )}
-        <button className={'pill' + (showZh ? ' on' : '')} aria-pressed={showZh} onClick={() => setShowZh(!showZh)}>
-          中文
-        </button>
-        <button className="pill play-all" onClick={() => playSeq(p.lines.map((l) => l.audio))}>
-          ▶ 整段
+      <div className="meta-row">
+        <button className="pill small-pill" onClick={() => playSeq(p.lines.map((l) => l.audio))}>
+          <Icon name="play" size={14} /> 整段连读
         </button>
       </div>
-      <div className="lines">
+      <div className="lines reading">
         {p.lines.map((l, i) => (
           <div className="line" key={i}>
             <div className="line-row">
               <button className="play" onClick={() => play(l.audio)} aria-label="播放这一句">
-                ▶
+                <Icon name="play" size={16} />
               </button>
               <div className="syls">
                 {(rl[i]?.words ?? []).map((w, j, ws) => (
@@ -352,23 +335,37 @@ function OpeningReader({ passageId, onSelect }: { passageId: string; onSelect: (
                       {w.tibetan}
                       {j < ws.length - 1 ? '་' : p.lines.length > 1 ? ' །' : ''}
                     </span>
-                    {showPron && <span className="pron">{w.yitong}</span>}
-                    {showWylie && <span className="syl-wylie">{w.tibetan.split('་').map((s) => syllableMap.get(s)?.wylie ?? '').join(' ')}</span>}
+                    {prefs.pron && <span className="pron">{w.yitong}</span>}
+                    {prefs.wylie && wylieOn() && <span className="syl-wylie">{w.tibetan.split('་').map((s) => syllableMap.get(s)?.wylie ?? '').join(' ')}</span>}
                   </span>
                 ))}
               </div>
+              <span className="play-space" />
             </div>
-            {showZh && chinese && p.lines.length === zhLines.length && <div className="zh">{zhLines[i]}</div>}
+            {prefs.zh && chinese && p.lines.length === zhLines.length && <div className="zh">{zhLines[i]}</div>}
           </div>
         ))}
-        {showZh && chinese && p.lines.length !== zhLines.length && <div className="zh">{chinese}</div>}
-        {showZh && !chinese && <p className="muted small">还没有中文译文。请在“我的”页最下面导入中文译文包。</p>}
+        {prefs.zh && chinese && p.lines.length !== zhLines.length && <div className="zh">{chinese}</div>}
+        {prefs.zh && !chinese && <p className="muted small center">还没有中文译文。请在“我的”页最下面导入中文译文包。</p>}
+      </div>
+      <div className="pager">
+        {prev ? (
+          <button className="link" onClick={() => goto(prev.id)}>
+            ‹ {passageTitles[prev.id]}
+          </button>
+        ) : (
+          <span />
+        )}
+        {next && (
+          <button className="link" onClick={() => goto(next.id)}>
+            {passageTitles[next.id]} ›
+          </button>
+        )}
       </div>
       <p className="muted small">
         读音为安多音 TTS 自动生成：整句是连读，点词听的是从整句里切出来的那一段。注音是一本通式，按对照表规律推出来，尚未逐个核对。点词看意思和音节结构。
       </p>
-      {word && !picked && <WordSheet w={word} onPick={setPicked} onClose={() => setWord(null)} />}
-      {picked && <SyllableCard s={picked} onClose={() => setPicked(null)} />}
+      {word && <WordSheet w={word} onPick={onPick} onClose={() => setWord(null)} />}
     </>
   )
 }
@@ -477,29 +474,6 @@ function WylieSetting() {
   )
 }
 
-/** 打开 App 时今日练习还没做完：弹出来提醒，点“开始”进去，点“稍后”留在当前页（路径页顶上也能进） */
-function PracticeReminder({ plan, onStart, onLater }: { plan: DayPlan; onStart: () => void; onLater: () => void }) {
-  const left = plan.steps.filter((k) => !plan.done.includes(k))
-  return (
-    <div className="sheet" onClick={onLater}>
-      <div className="card reminder" onClick={(e) => e.stopPropagation()}>
-        <h2>今日练习{plan.done.length ? '还没做完' : ''}</h2>
-        <p className="small muted">
-          还剩 {left.length} 步：{left.map(stepLabel).join(' → ')}。{plan.done.includes('drill') ? '' : '字卡做完就算今天签到。'}
-        </p>
-        <div className="actions col">
-          <button className="primary" onClick={onStart}>
-            {plan.done.length ? '继续' : '开始'}今日练习
-          </button>
-          <button className="link" onClick={onLater}>
-            稍后再做
-          </button>
-        </div>
-      </div>
-    </div>
-  )
-}
-
 /** 第一次打开时的欢迎页：一句话说清这个 App 怎么用 */
 function Welcome({ onStart }: { onStart: () => void }) {
   return (
@@ -509,7 +483,7 @@ function Welcome({ onStart }: { onStart: () => void }) {
       <p>从零开始学安多音的藏文拼读，最后能跟着念、读懂《普贤上师言教》的原文。</p>
       <ul>
         <li>
-          <b>每天做一次“今日练习”</b>：打开 App 会提醒你，路径页顶上也能进。字卡、复习、拼读一关，再加一点原文和安多会话，大约 15–20 分钟。字卡做完就算签到。
+          <b>每天做一次“今日练习”</b>：打开 App 首页就是今天要做的几步，点按钮一步接一步做。字卡、复习、拼读一关，再加一点原文和安多会话，大约 15–20 分钟。字卡做完就算签到。
         </li>
         <li>
           <b>开着声音</b>：读音都靠听。字母、元音和会话是老师的真人录音。
