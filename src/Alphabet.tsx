@@ -9,6 +9,8 @@ import { letterAudio } from './course.ts'
 import './alphabet.css'
 
 const LETTER_POOL = ROWS.flat()
+/** 安多会话教材拼读表“元音”一节的真人录音，每个元音一段 */
+const VOWEL_AUDIO: Record<string, string> = { 'ི': 'amdo/t/040', 'ུ': 'amdo/t/041', 'ེ': 'amdo/t/042', 'ོ': 'amdo/t/043' }
 
 /** “字母”页：字母表、元音、形近字，以及看字念音的练习入口 */
 export function AlphabetView({ onStart }: { onStart: (all?: boolean) => void }) {
@@ -95,12 +97,12 @@ export function AlphabetView({ onStart }: { onStart: (all?: boolean) => void }) 
 
       <h2>元音</h2>
       <p className="muted small">
-        四个元音符号，三个写在字母上面，一个写在下面。安多话里元音和字母拼起来读音变化很大（ཀི 和 ཀུ 书上都注 ge），所以先记形状和位置，读音跟着音频学。
+        四个元音符号，三个写在字母上面，一个写在下面。安多话里元音和字母拼起来读音变化很大（ཀི 和 ཀུ 书上都注 ge），所以先记形状和位置，读音跟着音频学。点元音符号听教材里单独念这个元音的真人录音。
       </p>
       <div className="vowels">
         {VOWEL_INFO.map((v) => (
           <div key={v.mark} className="vowel">
-            <div className="tib vowel-mark">◌{v.mark}</div>
+            <button className="tib vowel-mark" onClick={() => play(VOWEL_AUDIO[v.mark])} aria-label="听这个元音">◌{v.mark} <span className="small muted">▶</span></button>
             <div className="small">
               写在<b>{v.pos}面</b> · <span className="tib">{v.name}</span>
             </div>
