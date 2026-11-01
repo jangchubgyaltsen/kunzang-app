@@ -196,7 +196,7 @@ function PathView({ onOpen, onStart, onPractice }: { onOpen: (id: string) => voi
                         {ls?.status === 'locked' ? '🔒' : nodeIcon(l, i)}
                       </button>
                       {(isCur || l.kind === 'test' || ls?.optional) && (
-                        <div className="small node-label">{isCur ? `开始：${l.title}` : ls?.optional ? `补课：${l.title}` : l.title}</div>
+                        <div className="small node-label">{isCur ? `开始：${l.title}` : l.optional ? l.title : ls?.optional ? `补课：${l.title}` : l.title}</div>
                       )}
                     </li>
                   )
@@ -214,7 +214,7 @@ const ICON: Record<Level['kind'], string> = { learn: '', practice: '↻', read: 
 const STAGE_ICON = { hear: '听', read: '认', say: '说' }
 function nodeIcon(l: Level, i: number) {
   if (l.kind === 'talk') return STAGE_ICON[l.stage ?? 'hear']
-  if (l.title.endsWith('真人录音')) return l.kind === 'learn' ? '词' : '听'
+  if (l.optional) return '选'
   return l.kind === 'learn' ? String(i + 1) : ICON[l.kind]
 }
 

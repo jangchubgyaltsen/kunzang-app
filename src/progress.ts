@@ -70,7 +70,7 @@ export async function seenKCs(): Promise<Set<KC>> {
 }
 
 export type LevelStatus = 'locked' | 'available' | 'passed'
-export type LevelState = { id: string; status: LevelStatus; best?: number; /** 补课关：单元已通过后才加进来的 */ optional?: boolean }
+export type LevelState = { id: string; status: LevelStatus; best?: number; /** 不挡路的关：选学关，或单元已通过后才加进来的补课关 */ optional?: boolean }
 
 /**
  * 关卡状态：拼读线和诵读线各自按顺序解锁，上一关通过才开下一关。
@@ -85,15 +85,15 @@ export async function getPathState(): Promise<{ levels: Map<string, LevelState>;
     for (const l of u.levels) {
       const r = rows.get(l.id)
       const status: LevelStatus = r?.passedAt ? 'passed' : prevPassed[u.track] ? 'available' : 'locked'
-      // 单元小测已经通过、后来才加进来的关（如安多教材的口语词）算补课：可以学，但不挡后面的路
+      // 选学关（l.optional），和单元小测已经通过、后来才加进来的关（补课）：可以学，但不挡后面的路
       const makeUp = !r?.passedAt && !!rows.get(u.levels[u.levels.length - 1].id)?.passedAt
-      levels.set(l.id, { id: l.id, status: makeUp ? 'available' : status, best: r?.best, optional: makeUp || undefined })
-      prevPassed[u.track] = status === 'passed' || makeUp
+      levels.set(l.id, { id: l.id, status: makeUp ? 'available' : status, best: r?.best, optional: makeUp || l.optional || undefined })
+      if (!l.optional) prevPassed[u.track] = status === 'passed' || makeUp
     }
     const ls = u.levels.map((l) => levels.get(l.id)!)
     let status: UnitStatus = ls.every((l) => l.status === 'passed' || l.optional) ? 'passed' : ls[0].status === 'locked' ? 'locked' : 'available'
     if (status === 'passed') {
-      const kcs = [...new Set(u.levels.flatMap((l) => l.kcs))]
+      const kcs = [...new Set(u.levels.filter((l) => !l.optional).flatMap((l) => l.kcs))]
       const practiced = (await db.cards.where('kc').anyOf(kcs).primaryKeys()) as KC[]
       const m = await Promise.all(practiced.map(kcMastered))
       if (practiced.length > 0 && m.every(Boolean)) status = 'mastered'

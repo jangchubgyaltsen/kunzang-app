@@ -673,7 +673,8 @@ export function recallFor(kc: KC, known: Set<KC> = ALL): Scored | undefined {
 export type LevelKind = 'learn' | 'practice' | 'read' | 'line' | 'test' | 'talk'
 /** talk 关的三步：听懂（听录音选意思）→ 认读（看藏文选意思、看中文选藏文）→ 说（排音节、听音选句） */
 export type TalkStage = 'hear' | 'read' | 'say'
-export type Level = { id: string; unit: number; kind: LevelKind; title: string; kcs: KC[]; line?: string; stage?: TalkStage }
+/** optional：选学关，可以做，但不挡后面的关，也不进单元小测和抽查 */
+export type Level = { id: string; unit: number; kind: LevelKind; title: string; kcs: KC[]; line?: string; stage?: TalkStage; optional?: boolean }
 export type Track = 'spell' | 'read' | 'talk'
 export type PathUnit = { n: number; track: Track; title: string; intro: string; examples: string[]; levels: Level[]; passage?: string }
 
@@ -726,10 +727,10 @@ function spellUnit(u: UnitDef): PathUnit {
     })
   }
   chunk(u.extra, u.n < 10 ? 10 : 40).forEach((g, i) => levels.push({ id: id('r' + (i + 1)), unit: u.n, kind: 'read', title: '读开篇音节', kcs: g }))
-  // 安多会话教材：用刚学的拼读读口语词，听拼读表的真人录音
-  chunk(u.oral, 10).forEach((g, i) => levels.push({ id: id('d' + (i + 1)), unit: u.n, kind: 'learn', title: '口语词 · 真人录音', kcs: g }))
-  chunk(u.hear, 10).forEach((g, i) => levels.push({ id: id('h' + (i + 1)), unit: u.n, kind: 'practice', title: '听拼读 · 真人录音', kcs: g }))
-  levels.push({ id: id('t'), unit: u.n, kind: 'test', title: '单元小测', kcs: [...u.kcs, ...u.extra, ...u.oral] })
+  // 安多会话教材：用刚学的拼读读口语词、听拼读表，合成一个选学关（每次随机抽 10 个，可以反复做），不挡主线、不进小测
+  if (u.oral.length + u.hear.length)
+    levels.push({ id: id('oral'), unit: u.n, kind: 'practice', title: '选学：口语词和拼读 · 真人录音', kcs: [...u.oral, ...u.hear], optional: true })
+  levels.push({ id: id('t'), unit: u.n, kind: 'test', title: '单元小测', kcs: [...u.kcs, ...u.extra] })
   return { n: u.n, track: 'spell', title: u.title, intro: u.intro, examples: spellExamples(u), levels }
 }
 
@@ -877,7 +878,7 @@ export function buildLevel(levelId: string, seen: Set<KC>, weak: KC[] = []): { q
 export function buildSpotCheck(unit: number, weak: KC[] = []): Question[] {
   const u = unitByN.get(unit)!
   const known = knownFor(unit)
-  const pool = [...new Set(u.levels.flatMap((l) => l.kcs))]
+  const pool = [...new Set(u.levels.filter((l) => !l.optional).flatMap((l) => l.kcs))]
   const inPool = new Set(pool)
   const picked = [...new Set([...weak.filter((k) => inPool.has(k)).slice(0, 4), ...shuffle(pool)])].slice(0, 10)
   return shuffle(picked.map((k, j) => (u.track === 'read' ? readQuestion(k, j, known) : questionFor(k, k.startsWith('X:') ? 0 : undefined, known))))
