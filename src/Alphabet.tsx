@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { play } from './audio.ts'
 import {
   ALL_CARDS, CV_MARKS, CV_PRON, CV_SOURCE, FAST_MS, FLUENT_AT, HOOK_PAIRS, LETTER_NOTE, PRON, ROWS, SHAPE_PAIRS, SOUND_PAIRS, VOWEL_INFO,
-  buildDaily, cardCounts, cvAudioOf, isFluent, isLookalike, isSoundPair, loadStats, markDailyDone, optionsFor, record, saveStats,
+  buildDaily, cardCounts, guessed, modeFor, cvAudioOf, isFluent, isLookalike, isSoundPair, loadStats, markDailyDone, optionsFor, record, saveStats,
   type DrillItem, type Stat, type Step,
 } from './alphabet.ts'
 import { letterAudio } from './course.ts'
@@ -117,7 +117,7 @@ export function AlphabetView({ onStart }: { onStart: (all?: boolean) => void }) 
       <h2>字母 + 元音组合表</h2>
       <p className="muted small">
         30 个字母各配四个元音，共 120 个，每日字卡里都会考。点格子听真人录音。黑字是《一本通》上的注音，红字是书上例词里出现过的，
-        灰色斜体是按书上的规律推出来的，以录音为准。
+        灰色斜体是按书上的规律推出来、还没核对的，以录音为准；字卡里这些组合只考听音选字。
       </p>
       <div className="cv-table">
         <div className="cv-row cv-head">
@@ -216,7 +216,7 @@ export function Drill({ onExit, onComplete, all = false }: { onExit: () => void;
     await saveStats(s)
     setLog((l) => [...l, { it, ok, ms: t }])
     // 答错的过 3 题再来一次，换一种考法
-    if (!ok) setQueue((q) => [...q.slice(0, i + 4), { it, mode: step.mode === 'read' ? 'hear' : 'read' }, ...q.slice(i + 4)])
+    if (!ok) setQueue((q) => [...q.slice(0, i + 4), { it, mode: modeFor(it, step.mode === 'read' ? 'hear' : 'read') }, ...q.slice(i + 4)])
     if (ok && t <= FAST_MS) setTimeout(go, 800)
   }
 
@@ -232,9 +232,9 @@ export function Drill({ onExit, onComplete, all = false }: { onExit: () => void;
   )
   const ans = (x: DrillItem) => (
     <div className="drill-ans">
-      <span className="drill-pron">{x.pron}</span>
+      <span className={'drill-pron' + (guessed(x) ? ' guess' : '')}>{x.pron}</span>
       {x.hanzi && <span className="drill-hz">{x.hanzi}</span>}
-      {x.src !== undefined && <span className="small muted">{CV_SOURCE[x.src]}</span>}
+      {x.src !== undefined && <span className="small muted">{guessed(x) ? '按规律推的注音，还没核对，以录音为准' : CV_SOURCE[x.src]}</span>}
       {LETTER_NOTE[x.tib] && <span className="small muted">{LETTER_NOTE[x.tib]}</span>}
     </div>
   )

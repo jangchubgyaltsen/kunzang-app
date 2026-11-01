@@ -357,8 +357,9 @@ export function questionFor(kc: KC, variant?: number, known: Set<KC> = ALL): Sco
     const [p, src] = CV_PRON[shown]
     const siblings = VOWELS.filter((x) => x[0] === mark || known.has('V:' + x[0])).map((x) => base + x[0])
     const knownCV = VOWELS.filter((x) => known.has('V:' + x[0])).flatMap((x) => bases.map((l) => l[0] + x[0]))
-    const explain = `${mark} 叫 ${name}。${shown} 读 ${p}（${CV_SOURCE[src]}）。${VOWEL_RULE[mark]}`
-    if (v % 2 === 0)
+    const explain = `${mark} 叫 ${name}。${shown} ${src === 2 ? `大致读 ${p}（按规律推的，以录音为准）` : `读 ${p}（${CV_SOURCE[src]}）`}。${VOWEL_RULE[mark]}`
+    // 按规律推出来的注音（来源 2）还没核对，不拿来当“看字选读音”的标准答案，只考听音
+    if (v % 2 === 0 && src !== 2)
       return {
         kind: 'glyph2wylie', kc, ask: '这个怎么读？', prompt: shown, answer: p, audio: cvAudio(base, mark), explain,
         options: optionsWith(p, Object.values(CV_PRON).map((x) => x[0]), [PRON[base][0], ...siblings.map((x) => CV_PRON[x][0]), ...knownCV.map((x) => CV_PRON[x][0])]),
