@@ -60,7 +60,7 @@ export function AlphabetView({ onStart }: { onStart: (all?: boolean) => void }) 
       <h2>每日字卡</h2>
       <p className="muted small">
         30 个字母加 120 个字母 + 元音组合，一共 150 张卡。每天第一次打开 App 先考这个：到期的卡看字选注音、听音选字轮着考，
-        选项里放的是书上成对比较的形近字和发音相近的字；答错的当天再考，一眼认出的隔几天再考。新卡按字母表顺序每天带 15 张。
+        选项里放的是书上成对比较的形近字和发音相近的字；答错的当天再考，一眼认出的隔几天再考。新卡按字母表顺序每天带 15 张（到期的积压多时 10 张），每天一组至少 10 张卡。
       </p>
       <p className="small">
         今天到期 <b>{counts.due}</b> 张 · 还没见过 <b>{counts.fresh}</b> 张 · 已经一眼认出 <b>{counts.fluent}</b> / 150 张
