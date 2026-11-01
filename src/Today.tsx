@@ -1,31 +1,23 @@
 import { useEffect, useState } from 'react'
-import { linesOf } from './reading.ts'
-import { db } from './db.ts'
-import { play } from './audio.ts'
-import { AUSPICIOUS, GAMES, availableGames, dayKey, learnedPool, lineOfDay, planToday, streakInfo, type GameKind } from './daily.ts'
+import { AUSPICIOUS, dayKey, streakInfo } from './daily.ts'
+import { loadPlan, stepLabel, type DayPlan } from './practice.ts'
+// 首页卡片、签到印章和日历的样式在 games.css 里（小游戏收起来了，样式还在用）
+import './games.css'
 
 type Info = Awaited<ReturnType<typeof streakInfo>>
 
-/** 首页顶部的「今日」卡片：今日一句、今日游戏、签到天数。 */
-export default function Today({ onPlay }: { onPlay: (kind: GameKind | undefined, daily: boolean) => void }) {
+/** 首页顶部的「今日」卡片：签到天数和今日练习的进度。字卡做完就算签到。 */
+export default function Today({ onPractice }: { onPractice: () => void }) {
   const [info, setInfo] = useState<Info | null>(null)
-  const [game, setGame] = useState<GameKind | null>(null)
-  const [others, setOthers] = useState<GameKind[]>([])
+  const [plan, setPlan] = useState<DayPlan | null>(null)
   const [showCal, setShowCal] = useState(false)
-  const [showHall, setShowHall] = useState(false)
-  const [zh, setZh] = useState<string | null>(null)
-  const { passage, line, i } = lineOfDay()
 
   useEffect(() => {
     streakInfo().then(setInfo)
-    planToday().then((p) => setGame(p.game))
-    learnedPool().then((p) => setOthers(availableGames(p)))
-    db.translations.get(passage.id).then((t) => {
-      const parts = (t?.chinese ?? '').split(/(?<=[，。！])/).filter(Boolean)
-      setZh(parts.length === passage.lines.length ? parts[i] : null)
-    })
-  }, [passage, i])
+    loadPlan().then(setPlan)
+  }, [])
 
+  const left = plan ? plan.steps.filter((k) => !plan.done.includes(k)) : []
   return (
     <div className="today">
       <div className="today-head">
@@ -53,47 +45,14 @@ export default function Today({ onPlay }: { onPlay: (kind: GameKind | undefined,
         </div>
       )}
 
-      <div className="today-line">
-        <div className="small muted">今日一句</div>
-        <div className="line-row">
-          <button className="play" onClick={() => play(line.audio)} aria-label="播放这一句">
-            ▶
-          </button>
-          <div className="syls">
-            {(linesOf(passage.id)[i]?.words ?? []).map((w, j, ws) => (
-              <span key={w.id} className="word" onClick={() => play(w.audio)}>
-                <span className="tib">
-                  {w.tibetan}
-                  {j < ws.length - 1 ? '་' : ''}
-                </span>
-                <span className="pron">{w.yitong}</span>
-              </span>
-            ))}
-          </div>
-        </div>
-        {zh && <div className="zh">{zh}</div>}
-      </div>
-
-      {game && (
-        <button className="primary today-go" onClick={() => onPlay(undefined, true)}>
-          今日游戏：{GAMES[game].name}
-          <span className="small">{info?.today ? '今天已签到，可以再玩' : GAMES[game].desc + ' · 玩完即签到'}</span>
+      {plan && (
+        <button className="primary today-go" onClick={onPractice}>
+          {left.length ? `今日练习${plan.done.length ? ' · 继续' : ''}` : '今日练习 · 已做完'}
+          <span className="small">
+            {left.length ? `下一步：${stepLabel(left[0])} · 还剩 ${left.length} 步` : '可以再看看清单，或在下面的路径上接着学'}
+            {!info?.today && left.length ? ' · 字卡做完即签到' : ''}
+          </span>
         </button>
-      )}
-      {info?.today && others.length > 1 && (
-        <button className="link small" onClick={() => setShowHall(!showHall)}>
-          {showHall ? '收起' : '换个游戏玩'}
-        </button>
-      )}
-      {showHall && (
-        <div className="hall">
-          {others.map((g) => (
-            <button key={g} onClick={() => onPlay(g, false)}>
-              <b>{GAMES[g].name}</b>
-              <span className="small muted">{GAMES[g].desc}</span>
-            </button>
-          ))}
-        </div>
       )}
     </div>
   )

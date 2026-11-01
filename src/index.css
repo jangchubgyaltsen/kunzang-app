@@ -118,3 +118,13 @@ button.link { border: none; background: none; color: var(--accent); padding: 4px
 .para-zh { margin-top: 6px; color: #5d554c; }
 .resume { display: block; width: 100%; margin: 6px 0 10px; color: var(--accent); }
 .part:disabled { opacity: .55; }
+
+/* 今日练习 */
+.practice { display: flex; flex-direction: column; gap: 12px; padding-top: 8px; }
+.practice-steps { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 6px; }
+.practice-steps li { display: flex; align-items: baseline; gap: 8px; background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+.practice-steps li.done { opacity: 0.55; }
+.practice-steps li.now { border-color: var(--accent); }
+.practice-steps .mark { width: 1.2em; color: var(--accent); font-weight: 600; }
+.practice-done { text-align: center; }
+.side-tracks { display: flex; flex-direction: column; gap: 2px; margin: 4px 0 10px; }

@@ -2,17 +2,16 @@ import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { passages, passageTitles, syllableMap, type Syllable } from './content.ts'
 import { audioStatus, play, playSeq } from './audio.ts'
 import { say } from './sound.ts'
-import { db, exportData, importData, importTranslationPack, type SpotCheck } from './db.ts'
+import { db, exportData, importData, importTranslationPack } from './db.ts'
 import Lesson from './Lesson.tsx'
 import Review from './Review.tsx'
-import Game from './Games.tsx'
 import Today from './Today.tsx'
+import Practice from './Practice.tsx'
 import { AlphabetView, Drill } from './Alphabet.tsx'
-import { dailyDue } from './alphabet.ts'
-import type { GameKind } from './daily.ts'
-import { CHECK_DAYS, dueChecks, dueKCs, ensureChecks, getPathState, type LevelState, type UnitState } from './progress.ts'
-import { PATH, TALK_BASE, letterAudio, unitByN, wordMap, type Level, type Track } from './course.ts'
-import { spotCheckSession, type Session } from './session.ts'
+import { loadPlan } from './practice.ts'
+import { ensureChecks, getPathState, type LevelState, type UnitState } from './progress.ts'
+import { PATH, letterAudio, wordMap, type Level, type Track } from './course.ts'
+import { type Session } from './session.ts'
 import { linesOf, yitongOf, type Token } from './reading.ts'
 import { chapters } from './book.ts'
 import { BookChapter } from './BookReader.tsx'
@@ -23,13 +22,14 @@ export default function App() {
   const [tab, setTab] = useState<Tab>('path')
   const [passageId, setPassageId] = useState('title')
   const [session, setSession] = useState<Session | null>(null)
-  const [game, setGame] = useState<{ kind?: GameKind; daily: boolean } | null>(null)
-  // 每日字卡：每天打开 App 先考这个，做完一组之前每次打开都会弹出。负数表示 150 张全部过一遍
+  // 字母页手动开的字卡。负数表示 150 张全部过一遍
   const [drill, setDrill] = useState(0)
+  // 今日练习：每天打开 App 先自动进这个（字卡 → 复习 → 拼读 → 开篇 → 会话），全部做完之前每次打开都会弹出
+  const [practice, setPractice] = useState<{ auto: boolean } | null>(null)
   useEffect(() => {
-    dailyDue().then((due) => due && setDrill((n) => n || 1))
+    loadPlan().then((p) => p.done.length < p.steps.length && setPractice((x) => x ?? { auto: true }))
   }, [])
-  const busy = session !== null || game !== null || drill !== 0
+  const busy = session !== null || drill !== 0 || practice !== null
 
   // 原文页看的是哪一章：'00' 是开篇（逐词版），其余是正文各章
   const [chapterId, setChapterId] = useState('00')
@@ -56,11 +56,11 @@ export default function App() {
           ) : (
             <Lesson questions={session.questions} title={session.title} onFinish={session.onFinish} onExit={() => setSession(null)} />
           ))}
-        {game !== null && <Game kind={game.kind} daily={game.daily} onExit={() => setGame(null)} />}
+        {practice !== null && <Practice auto={practice.auto} onExit={() => setPractice(null)} />}
         {drill !== 0 && <Drill key={drill} all={drill < 0} onExit={() => setDrill(0)} />}
         {!busy && tab === 'alphabet' && <AlphabetView key={drill} onStart={(all) => setDrill(all ? -Date.now() : Date.now())} />}
         {!busy && tab === 'path' && (
-          <PathView onOpen={openPassage} onStart={setSession} onReview={() => setTab('review')} onPlay={(kind, daily) => setGame({ kind, daily })} />
+          <PathView onOpen={openPassage} onStart={setSession} onPractice={() => setPractice({ auto: false })} />
         )}
         {!busy && tab === 'reader' && <ReaderView passageId={passageId} onSelect={setPassageId} chapterId={chapterId} onChapter={pickChapter} />}
         {!busy && tab === 'amdo' && <AmdoView onStart={setSession} />}
@@ -90,27 +90,14 @@ export default function App() {
 }
 
 type PathState = Awaited<ReturnType<typeof getPathState>>
-const TRACKS: [Track, string][] = [
-  ['spell', '拼读'],
+// 路径上只显示拼读线；诵读开篇和安多会话每天排进今日练习
+const SIDE_TRACKS: [Track, string][] = [
   ['read', '诵读开篇'],
   ['talk', '安多会话'],
 ]
 
-function PathView({
-  onOpen,
-  onStart,
-  onReview,
-  onPlay,
-}: {
-  onOpen: (id: string) => void
-  onStart: (s: Session) => void
-  onReview: () => void
-  onPlay: (kind: GameKind | undefined, daily: boolean) => void
-}) {
+function PathView({ onOpen, onStart, onPractice }: { onOpen: (id: string) => void; onStart: (s: Session) => void; onPractice: () => void }) {
   const [st, setSt] = useState<PathState | null>(null)
-  const [due, setDue] = useState(0)
-  const [checks, setChecks] = useState<SpotCheck[]>([])
-  const [track, setTrack] = useState<Track>(() => (localStorage.getItem('track') as Track) ?? 'spell')
   const [expanded, setExpanded] = useState<Set<number>>(new Set())
   const currentRef = useRef<HTMLLIElement | null>(null)
 
@@ -118,18 +105,13 @@ function PathView({
     getPathState().then(async (s) => {
       setSt(s)
       await ensureChecks(s.units)
-      setChecks(await dueChecks())
     })
-    dueKCs(99).then((x) => setDue(x.length))
   }, [])
   useEffect(() => {
-    localStorage.setItem('track', track)
-  }, [track])
-  useEffect(() => {
     currentRef.current?.scrollIntoView({ block: 'center' })
-  }, [st, track])
+  }, [st])
 
-  const units = PATH.filter((u) => u.track === track)
+  const units = PATH.filter((u) => u.track === 'spell')
   const unitState = new Map(st?.units.map((u) => [u.n, u]))
   // 当前关：优先主线上的下一关；补课关（单元已通过后才加进来的）排在后面
   const open = st ? units.flatMap((u) => u.levels).filter((l) => st.levels.get(l.id)?.status === 'available') : []
@@ -137,37 +119,21 @@ function PathView({
 
   return (
     <section>
-      <Today onPlay={onPlay} />
-      {(checks.length > 0 || due > 0) && (
-        <div className="due-box">
-          <div className="small muted">定时回顾</div>
-          {checks.map((c) => (
-            <button key={c.id} className="primary due-go" onClick={async () => onStart(await spotCheckSession(c))}>
-              抽查：{unitByN.get(c.unit)!.title}
-              <span className="small">单元通过后第 {CHECK_DAYS[c.step]} 天 · 10 题</span>
-            </button>
-          ))}
-          {due > 0 && (
-            <button className="link" onClick={onReview}>
-              {due} 个知识点到期需要复习 →
-            </button>
-          )}
+      <Today onPractice={onPractice} />
+      <p className="muted small">拼读路径：字母、元音和加字，一关只学两三个新东西。每天的今日练习会带你走一关，想多学可以在这里接着往下点。</p>
+      {st && (
+        <div className="side-tracks small muted">
+          {SIDE_TRACKS.map(([t, label]) => {
+            const ls = PATH.filter((u) => u.track === t).flatMap((u) => u.levels)
+            const done = ls.filter((l) => st.levels.get(l.id)?.status === 'passed').length
+            return (
+              <div key={t}>
+                {label}：{done} / {ls.length} 关 · 每天在今日练习里学一点
+              </div>
+            )
+          })}
         </div>
       )}
-      <div className="chips track-tabs">
-        {TRACKS.map(([k, label]) => (
-          <button key={k} className={track === k ? 'on' : ''} onClick={() => setTrack(k)}>
-            {label}
-          </button>
-        ))}
-      </div>
-      <p className="muted small">
-        {track === 'spell'
-          ? '字母、元音和加字，一关只学两三个新东西。每个单元还有安多教材的口语词和拼读表，都是真人录音。'
-          : track === 'read'
-            ? '开篇原文一句一关：词卡用从整句里切出来的读音，最后听整句连读并跟读。可以和拼读同时学。'
-            : '安多话日常会话，真人录音，15 句一个单元。先听懂，再认读，最后自己排出整句。从第一天就能学，和拼读同时进行。'}
-      </p>
       {units.map((u) => {
         const us = unitState.get(u.n)
         const done = us?.status === 'passed' || us?.status === 'mastered'
@@ -176,7 +142,7 @@ function PathView({
           <div key={u.n} className={'unit-block' + (us?.status === 'locked' ? ' locked' : '')}>
             <div className="unit-head">
               <div>
-                <div className="small">{u.track === 'talk' ? `第 ${u.n - TALK_BASE + 1} 组` : `单元 ${u.n}`}</div>
+                <div className="small">单元 {u.n}</div>
                 <div className="unit-title">{u.title}</div>
                 {u.examples.length > 0 && (
                   <div className="tib small">
