@@ -39,6 +39,8 @@ export default function Lesson({ level, questions, title, onExit, onFinish, onCo
   const [struck, setStruck] = useState<(string | number)[]>([])
   const [hint, setHint] = useState<Hint | null>(null)
   const [guessed, setGuessed] = useState(false)
+  /** 先想再看：听会话句选意思时，选项晚 3 秒出来 */
+  const [ready, setReady] = useState(true)
   const medians = useRef<Map<string, number>>(new Map())
   const shownAt = useRef(0)
   /** 一次就答对的那题先不写进记录，等点“继续”（中途可以改成“是猜的”） */
@@ -67,7 +69,14 @@ export default function Lesson({ level, questions, title, onExit, onFinish, onCo
   const q = queue?.[i]
   useEffect(() => {
     shownAt.current = performance.now()
-    if (q && (q.kind === 'listen' || q.kind === 'intro') && q.audio) play(q.audio)
+    if (q && (q.kind === 'listen' || q.kind === 'intro' || q.kind === 'build') && q.audio) play(q.audio)
+    if (q?.kind !== 'listen' || !q.zh) return setReady(true)
+    setReady(false)
+    const t = setTimeout(() => {
+      setReady(true)
+      shownAt.current = performance.now()
+    }, 3000)
+    return () => clearTimeout(t)
   }, [q])
 
   if (!queue) return <section className="lesson">载入中…</section>
@@ -111,7 +120,19 @@ export default function Lesson({ level, questions, title, onExit, onFinish, onCo
       <section className="lesson">
         {top}
         <ShadowCard q={q as Shadow} />
-        <button className="primary" onClick={next}>跟读完了</button>
+        <p className="small muted center">读完和原音比一比：</p>
+        <div className="actions">
+          <button className="primary" onClick={next}>读得像</button>
+          <button
+            onClick={async () => {
+              // 自己觉得还差一点：这句早点再练
+              await recordAnswer(q.kc, false, unit, 'shadow', Rating.Hard)
+              next()
+            }}
+          >
+            还差一点
+          </button>
+        </div>
       </section>
     )
 
@@ -129,7 +150,7 @@ export default function Lesson({ level, questions, title, onExit, onFinish, onCo
     if (answered || struck.includes(c)) return
     const ok = isRight(c)
     const ms = Math.round(performance.now() - shownAt.current)
-    const optionCount = q.kind === 'findRoot' ? q.parts.length : q.kind === 'order' ? 0 : q.options.length
+    const optionCount = q.kind === 'findRoot' || q.kind === 'spotError' ? q.parts.length : q.kind === 'order' || q.kind === 'build' ? 0 : q.options.length
     // 第一次答错：给一句针对这个错项的提示，划掉它，再选一次（剩的选项不到两个、排序题就直接给答案）
     if (!ok && !struck.length && optionCount - 1 >= 2) {
       const h = hintFor(q, c)
@@ -144,7 +165,7 @@ export default function Lesson({ level, questions, title, onExit, onFinish, onCo
     // 答对读题目本身，答错读你选的那个，让耳朵也记住区别
     if (ok && q.kind === 'glyph2wylie' && q.seq) playSeq(q.seq)
     else if (ok && q.audio) play(q.audio)
-    else say(labelOf(q, c))
+    else if (q.kind !== 'build') say(labelOf(q, c))
     if (!firstTry.has(q.kc + q.kind)) setFirstTry(new Map(firstTry).set(q.kc + q.kind, ok))
     // 记下第一个选错的选项和它的误区类别，以后统计哪类错误最多
     const first = struck.length ? { pick: String(labelOf(q, struck[0])), miss: hint?.cat } : ok ? {} : { pick: String(labelOf(q, c)), miss: hintFor(q, c).cat }
@@ -174,7 +195,15 @@ export default function Lesson({ level, questions, title, onExit, onFinish, onCo
     <section className="lesson">
       {top}
       <Prompt q={q} />
-      {q.kind === 'order' ? <OrderPieces key={i} q={q} locked={answered} onDone={choose} /> : <Options q={q} chosen={chosen} struck={struck} onChoose={choose} />}
+      {q.kind === 'order' ? (
+        <OrderPieces key={i} q={q} locked={answered} onDone={choose} />
+      ) : q.kind === 'build' ? (
+        <BuildSlots key={i} q={q} locked={answered} onDone={choose} />
+      ) : ready ? (
+        <Options q={q} chosen={chosen} struck={struck} onChoose={choose} />
+      ) : (
+        <p className="muted center think">先在心里想想是什么意思……</p>
+      )}
       {hint && !answered && (
         <div className="feedback hint">
           <div className="fb-title">再选一次</div>
@@ -185,7 +214,7 @@ export default function Lesson({ level, questions, title, onExit, onFinish, onCo
         <div className={'feedback ' + (isRight(chosen) ? 'ok' : 'bad')}>
           <div className="fb-title">{isRight(chosen) ? (struck.length ? '对了，看了提示才选对' : '答对了') : `正确答案：${labelOf(q, q.answer)}`}</div>
           <div className="explain">{q.explain}</div>
-          {!isRight(chosen) && repeated && <Basics q={q} />}
+          {((!isRight(chosen) && repeated) || q.kind === 'spotError') && <Basics q={q} />}
           {isRight(chosen) && !struck.length && (
             <button className="link small" disabled={guessed} onClick={markGuess}>
               {guessed ? '记下了：这题过不久再考' : '其实是猜的'}
@@ -207,8 +236,12 @@ function withTib(t: string) {
 const long = (q: Scored) => q.kc.startsWith('A:')
 
 function labelOf(q: Scored, a: string | number) {
-  return q.kind === 'findRoot' ? q.parts[a as number] : String(a)
+  if (q.kind === 'build') return a === q.answer ? q.target : String(a).replace(/\|/g, ' ')
+  return q.kind === 'findRoot' || q.kind === 'spotError' ? q.parts[a as number] : String(a)
 }
+
+/** 前加字、上加字……在全 App 里用固定的颜色 */
+const ROLE_CLASS: Record<string, string> = { 前加字: 'r-pre', 上加字: 'r-sup', 基字: 'r-root', 下加字: 'r-sub', 后加字: 'r-suf', 再后加字: 'r-post', 元音: 'r-vowel' }
 
 function IntroCard({ q }: { q: Intro }) {
   return (
@@ -225,7 +258,7 @@ function IntroCard({ q }: { q: Intro }) {
       {q.parts && (
         <div className="parts">
           {q.parts.map((p, k) => (
-            <div key={k} className={'part tap' + (p.role === '基字' ? ' root' : '')} onClick={() => say(p.ch)}>
+            <div key={k} className={'part tap ' + (ROLE_CLASS[p.role] ?? '') + (p.role === '基字' ? ' root' : '')} onClick={() => say(p.ch)}>
               <div className="tib">{p.ch}</div>
               <div className="small">{p.role}</div>
             </div>
@@ -260,10 +293,25 @@ function Prompt({ q }: { q: Scored }) {
           <div className="tib huge tap" onClick={() => (q.audio ? play(q.audio) : say(q.prompt))}>{q.prompt}</div>
         </div>
       )
+    case 'build':
+      return (
+        <div className="prompt">
+          <div className="ask">{q.audio ? '听读音，看转写，给每个位置选字，拼出这个音节' : '看转写，给每个位置选字，拼出这个音节'}</div>
+          <div className="latin-big">{q.wylie}</div>
+          {q.audio && <button className="play-big" onClick={() => play(q.audio!)}>▶</button>}
+        </div>
+      )
+    case 'spotError':
+      return (
+        <div className="prompt">
+          <div className="ask">这样拆有一处标错了，点出来</div>
+          <div className="tib huge tap" onClick={() => (q.audio ? play(q.audio) : say(q.prompt))}>{q.prompt}</div>
+        </div>
+      )
     case 'order':
       return (
         <div className="prompt">
-          <div className="ask">听整句，按顺序点出词语</div>
+          <div className="ask">{q.ask ?? '听整句，按顺序点出词语'}</div>
           <button className="play-big" onClick={() => play(q.audio)}>▶</button>
         </div>
       )
@@ -292,6 +340,47 @@ function Prompt({ q }: { q: Scored }) {
 }
 
 /** 排词序：点下面的词放进句子，点句子里的词放回去，放满了自动判对错 */
+/** 拼字：每个位置一行，选好全部位置再检查 */
+function BuildSlots({ q, locked, onDone }: { q: Extract<Scored, { kind: 'build' }>; locked: boolean; onDone: (joined: string) => void }) {
+  const [picks, setPicks] = useState<(string | null)[]>(() => q.slots.map(() => null))
+  const full = picks.every((x) => x !== null)
+  return (
+    <div className="build">
+      {q.slots.map((slot, k) => (
+        <div key={k} className="build-row">
+          <span className={'small role ' + (ROLE_CLASS[slot.role] ?? '')}>{slot.role}</span>
+          <div className="build-opts tib">
+            {slot.options.map((o) => {
+              const on = picks[k] === o
+              const cls = locked ? (o === slot.answer ? ' right' : on ? ' wrong' : ' dim') : on ? ' on' : ''
+              return (
+                <button
+                  key={o}
+                  className={'piece' + cls}
+                  disabled={locked}
+                  onClick={() => {
+                    if (o !== '无') say(o)
+                    setPicks(picks.map((x, j) => (j === k ? o : x)))
+                  }}
+                >
+                  {o === '无' ? <span className="small">无</span> : o.length === 1 && /[\u0F71-\u0F84]/.test(o) ? '◌' + o : o}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      ))}
+      {locked ? (
+        <div className="tib huge center">{q.target}</div>
+      ) : (
+        <button className="primary" disabled={!full} onClick={() => onDone(picks.join('|'))}>
+          检查
+        </button>
+      )}
+    </div>
+  )
+}
+
 function OrderPieces({ q, locked, onDone }: { q: Extract<Scored, { kind: 'order' }>; locked: boolean; onDone: (joined: string) => void }) {
   const [placed, setPlaced] = useState<number[]>([])
   const put = (k: number) => {
@@ -299,7 +388,7 @@ function OrderPieces({ q, locked, onDone }: { q: Extract<Scored, { kind: 'order'
     say(q.pieces[k])
     const p = [...placed, k]
     setPlaced(p)
-    if (p.length === q.pieces.length) onDone(p.map((x) => q.pieces[x]).join('་'))
+    if (p.length === (q.need ?? q.pieces.length)) onDone(p.map((x) => q.pieces[x]).join('་'))
   }
   return (
     <div className="order">
@@ -321,16 +410,23 @@ function OrderPieces({ q, locked, onDone }: { q: Extract<Scored, { kind: 'order'
   )
 }
 
-function Options({ q, chosen, struck, onChoose }: { q: Exclude<Scored, { kind: 'order' }>; chosen: string | number | null; struck: (string | number)[]; onChoose: (c: string | number) => void }) {
-  const items: (string | number)[] = q.kind === 'findRoot' ? q.parts.map((_, k) => k) : q.options
+function Options({ q, chosen, struck, onChoose }: { q: Exclude<Scored, { kind: 'order' | 'build' }>; chosen: string | number | null; struck: (string | number)[]; onChoose: (c: string | number) => void }) {
+  const items: (string | number)[] = q.kind === 'findRoot' || q.kind === 'spotError' ? q.parts.map((_, k) => k) : q.options
   const cls = (c: string | number) =>
     chosen === null ? (struck.includes(c) ? ' struck' : '') : c === q.answer ? ' right' : c === chosen || struck.includes(c) ? ' wrong' : ' dim'
   const style = (q.kind === 'meaning' || (q.kind === 'listen' && q.zh) ? ' gloss' : q.kind === 'glyph2wylie' ? ' latin' : ' tib') + (long(q) ? ' long' : '')
   return (
-    <div className={'options' + (q.kind === 'findRoot' ? ' row' : '') + (long(q) ? ' one' : '')}>
+    <div className={'options' + (q.kind === 'findRoot' || q.kind === 'spotError' ? ' row' : '') + (long(q) ? ' one' : '')}>
       {items.map((c) => (
         <button key={String(c)} className={'opt' + style + cls(c)} disabled={chosen === null && struck.includes(c)} onClick={() => onChoose(c)}>
-          {labelOf(q, c)}
+          {q.kind === 'spotError' ? (
+            <span className="spot">
+              <span className="tib">{labelOf(q, c)}</span>
+              <span className={'small role ' + (ROLE_CLASS[q.shown[c as number]] ?? '')}>{q.shown[c as number]}</span>
+            </span>
+          ) : (
+            labelOf(q, c)
+          )}
         </button>
       ))}
     </div>
@@ -339,17 +435,21 @@ function Options({ q, chosen, struck, onChoose }: { q: Exclude<Scored, { kind: '
 
 /** 同一知识点连续答错时，回到结构拆解。 */
 function Basics({ q }: { q: Scored }) {
-  if (q.kind === 'order') return null
-  const t = q.kind === 'findRoot' ? q.prompt : q.kc.startsWith('S:') ? q.kc.slice(2) : null
+  if (q.kind === 'order' || q.kind === 'build') return null
+  const t = q.kind === 'findRoot' || q.kind === 'spotError' ? q.prompt : q.kc.startsWith('S:') ? q.kc.slice(2) : null
   const s = t ? syllableMap.get(t) : undefined
-  if (q.kind !== 'findRoot' && !s) return null
-  const parts = s ? partsOf(s) : (q as Extract<Scored, { kind: 'findRoot' }>).parts.map((ch, k) => ({ ch, role: k === q.answer ? '基字' : '' }))
+  if (q.kind !== 'findRoot' && q.kind !== 'spotError' && !s) return null
+  const parts = s
+    ? partsOf(s)
+    : q.kind === 'spotError' || (q.kind === 'findRoot' && q.roles)
+      ? q.parts.map((ch, k) => ({ ch, role: q.roles![k] }))
+      : (q as Extract<Scored, { kind: 'findRoot' }>).parts.map((ch, k) => ({ ch, role: k === q.answer ? '基字' : '' }))
   return (
     <div className="basics">
       <div className="small muted">拆开来看：</div>
       <div className="parts">
         {parts.map((p, k) => (
-          <div key={k} className={'part tap' + (p.role === '基字' ? ' root' : '')} onClick={() => say(p.ch)}>
+          <div key={k} className={'part tap ' + (ROLE_CLASS[p.role] ?? '') + (p.role === '基字' ? ' root' : '')} onClick={() => say(p.ch)}>
             <div className="tib">{p.ch}</div>
             <div className="small">{p.role}</div>
           </div>

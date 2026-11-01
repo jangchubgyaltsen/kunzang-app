@@ -54,6 +54,17 @@ export function hintFor(q: Scored, chosen: string | number): Hint {
     return { cat: 'other', text: `${ch} 不是基字。先找元音符号加在哪个字上，或者哪个字上下叠着别的字。` }
   }
 
+  if (q.kind === 'build') {
+    const picks = String(chosen).split('|')
+    const bad = q.slots.filter((slot, k) => picks[k] !== slot.answer).map((slot) => slot.role)
+    return { cat: 'build', text: `${bad.join('、')}选得不对。` }
+  }
+
+  if (q.kind === 'spotError') {
+    const k = chosen as number
+    return { cat: 'spot', text: `${q.parts[k]} 标的是“${q.shown[k]}”，这个标对了。看看哪个字被标成了基字，它真的是基字吗？` }
+  }
+
   const c = String(chosen)
 
   // 字母

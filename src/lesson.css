@@ -58,3 +58,26 @@ button.recording { border-color: #c62828; color: #c62828; }
 .opt.tib.long { font-size: 22px; text-align: left; padding: 10px 14px; }
 .opt.gloss.long { text-align: left; }
 .feedback .explain .tib { font-size: 1.35em; }
+
+/* 前加字、上加字、基字……全 App 固定颜色 */
+.r-pre { --role: #6a4c93; }
+.r-sup { --role: #1d6fa5; }
+.r-root { --role: #8a2c1d; }
+.r-sub { --role: #2e7d32; }
+.r-suf { --role: #b26a00; }
+.r-post { --role: #00838f; }
+.r-vowel { --role: #555; }
+.part[class*=' r-'] { border-color: var(--role); }
+.part[class*=' r-'] .small { color: var(--role); }
+.role { color: var(--role, inherit); font-weight: 600; }
+.spot { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.think { padding: 24px 0; }
+.build { display: flex; flex-direction: column; gap: 10px; }
+.build-row { display: flex; align-items: center; gap: 10px; }
+.build-row > .role { width: 4.5em; flex: none; }
+.build-opts { display: flex; gap: 8px; flex-wrap: wrap; }
+.build-opts .piece { min-width: 52px; }
+.build-opts .piece.on { border-color: var(--accent); background: #fbeee6; }
+.build-opts .piece.right { border-color: #2e7d32; background: #e8f5e9; }
+.build-opts .piece.wrong { border-color: #c62828; background: #fdecea; }
+.build-opts .piece.dim { opacity: .45; }
