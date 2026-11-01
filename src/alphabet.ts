@@ -56,6 +56,11 @@ export const ALL_CARDS: DrillItem[] = ROWS.flat().flatMap((l) => [letterItem(l),
 const LETTER_CARDS = ALL_CARDS.filter((x) => x.key.startsWith('L:'))
 const CV_CARDS = ALL_CARDS.filter((x) => x.key.startsWith('CV:'))
 
+/** 注音是按规律推出来的（没核对过）：只能听录音考，不考“看字选读音” */
+export const guessed = (it: DrillItem) => it.src === 2
+/** 这张卡这一次用哪种考法；推定注音的卡一律听音选字 */
+export const modeFor = (it: DrillItem, m: Mode): Mode => (guessed(it) ? 'hear' : m)
+
 /** 两个字是不是书上成对比较的：形近，或发音相近 */
 export const isLookalike = (a: string, b: string) => !!shapeMates.get(a)?.has(b)
 export const isSoundPair = (a: string, b: string) => !!soundMates.get(a)?.has(b)
@@ -165,7 +170,7 @@ export function cardCounts(stats: Record<string, Stat>) {
  */
 export function buildDaily(stats: Record<string, Stat>, all = false): Step[] {
   const t = today()
-  if (all) return noRepeat(shuffle(ALL_CARDS).map((it, i) => ({ it, mode: i % 2 ? 'hear' : 'read' })))
+  if (all) return noRepeat(shuffle(ALL_CARDS).map((it, i) => ({ it, mode: modeFor(it, i % 2 ? 'hear' : 'read') })))
   const seen = ALL_CARDS.filter((x) => stats[x.key]?.seen)
   const due = seen
     .filter((x) => dueOf(stats[x.key]) <= t)
@@ -181,8 +186,9 @@ export function buildDaily(stats: Record<string, Stat>, all = false): Step[] {
     .sort((a, b) => (stats[a.key].at ?? 0) - (stats[b.key].at ?? 0))
     .slice(0, Math.max(0, MIN_CARDS - picked.size))
   const quiz: Step[] = [
-    ...[...due, ...extra].map((it): Step => ({ it, mode: boxOf(stats[it.key]) % 2 ? 'hear' : 'read' })),
-    ...fresh.flatMap((it): Step[] => [{ it, mode: 'read' }, { it, mode: 'hear' }]),
+    ...[...due, ...extra].map((it): Step => ({ it, mode: modeFor(it, boxOf(stats[it.key]) % 2 ? 'hear' : 'read') })),
+    // 新卡两种考法各一次；推定注音的卡听两次
+    ...fresh.flatMap((it): Step[] => [{ it, mode: modeFor(it, 'read') }, { it, mode: 'hear' }]),
   ]
   return [...fresh.map((it): Step => ({ it, intro: true, mode: 'read' })), ...noRepeat(shuffle(quiz))]
 }

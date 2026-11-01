@@ -55,5 +55,7 @@
 /* 组合注音的来源：书上 · 书上例词 · 按规律推 */
 .cv-pron.src0 { color: var(--ink); }
 .cv-pron.src1 { color: var(--accent); }
-.cv-pron.src2 { font-style: italic; opacity: .75; }
+.cv-pron.src2 { font-style: italic; color: #aaa196; }
+/* 按规律推出来、还没核对的注音：灰色，不拿来考 */
+.drill-pron.guess { color: #aaa196; font-style: italic; font-weight: 400; }
 .drill-opt.tib-opt .tib { font-size: 30px; line-height: 1.4; }
