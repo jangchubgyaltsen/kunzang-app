@@ -138,3 +138,4 @@ button.danger { color: #b3261e; border-color: #b3261e; }
 .tag-unsure { font-size: 11px; margin-left: 6px; padding: 1px 5px; border-radius: 8px; background: #eee3cf; color: #8a6d3b; vertical-align: middle; }
 .welcome { display: flex; flex-direction: column; gap: 14px; padding-top: 24px; }
 .welcome ul { padding-left: 18px; display: flex; flex-direction: column; gap: 10px; }
+.card.reminder { width: 100%; max-width: 480px; display: flex; flex-direction: column; gap: 10px; }

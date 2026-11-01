@@ -9,7 +9,7 @@ import Review from './Review.tsx'
 import Today from './Today.tsx'
 import Practice from './Practice.tsx'
 import { AlphabetView, Drill } from './Alphabet.tsx'
-import { loadPlan } from './practice.ts'
+import { loadPlan, stepLabel, type DayPlan } from './practice.ts'
 import { ensureChecks, getPathState, type LevelState, type UnitState } from './progress.ts'
 import { PATH, letterAudio, type Level, type Question, type Track } from './course.ts'
 import { type Session } from './session.ts'
@@ -26,17 +26,18 @@ type Shelf = 'alphabet' | 'amdo'
 export default function App() {
   const [tab, setTab] = useState<Tab>('path')
   const [shelf, setShelf] = useState<Shelf>('alphabet')
-  // 第一次打开：先看一屏欢迎页，再开始今日练习
+  // 第一次打开：先看一屏欢迎页
   const [welcome, setWelcome] = useState(() => localStorage.getItem('welcomed') !== '1')
   const [passageId, setPassageId] = useState('title')
   const [session, setSession] = useState<Session | null>(null)
   // 字母页手动开的字卡。负数表示 150 张全部过一遍
   const [drill, setDrill] = useState(0)
-  // 今日练习：每天打开 App 先自动进这个（字卡 → 复习 → 拼读 → 开篇 → 会话），全部做完之前每次打开都会弹出
+  // 今日练习（字卡 → 复习 → 拼读 → 开篇 → 会话）。打开 App 停在路径页，没做完时弹一个提醒，点“开始”才进去
   const [practice, setPractice] = useState<{ auto: boolean } | null>(null)
+  const [reminder, setReminder] = useState<DayPlan | null>(null)
   useEffect(() => {
     if (welcome) return
-    loadPlan().then((p) => p.done.length < p.steps.length && setPractice((x) => x ?? { auto: true }))
+    loadPlan().then((p) => p.done.length < p.steps.length && setReminder(p))
   }, [welcome])
   const busy = session !== null || drill !== 0 || practice !== null
 
@@ -102,11 +103,22 @@ export default function App() {
         {!busy && tab === 'me' && <Review onStart={setSession} />}
         {!busy && tab === 'me' && <SettingsView />}
       </main>
+      {!busy && reminder && (
+        <PracticeReminder
+          plan={reminder}
+          onStart={() => {
+            setReminder(null)
+            setTab('path')
+            setPractice({ auto: true })
+          }}
+          onLater={() => setReminder(null)}
+        />
+      )}
       {!busy && (
         <nav className="tabs">
           {(
             [
-              ['path', '今天'],
+              ['path', '路径'],
               ['reader', '原文'],
               ['library', '资料库'],
               ['me', '我的'],
@@ -465,6 +477,29 @@ function WylieSetting() {
   )
 }
 
+/** 打开 App 时今日练习还没做完：弹出来提醒，点“开始”进去，点“稍后”留在当前页（路径页顶上也能进） */
+function PracticeReminder({ plan, onStart, onLater }: { plan: DayPlan; onStart: () => void; onLater: () => void }) {
+  const left = plan.steps.filter((k) => !plan.done.includes(k))
+  return (
+    <div className="sheet" onClick={onLater}>
+      <div className="card reminder" onClick={(e) => e.stopPropagation()}>
+        <h2>今日练习{plan.done.length ? '还没做完' : ''}</h2>
+        <p className="small muted">
+          还剩 {left.length} 步：{left.map(stepLabel).join(' → ')}。{plan.done.includes('drill') ? '' : '字卡做完就算今天签到。'}
+        </p>
+        <div className="actions col">
+          <button className="primary" onClick={onStart}>
+            {plan.done.length ? '继续' : '开始'}今日练习
+          </button>
+          <button className="link" onClick={onLater}>
+            稍后再做
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 /** 第一次打开时的欢迎页：一句话说清这个 App 怎么用 */
 function Welcome({ onStart }: { onStart: () => void }) {
   return (
@@ -474,7 +509,7 @@ function Welcome({ onStart }: { onStart: () => void }) {
       <p>从零开始学安多音的藏文拼读，最后能跟着念、读懂《普贤上师言教》的原文。</p>
       <ul>
         <li>
-          <b>每天打开就是“今日练习”</b>：字卡、复习、拼读一关，再加一点原文和安多会话，大约 15–20 分钟。字卡做完就算签到。
+          <b>每天做一次“今日练习”</b>：打开 App 会提醒你，路径页顶上也能进。字卡、复习、拼读一关，再加一点原文和安多会话，大约 15–20 分钟。字卡做完就算签到。
         </li>
         <li>
           <b>开着声音</b>：读音都靠听。字母、元音和会话是老师的真人录音。
