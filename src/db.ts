@@ -4,7 +4,11 @@ import { unitByN } from './course.ts'
 export type Flag = { id?: number; kind: 'syllable' | 'line'; ref: string; note: string; createdAt: number }
 export type Setting = { key: string; value: unknown }
 export type Translation = { id: string; chinese: string }
-export type Attempt = { id?: number; kc: string; ok: boolean; at: number; unit?: number; src?: string }
+/**
+ * 一次作答。kind：题型；ms：从出题到作答的毫秒数；pick：选了哪个错项；miss：误区类别（见 hints.ts）。
+ * src：drill 字卡，hint 提示后才答对，guess 自己说是猜的。
+ */
+export type Attempt = { id?: number; kc: string; ok: boolean; at: number; unit?: number; src?: string; kind?: string; ms?: number; pick?: string; miss?: string }
 export type CardRow = { kc: string; due: number; card: unknown }
 export type UnitResult = { n: number; passedAt?: number; best: number }
 export type Checkin = { date: string; game: string; score: number; total: number; at: number }

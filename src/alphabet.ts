@@ -120,7 +120,7 @@ const endOfToday = () => {
 
 /** 记一次字卡作答，写进 FSRS，返回更新后的记录 */
 export async function record(key: string, ok: boolean, ms: number): Promise<Stat> {
-  const card = await recordAnswer(key, ok, undefined, 'drill', ms <= FAST_MS ? Rating.Good : Rating.Hard)
+  const card = await recordAnswer(key, ok, undefined, 'drill', !ok ? Rating.Again : ms <= FAST_MS ? Rating.Good : Rating.Hard, { ms })
   return toStat(card)
 }
 
