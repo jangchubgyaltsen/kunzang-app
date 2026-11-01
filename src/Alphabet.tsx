@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { play } from './audio.ts'
 import {
   ALL_CARDS, CV_MARKS, CV_PRON, CV_SOURCE, FAST_MS, FLUENT_DAYS, HOOK_PAIRS, LETTER_NOTE, PRON, ROWS, SHAPE_PAIRS, SOUND_PAIRS, VOWEL_INFO,
-  buildDaily, cardCounts, loadSession, saveSession, cvAudioOf, isFluent, isLookalike, isSoundPair, loadStats, markDailyDone, optionsFor, record,
+  buildDaily, cardCounts, letterUnlocked, loadSession, saveSession, splitOf, cvAudioOf, isFluent, isLookalike, isSoundPair, loadStats, markDailyDone, optionsFor, record,
   type DrillItem, type Stat, type Step,
 } from './alphabet.ts'
 import { letterAudio } from './course.ts'
@@ -59,15 +59,16 @@ export function AlphabetView({ onStart }: { onStart: (all?: boolean) => void }) 
 
       <h2>每日字卡</h2>
       <p className="muted small">
-        30 个字母加 120 个字母 + 元音组合，一共 150 张卡。每天第一次打开 App 先考这个：到期的卡看字选注音、听音选字轮着考，
-        选项里放的是书上成对比较的形近字和发音相近的字；答错的当天再考，答得越快越稳，隔的天数越长。每天一组 15 张：到期的优先，剩下的按字母表顺序带新卡（每天至少 5 张新卡）。拼读路径也按这个顺序学字母，两边共用一份记录。
+        30 个字母、4 个元音，加上 120 个字母 + 元音组合，一共 {ALL_CARDS.length} 张卡。循序渐进：先只考 30 个字母和 4 个元音；
+        一个字母和 4 个元音都有点熟了（至少答过两次、最近没答错），才开始考这个字母的 4 个组合。每天第一次打开 App 先考这个：到期的卡看字选注音、听音选字轮着考，
+        选项里放的是书上成对比较的形近字和发音相近的字；答错的当天再考，答得越快越稳，隔的天数越长。每天一组 15 张：到期的优先，剩下的按顺序带新卡（每天至少 5 张新卡）。拼读路径也按这个顺序学字母，两边共用一份记录。
       </p>
       <p className="small">
-        今天到期 <b>{counts.due}</b> 张 · 还没见过 <b>{counts.fresh}</b> 张 · 已经记牢 <b>{counts.fluent}</b> / 150 张
+        现在能考 <b>{counts.open}</b> / {ALL_CARDS.length} 张 · 今天到期 <b>{counts.due}</b> 张 · 能考的里还没见过 <b>{counts.freshOpen}</b> 张 · 已经记牢 <b>{counts.fluent}</b> 张
       </p>
       <div className="actions col alpha-go">
         <button className="primary" onClick={() => onStart()}>开始今天的字卡</button>
-        <button onClick={() => onStart(true)}>150 张全部过一遍</button>
+        <button onClick={() => onStart(true)}>能考的 {counts.open} 张全部过一遍</button>
       </div>
 
       <h2>比较发音</h2>
@@ -116,7 +117,7 @@ export function AlphabetView({ onStart }: { onStart: (all?: boolean) => void }) 
       </div>
       <h2>字母 + 元音组合表</h2>
       <p className="muted small">
-        第一列是 30 个字母本身，后面四列是每个字母配四个元音的 120 个组合，一共 150 张，每日字卡都会考到；记牢了的亮金色。点格子听真人录音。黑字是《一本通》上的注音，红字是书上例词里出现过的，
+        第一列是 30 个字母本身，后面四列是每个字母配四个元音的 120 个组合。灰色的行还没开始考：这个字母和 4 个元音都有点熟了才考它的组合；记牢了的亮金色。点格子听真人录音。黑字是《一本通》上的注音，红字是书上例词里出现过的，
         灰色斜体是按书上的规律推出来的，以录音为准。
       </p>
       <div className="cv-table">
@@ -126,7 +127,7 @@ export function AlphabetView({ onStart }: { onStart: (all?: boolean) => void }) 
           ))}
         </div>
         {LETTER_POOL.map((l) => (
-          <div key={l} className="cv-row">
+          <div key={l} className={'cv-row' + (letterUnlocked(stats, l) || CV_MARKS.some((m) => stats['CV:' + l + m]?.seen) ? '' : ' locked')}>
             {[l, ...CV_MARKS.map((m) => l + m)].map((x, k) => (
               <button
                 key={x}
@@ -242,9 +243,11 @@ export function Drill({ onExit, onComplete, all = false }: { onExit: () => void;
   const ans = (x: DrillItem) => (
     <div className="drill-ans">
       <span className="drill-pron">{x.pron}</span>
-      {x.hanzi && <span className="drill-hz">{x.hanzi}</span>}
+      {x.hanzi && <span className={'drill-hz' + (x.key.startsWith('V:') ? ' tib' : '')}>{x.hanzi}</span>}
       {x.src !== undefined && <span className="small muted">{CV_SOURCE[x.src]}</span>}
       {LETTER_NOTE[x.tib] && <span className="small muted">{LETTER_NOTE[x.tib]}</span>}
+      {x.note && <span className="small muted">{x.note}</span>}
+      <Split it={x} />
     </div>
   )
 
@@ -254,7 +257,7 @@ export function Drill({ onExit, onComplete, all = false }: { onExit: () => void;
         {top}
         <div className="intro-label center">新卡</div>
         <div className="drill-card tap" onClick={() => play(it.audio)}>
-          <div className="tib huge">{it.tib}</div>
+          <div className={"tib huge" + (it.key.startsWith("V:") ? " vowel-big" : "")}>{it.tib}</div>
           {ans(it)}
         </div>
         <p className="small muted center">点字再听一遍。记住它的样子和读音，等一下就考。</p>
@@ -278,12 +281,12 @@ export function Drill({ onExit, onComplete, all = false }: { onExit: () => void;
       <div className="intro-label center">{hear ? '听音选字' : '看字选读音'}</div>
       {hear ? (
         <div className={'drill-card tap' + (ok === true ? ' ok' : ok === false ? ' bad' : '')} onClick={() => play(it.audio)}>
-          {revealed ? <div className="tib huge">{it.tib}</div> : <button className="play-big">▶</button>}
+          {revealed ? <div className={"tib huge" + (it.key.startsWith("V:") ? " vowel-big" : "")}>{it.tib}</div> : <button className="play-big">▶</button>}
           {revealed && ans(it)}
         </div>
       ) : (
         <div className={'drill-card' + (revealed ? ' tap' : '') + (ok === true ? ' ok' : ok === false ? ' bad' : '')} onClick={() => revealed && play(it.audio)}>
-          <div className="tib huge">{it.tib}</div>
+          <div className={"tib huge" + (it.key.startsWith("V:") ? " vowel-big" : "")}>{it.tib}</div>
           {revealed && ans(it)}
         </div>
       )}
@@ -294,7 +297,7 @@ export function Drill({ onExit, onComplete, all = false }: { onExit: () => void;
           const cls = !revealed ? '' : o.key === it.key ? ' right' : o.key === picked?.key ? ' wrong' : ' dim'
           return (
             <button key={o.key} className={'opt drill-opt' + cls + (hear ? ' tib-opt' : '')} disabled={revealed} onClick={() => answer(o)}>
-              {hear ? <span className="tib">{o.tib}</span> : <span>{o.pron}{o.hanzi ? ' ' + o.hanzi : ''}</span>}
+              {hear ? <span className="tib">{o.tib}</span> : <span>{o.pron}{o.hanzi ? <> <span className={o.key.startsWith('V:') ? 'tib' : ''}>{o.hanzi}</span></> : ''}</span>}
             </button>
           )
         })}
@@ -311,6 +314,11 @@ export function Drill({ onExit, onComplete, all = false }: { onExit: () => void;
               </button>
             ))}
           </div>
+          {splitOf(picked) && (
+            <div className="small split-row">
+              你选的拆开读：<Split it={picked} />
+            </div>
+          )}
           <div className="small">过几题还会再考这张卡。</div>
         </div>
       )}
@@ -321,6 +329,23 @@ export function Drill({ onExit, onComplete, all = false }: { onExit: () => void;
         </>
       )}
     </section>
+  )
+}
+
+/** 组合拆开读：ཀ ga + ◌ི i · གི་གུ → ge */
+function Split({ it }: { it: DrillItem }) {
+  const sp = splitOf(it)
+  if (!sp) return null
+  return (
+    <span className="split">
+      {sp.parts.map(([t, p], k) => (
+        <span key={t}>
+          {k > 0 && ' + '}
+          <span className="tib">{t}</span> <span className="muted">{p}</span>
+        </span>
+      ))}
+      {' → '}<b>{sp.result}</b>
+    </span>
   )
 }
 
@@ -337,7 +362,7 @@ function DrillSummary({ log, stats, onExit }: { log: Log; stats: Record<string, 
       <h1>每日字卡</h1>
       <div className="big-number">
         {fluent}
-        <span className="small muted"> / 150 张记牢了</span>
+        <span className="small muted"> / {ALL_CARDS.length} 张记牢了</span>
       </div>
       <p className="muted">其中字母 {letters} / 30 个；还有 {fresh} 张新卡没见过。</p>
       <p className="muted">

@@ -57,3 +57,8 @@
 .cv-pron.src1 { color: var(--accent); }
 .cv-pron.src2 { font-style: italic; opacity: .75; }
 .drill-opt.tib-opt .tib { font-size: 30px; line-height: 1.4; }
+.cv-row.locked { opacity: 0.4; }
+.split { display: block; font-size: 15px; margin-top: 4px; }
+.split .tib { font-size: 1.3em; }
+.split-row { margin: 6px 0; }
+.vowel-big { padding-top: 0.6em; line-height: 1.6; }

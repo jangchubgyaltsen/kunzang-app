@@ -43,8 +43,8 @@ export const cvPron = (s: string) => CV_PRON[s]?.[0]
 const wylieOf = new Map(LETTERS)
 const vowelLatin = new Map(VOWELS.map(([m, v]) => [m, v]))
 
-/** 一张字卡：一个字母，或一个字母 + 元音组合。src：组合注音的来源（见 CV_PRON） */
-export type DrillItem = { key: string; tib: string; pron: string; hanzi?: string; wylie: string; audio: string; base: string; src?: 0 | 1 | 2 }
+/** 一张字卡：一个字母、一个元音符号，或一个字母 + 元音组合。src：组合注音的来源（见 CV_PRON）；note：卡上的补充说明 */
+export type DrillItem = { key: string; tib: string; pron: string; hanzi?: string; wylie: string; audio: string; base: string; src?: 0 | 1 | 2; note?: string }
 
 export const letterItem = (l: string): DrillItem => ({
   key: 'L:' + l, tib: l, pron: PRON[l][0], hanzi: PRON[l][1], wylie: wylieOf.get(l)!, audio: letterAudio(l), base: l,
@@ -53,10 +53,31 @@ export const cvItem = (s: string): DrillItem => ({
   key: 'CV:' + s, tib: s, pron: CV_PRON[s][0], src: CV_PRON[s][1], wylie: wylieOf.get(s[0])!.replace(/a$/, '') + vowelLatin.get(s[1]), audio: cvAudioOf(s), base: s[0],
 })
 
-/** 全部 150 张：按字母表顺序，每个字母后面跟它的四个元音组合 */
-export const ALL_CARDS: DrillItem[] = ROWS.flat().flatMap((l) => [letterItem(l), ...CV_MARKS.map((m) => cvItem(l + m))])
-const LETTER_CARDS = ALL_CARDS.filter((x) => x.key.startsWith('L:'))
-const CV_CARDS = ALL_CARDS.filter((x) => x.key.startsWith('CV:'))
+/** 单独的元音符号：写成 ◌ི，读音是转写字母（i u e o），录音放 ཨ 加这个元音 */
+export const vowelItem = (m: string): DrillItem => {
+  const v = VOWEL_INFO.find((x) => x.mark === m)!
+  return {
+    key: 'V:' + m, tib: '◌' + m, pron: vowelLatin.get(m)!, hanzi: v.name, wylie: vowelLatin.get(m)!, audio: cvAudioOf('ཨ' + m), base: '◌',
+    note: `写在字母${v.pos}面，叫 ${v.name}。和 ཨ 拼成 ཨ${m}，安多话读 ${CV_PRON['ཨ' + m][0]}`,
+  }
+}
+
+const LETTER_CARDS = ROWS.flat().map(letterItem)
+export const VOWEL_CARDS = CV_MARKS.map(vowelItem)
+const CV_CARDS = ROWS.flat().flatMap((l) => CV_MARKS.map((m) => cvItem(l + m)))
+/**
+ * 全部 154 张，学的顺序：先学 30 个字母和 4 个元音（元音放在第一行字母后面），
+ * 再学 120 个字母 + 元音组合（某个字母和 4 个元音都“有点熟了”才开始考这个字母的组合，见 unlocked）。
+ */
+export const BASIC_CARDS: DrillItem[] = [...LETTER_CARDS.slice(0, 4), ...VOWEL_CARDS, ...LETTER_CARDS.slice(4)]
+export const ALL_CARDS: DrillItem[] = [...BASIC_CARDS, ...CV_CARDS]
+
+/** 一个组合拆开怎么读：ཀི = ཀ ga + ◌ི（གི་གུ）→ ge */
+export function splitOf(it: DrillItem): { parts: [string, string][]; result: string } | undefined {
+  if (!it.key.startsWith('CV:')) return
+  const v = VOWEL_INFO.find((x) => x.mark === it.tib[1])!
+  return { parts: [[it.base, PRON[it.base][0]], ['◌' + v.mark, `${vowelLatin.get(v.mark)} · ${v.name}`]], result: it.pron }
+}
 
 /** 两个字是不是书上成对比较的：形近，或发音相近 */
 export const isLookalike = (a: string, b: string) => !!shapeMates.get(a)?.has(b)
@@ -73,6 +94,11 @@ export type Mode = 'read' | 'hear'
 
 /** 四个选项：答案 + 书上成对比较的字 + 同一个字母的其他组合 + 其他 */
 export function optionsFor(it: DrillItem, mode: Mode): DrillItem[] {
+  if (it.key.startsWith('V:')) {
+    // 元音：在另外三个元音里选；听音时 ཨི ཨུ 安多话都读 e，听不出来，不同时出现
+    const heard = (x: DrillItem) => CV_PRON['ཨ' + x.tib[1]][0]
+    return shuffle([it, ...VOWEL_CARDS.filter((x) => x.key !== it.key && (mode === 'read' || heard(x) !== heard(it)))])
+  }
   const all = it.key.startsWith('CV:') ? CV_CARDS : LETTER_CARDS
   const mates = all.filter((x) => sameVowel(x, it) && (isLookalike(it.base, x.base) || isSoundPair(it.base, x.base)))
   const sameBase = all.filter((x) => x.base === it.base)
@@ -106,10 +132,23 @@ const toStat = (c: Card): Stat => ({
 })
 
 export async function loadStats(): Promise<Record<string, Stat>> {
-  const rows = await db.cards.where('kc').startsWithAnyOf('L:', 'CV:').toArray()
+  const rows = await db.cards.where('kc').startsWithAnyOf('L:', 'CV:', 'V:').toArray()
   return Object.fromEntries(rows.map((r) => [r.kc, toStat(reviveCard(r.card))]))
 }
 export const isFluent = (s?: Stat) => !!s && s.review && s.stability >= FLUENT_DAYS
+/** 有点熟了：至少答过两次，最近一次没答错（FSRS 在复习状态） */
+export const isWarm = (s?: Stat) => !!s && s.review && s.seen >= 2
+
+/**
+ * 现在能考的卡：30 个字母和 4 个元音一直能考；
+ * 一个字母的 4 个组合，要这个字母和 4 个元音都有点熟了才开始考。已经见过的卡一直留着复习。
+ */
+export function unlocked(stats: Record<string, Stat>): DrillItem[] {
+  const vowelsWarm = VOWEL_CARDS.every((x) => isWarm(stats[x.key]))
+  return ALL_CARDS.filter((x) => !x.key.startsWith('CV:') || stats[x.key]?.seen || (vowelsWarm && isWarm(stats['L:' + x.base])))
+}
+export const letterUnlocked = (stats: Record<string, Stat>, l: string) =>
+  VOWEL_CARDS.every((x) => isWarm(stats[x.key])) && isWarm(stats['L:' + l])
 
 export const today = () => new Date().toLocaleDateString('sv')
 const endOfToday = () => {
@@ -145,22 +184,27 @@ export const MIN_NEW = 5
 export function cardCounts(stats: Record<string, Stat>) {
   const t = endOfToday()
   const seen = ALL_CARDS.filter((x) => stats[x.key]?.seen)
-  return { due: seen.filter((x) => stats[x.key].due <= t).length, fresh: ALL_CARDS.length - seen.length, fluent: ALL_CARDS.filter((x) => isFluent(stats[x.key])).length }
+  const open = unlocked(stats)
+  return {
+    due: seen.filter((x) => stats[x.key].due <= t).length, fresh: ALL_CARDS.length - seen.length,
+    fluent: ALL_CARDS.filter((x) => isFluent(stats[x.key])).length, open: open.length, freshOpen: open.filter((x) => !stats[x.key]?.seen).length,
+  }
 }
 
 /**
- * 每天早上的字卡，一共 15 张，每张考一题：
+ * 每天早上的字卡，一共 15 张，每张考一题（只从 unlocked 里出：先字母和元音，熟了再加组合）：
  * 1. 到期的卡（答错过的、到了复习日子的）优先，记得越不牢（FSRS 稳定度越低）越先考，看字选注音和听音选字轮着来；
- * 2. 剩下的位置按字母表顺序带新卡，先看一遍再考；积压再多也至少带 5 张新卡；
- * 3. 两样加起来不到 15 张时（比如 150 张都见过了），用最久没见的卡补够。
+ * 2. 剩下的位置按学的顺序带新卡（字母和元音在前，组合在后），先看一遍再考；积压再多也至少带 5 张新卡（如果有能带的）；
+ * 3. 两样加起来不到 15 张时（比如能考的都见过了），用最久没见的卡补够。
  * 答错的过几题再考一次，不占这 15 张。
- * all：150 张全部过一遍，每张一题。
+ * all：现在能考的全部过一遍，每张一题。
  */
 export function buildDaily(stats: Record<string, Stat>, all = false): Step[] {
   const t = endOfToday()
-  if (all) return noRepeat(shuffle(ALL_CARDS).map((it, i) => ({ it, mode: i % 2 ? 'hear' : 'read' })))
+  const open = unlocked(stats)
+  if (all) return noRepeat(shuffle(open).map((it, i) => ({ it, mode: i % 2 ? 'hear' : 'read' })))
   const seen = ALL_CARDS.filter((x) => stats[x.key]?.seen)
-  const unseen = ALL_CARDS.filter((x) => !stats[x.key]?.seen)
+  const unseen = open.filter((x) => !stats[x.key]?.seen)
   const dueAll = seen
     .filter((x) => stats[x.key].due <= t)
     .sort((a, b) => stats[a.key].stability - stats[b.key].stability || stats[a.key].due - stats[b.key].due)
