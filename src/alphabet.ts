@@ -136,12 +136,10 @@ const noRepeat = (q: Step[]) => {
   return q
 }
 
-/** 每天最多带几张新卡（一个字母和它的四个组合算 5 张） */
-export const NEW_PER_DAY = 15
-/** 积压再多，每天也至少带这么多张新卡；每天一组至少这么多张不同的卡 */
-export const MIN_NEW = 10
-export const MIN_CARDS = 10
-const DUE_MAX = 60
+/** 每天一组字卡的张数（一张考一题） */
+export const DAILY_CARDS = 15
+/** 积压再多，每天也至少带这么多张新卡（正好一个字母和它的四个组合） */
+export const MIN_NEW = 5
 
 /** 到期没复习的卡有几张；新卡还剩几张没见过 */
 export function cardCounts(stats: Record<string, Stat>) {
@@ -151,34 +149,53 @@ export function cardCounts(stats: Record<string, Stat>) {
 }
 
 /**
- * 每天早上的字卡：
- * 1. 到期的卡（答错过的、到了复习日子的），记得越不牢（FSRS 稳定度越低）越先考，一张一题，看字选注音和听音选字轮着来；
- * 2. 按字母表顺序带进新卡：先看一遍，再看字选注音、听音选字各考一次（每天 15 张，到期的积压多时 10 张）；
- * 3. 两样加起来不到 10 张时，用最久没见的卡补够 10 张。
+ * 每天早上的字卡，一共 15 张，每张考一题：
+ * 1. 到期的卡（答错过的、到了复习日子的）优先，记得越不牢（FSRS 稳定度越低）越先考，看字选注音和听音选字轮着来；
+ * 2. 剩下的位置按字母表顺序带新卡，先看一遍再考；积压再多也至少带 5 张新卡；
+ * 3. 两样加起来不到 15 张时（比如 150 张都见过了），用最久没见的卡补够。
+ * 答错的过几题再考一次，不占这 15 张。
  * all：150 张全部过一遍，每张一题。
  */
 export function buildDaily(stats: Record<string, Stat>, all = false): Step[] {
   const t = endOfToday()
   if (all) return noRepeat(shuffle(ALL_CARDS).map((it, i) => ({ it, mode: i % 2 ? 'hear' : 'read' })))
   const seen = ALL_CARDS.filter((x) => stats[x.key]?.seen)
-  const due = seen
+  const unseen = ALL_CARDS.filter((x) => !stats[x.key]?.seen)
+  const dueAll = seen
     .filter((x) => stats[x.key].due <= t)
     .sort((a, b) => stats[a.key].stability - stats[b.key].stability || stats[a.key].due - stats[b.key].due)
-    .slice(0, DUE_MAX)
-  // 积压太多时少带新卡
-  const nNew = due.length >= 20 ? MIN_NEW : NEW_PER_DAY
-  const fresh = ALL_CARDS.filter((x) => !stats[x.key]?.seen).slice(0, nNew)
-  // 到期的加新卡不够 10 张时（比如 150 张都见过了），用最久没见的卡补够
+  const nNew = Math.min(unseen.length, Math.max(MIN_NEW, DAILY_CARDS - dueAll.length))
+  const fresh = unseen.slice(0, nNew)
+  const due = dueAll.slice(0, DAILY_CARDS - fresh.length)
   const picked = new Set([...due, ...fresh].map((x) => x.key))
   const extra = [...seen]
     .filter((x) => !picked.has(x.key))
     .sort((a, b) => (stats[a.key].at ?? 0) - (stats[b.key].at ?? 0))
-    .slice(0, Math.max(0, MIN_CARDS - picked.size))
+    .slice(0, Math.max(0, DAILY_CARDS - picked.size))
   const quiz: Step[] = [
     ...[...due, ...extra].map((it): Step => ({ it, mode: (stats[it.key]?.seen ?? 0) % 2 ? 'hear' : 'read' })),
-    ...fresh.flatMap((it): Step[] => [{ it, mode: 'read' }, { it, mode: 'hear' }]),
+    ...fresh.map((it, i): Step => ({ it, mode: i % 2 ? 'hear' : 'read' })),
   ]
   return [...fresh.map((it): Step => ({ it, intro: true, mode: 'read' })), ...noRepeat(shuffle(quiz))]
+}
+
+// ---- 做到一半退出：记住今天这一组做到哪了，回来接着做 ----
+const SESSION_KEY = 'alphabet-session'
+type SavedStep = { key: string; intro?: boolean; mode: Mode }
+export type DrillLog = { key: string; ok: boolean; ms: number }[]
+type Session = { date: string; steps: SavedStep[]; i: number; log: DrillLog }
+const cardByKey = new Map(ALL_CARDS.map((x) => [x.key, x]))
+
+/** 今天没做完的那一组；没有就返回 undefined */
+export async function loadSession(): Promise<{ steps: Step[]; i: number; log: DrillLog } | undefined> {
+  const s = (await db.settings.get(SESSION_KEY))?.value as Session | undefined
+  if (!s || s.date !== today() || s.i >= s.steps.length) return
+  const steps = s.steps.filter((x) => cardByKey.has(x.key)).map((x) => ({ it: cardByKey.get(x.key)!, intro: x.intro, mode: x.mode }))
+  return { steps, i: Math.min(s.i, steps.length), log: s.log ?? [] }
+}
+export async function saveSession(steps: Step[], i: number, log: DrillLog) {
+  const value: Session = { date: today(), steps: steps.map((x) => ({ key: x.it.key, intro: x.intro, mode: x.mode })), i, log }
+  await db.settings.put({ key: SESSION_KEY, value })
 }
 
 // 每天第一次打开 App 自动弹出，做完才算今天做过
