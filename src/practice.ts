@@ -53,7 +53,7 @@ export async function markStep(key: StepKey, failed = false) {
  * 一天大约做多少题。字卡、抽查、到期复习一定做；剩下的额度按 拼读 → 诵读开篇 → 安多会话 的顺序排新内容，
  * 排不下的放进 extra（做完后可以点“再学一点”）。拼读至少留一关，免得复习多的日子主线停下来。
  */
-export const DAILY_BUDGET = 60
+export const DAILY_BUDGET = 65
 /** 每一步大约多少题（含介绍卡） */
 const COST: Record<string, number> = { drill: 20, check: 10, 'next:spell': 15, 'next:read': 16, 'next:talk': 10 }
 

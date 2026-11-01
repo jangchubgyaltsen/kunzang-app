@@ -238,10 +238,17 @@ export function Drill({ onExit, onComplete, all = false }: { onExit: () => void;
     const ok = choice.key === it.key
     const t = Math.round(performance.now() - shownAt.current)
     // 第一次选错：不揭晓，给一句提示、划掉这个，再选一次（和关卡里一样）；只剩两个选项时直接揭晓
+    // 答错的过 3 题再来一次，换一种考法；同一张卡今天最多补练两次
+    const requeue = () =>
+      setQueue((q) =>
+        q.filter((x) => x.retry && x.it.key === it.key).length >= 2
+          ? q
+          : [...q.slice(0, i + 4), { it, mode: modeFor(it, step.mode === 'read' ? 'hear' : 'read'), retry: true }, ...q.slice(i + 4)],
+      )
     if (!ok && !struck && opts.length >= 3) {
       setStruck(choice)
       play(choice.audio)
-      setQueue((q) => [...q.slice(0, i + 4), { it, mode: modeFor(it, step.mode === 'read' ? 'hear' : 'read'), retry: true }, ...q.slice(i + 4)])
+      requeue()
       return
     }
     setMs(t)
@@ -250,8 +257,8 @@ export function Drill({ onExit, onComplete, all = false }: { onExit: () => void;
     const st = await record(it.key, ok, t, !!struck)
     setStats((s) => ({ ...s, [it.key]: st }))
     setLog((l) => [...l, { it, ok: ok && !struck, ms: t }])
-    // 答错的过 3 题再来一次，换一种考法（看了提示的已经在上面排过了）
-    if (!ok && !struck) setQueue((q) => [...q.slice(0, i + 4), { it, mode: modeFor(it, step.mode === 'read' ? 'hear' : 'read'), retry: true }, ...q.slice(i + 4)])
+    // 看了提示的已经在上面排过补练了
+    if (!ok && !struck) requeue()
     if (ok && !struck && t <= FAST_MS) setTimeout(go, 800)
   }
 
@@ -357,9 +364,10 @@ export function Drill({ onExit, onComplete, all = false }: { onExit: () => void;
           <div className="small">过几题还会再考这张卡。</div>
         </div>
       )}
-      {revealed && (ok === false || ms > FAST_MS) && (
+      {revealed && (ok === false || ms > FAST_MS || struck) && (
         <>
-          {ok === true && <p className="small muted center">答对了，但用了 {(ms / 1000).toFixed(1)} 秒。3 秒内答对才算一眼认出。</p>}
+          {ok === true && struck && <p className="small muted center">看了提示才选对，过几题再考一次。</p>}
+          {ok === true && !struck && <p className="small muted center">答对了，但用了 {(ms / 1000).toFixed(1)} 秒。3 秒内答对才算一眼认出。</p>}
           <button className="primary sticky-go" onClick={go}>继续</button>
         </>
       )}
