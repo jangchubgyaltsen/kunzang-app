@@ -138,6 +138,9 @@ const noRepeat = (q: Step[]) => {
 
 /** 每天最多带几张新卡（一个字母和它的四个组合算 5 张） */
 export const NEW_PER_DAY = 15
+/** 积压再多，每天也至少带这么多张新卡；每天一组至少这么多张不同的卡 */
+export const MIN_NEW = 10
+export const MIN_CARDS = 10
 const DUE_MAX = 60
 
 /** 到期没复习的卡有几张；新卡还剩几张没见过 */
@@ -149,8 +152,9 @@ export function cardCounts(stats: Record<string, Stat>) {
 
 /**
  * 每天早上的字卡：
- * 1. 到期的卡（答错过的、到了复习日子的），盒子越低越先考，一张一题，看字选注音和听音选字轮着来；
- * 2. 按字母表顺序带进新卡：先看一遍，再看字选注音、听音选字各考一次。
+ * 1. 到期的卡（答错过的、到了复习日子的），记得越不牢（FSRS 稳定度越低）越先考，一张一题，看字选注音和听音选字轮着来；
+ * 2. 按字母表顺序带进新卡：先看一遍，再看字选注音、听音选字各考一次（每天 15 张，到期的积压多时 10 张）；
+ * 3. 两样加起来不到 10 张时，用最久没见的卡补够 10 张。
  * all：150 张全部过一遍，每张一题。
  */
 export function buildDaily(stats: Record<string, Stat>, all = false): Step[] {
@@ -162,10 +166,14 @@ export function buildDaily(stats: Record<string, Stat>, all = false): Step[] {
     .sort((a, b) => stats[a.key].stability - stats[b.key].stability || stats[a.key].due - stats[b.key].due)
     .slice(0, DUE_MAX)
   // 积压太多时少带新卡
-  const nNew = due.length >= 40 ? 0 : due.length >= 20 ? 5 : NEW_PER_DAY
+  const nNew = due.length >= 20 ? MIN_NEW : NEW_PER_DAY
   const fresh = ALL_CARDS.filter((x) => !stats[x.key]?.seen).slice(0, nNew)
-  // 一张都不到期、也没有新卡时，挑最久没见的 10 张复习
-  const extra = due.length || fresh.length ? [] : [...seen].sort((a, b) => (stats[a.key].at ?? 0) - (stats[b.key].at ?? 0)).slice(0, 10)
+  // 到期的加新卡不够 10 张时（比如 150 张都见过了），用最久没见的卡补够
+  const picked = new Set([...due, ...fresh].map((x) => x.key))
+  const extra = [...seen]
+    .filter((x) => !picked.has(x.key))
+    .sort((a, b) => (stats[a.key].at ?? 0) - (stats[b.key].at ?? 0))
+    .slice(0, Math.max(0, MIN_CARDS - picked.size))
   const quiz: Step[] = [
     ...[...due, ...extra].map((it): Step => ({ it, mode: (stats[it.key]?.seen ?? 0) % 2 ? 'hear' : 'read' })),
     ...fresh.flatMap((it): Step[] => [{ it, mode: 'read' }, { it, mode: 'hear' }]),
