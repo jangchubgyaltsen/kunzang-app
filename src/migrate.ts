@@ -9,17 +9,25 @@ import { PASS_ACCURACY } from './progress.ts'
  *    路径里已经有卡片的字母，保留路径的记录。
  * 2. 拼读路径 1–9 单元改成了按字母表顺序，关卡里的内容变了，旧的通过记录对不上。
  *    按现在的内容重新算：一关里的知识点都练过（有卡片）就算通过；没通过的单元，旧的抽查计划删掉。
+ * 3. 拼读路径又改了一次顺序（1–6 单元只学字母、元音和简单词，7–9 单元才学加字），用同样的办法再算一遍。
  */
 const FLAG = 'migrated-v2'
+const FLAG_V3 = 'spell-order-v3'
 const DAY = 24 * 3600 * 1000
 const GAP_DAYS = [0, 1, 2, 4, 7, 15, 30]
 type OldStat = { fast: number; seen: number; ok: number; at?: number; box?: number; due?: string }
 
 export async function migrate() {
-  if ((await db.settings.get(FLAG))?.value) return
-  await moveDrillStats()
-  await relayoutSpell()
-  await db.settings.put({ key: FLAG, value: Date.now() })
+  if (!(await db.settings.get(FLAG))?.value) {
+    await moveDrillStats()
+    await relayoutSpell()
+    await db.settings.put({ key: FLAG, value: Date.now() })
+    await db.settings.put({ key: FLAG_V3, value: Date.now() })
+  }
+  if (!(await db.settings.get(FLAG_V3))?.value) {
+    await relayoutSpell()
+    await db.settings.put({ key: FLAG_V3, value: Date.now() })
+  }
 }
 
 async function moveDrillStats() {
