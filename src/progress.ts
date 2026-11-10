@@ -1,8 +1,10 @@
 import { createEmptyCard, fsrs, Rating, State, type Card, type Grade } from 'ts-fsrs'
 import { db, type Attempt } from './db.ts'
 import { PATH, levelById, unitByN, type KC } from './course.ts'
+import { retention } from './prefs.ts'
 
-const scheduler = fsrs()
+/** 每次按当前的记忆强度设置建一个（设置改了马上生效） */
+const scheduler = () => fsrs({ request_retention: retention() })
 const DAY = 24 * 3600 * 1000
 
 export type UnitStatus = 'locked' | 'available' | 'passed' | 'mastered'
@@ -34,7 +36,7 @@ export async function recordAnswer(kc: KC, ok: boolean, unit?: number, src?: str
   const card: Card = row ? reviveCard(row.card) : createEmptyCard(now)
   let r: Grade = rating ?? (ok ? Rating.Good : Rating.Again)
   if (r === Rating.Easy && card.state !== State.Review) r = Rating.Good
-  const next = scheduler.next(card, now, r).card
+  const next = scheduler().next(card, now, r).card
   await db.cards.put({ kc, due: next.due.getTime(), card: next })
   return next
 }

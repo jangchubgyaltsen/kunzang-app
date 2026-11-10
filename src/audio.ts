@@ -51,8 +51,11 @@ function blobUrl(id: string) {
 
 /** 提前把几段音频取好，之后点击时能马上同步播放。 */
 export function preload(ids: (string | undefined)[]) {
-  for (const id of ids) if (id) void blobUrl(id).catch(() => {})
+  for (const id of ids) if (id) void blobUrl(id.split('#')[0]).catch(() => {})
 }
+
+/** 整句音频里的一段，写成一个音频 id：book/p0009-s01#0.32-1.81。play() 认得这种写法。 */
+export const clipId = (id: string, from: number, to: number) => `${id}#${from}-${to}`
 
 // iOS 只允许在用户手势里第一次调用 play()，之后这个播放器才能在异步回调里出声。
 // 注意 iOS 上 pointerdown/touchstart 不算手势，只有 touchend、click、keydown 才算，
@@ -153,6 +156,8 @@ export function stop() {
 }
 
 function start(id: string, from = 0, to = Infinity) {
+  const m = id.match(/^(.*)#([\d.]+)-([\d.]+)$/)
+  if (m) return start(m[1], Math.max(0, +m[2] - 0.03), +m[3] + 0.05)
   const n = ++latest
   player.pause()
   stopAt = Infinity
@@ -178,6 +183,9 @@ export function playUrl(src: string, onEnd?: () => void) {
 
 // 最近一次播放的结果，设置页的“声音测试”显示它，方便排查
 let status = '还没有播放过'
+
+/** 现在放到第几秒（原文页逐词高亮用）；没在放就是 -1 */
+export const playhead = () => (current && !player.paused ? player.currentTime : -1)
 export const audioStatus = () => `${status}；${unlocked ? '已解锁' : '未解锁'}`
 
 function go(n: number, src: string, retry: () => void, from = 0, to = Infinity, direct?: string) {

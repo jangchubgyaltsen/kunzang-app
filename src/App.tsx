@@ -3,7 +3,7 @@ import { passages, passageTitles, syllableMap, type Syllable } from './content.t
 import { audioStatus, onTrack, play, playSeq, stop } from './audio.ts'
 import { say } from './sound.ts'
 import { Icon } from './icons.tsx'
-import PathList from './PathList.tsx'
+import ProgressView from './Progress.tsx'
 import { useReaderPrefs } from './readerPrefs.ts'
 import { db, exportData, importData, importTranslationPack, resetProgress } from './db.ts'
 import { migrate } from './migrate.ts'
@@ -26,7 +26,7 @@ type Tab = 'today' | 'path' | 'reader' | 'library' | 'me'
 type Shelf = 'alphabet' | 'amdo'
 const TABS: [Tab, string, Parameters<typeof Icon>[0]['name']][] = [
   ['today', '今天', 'today'],
-  ['path', '路径', 'path'],
+  ['path', '进度', 'path'],
   ['reader', '原文', 'book'],
   ['library', '资料库', 'library'],
   ['me', '我的', 'me'],
@@ -56,11 +56,6 @@ export default function App() {
     db.settings.put({ key: 'reader-chapter', value: id })
   }
 
-  const openPassage = (id: string) => {
-    setPassageId(id)
-    pickChapter('00')
-    setTab('reader')
-  }
   const go = (t: Tab) => {
     setTab(t)
     window.scrollTo(0, 0)
@@ -115,7 +110,14 @@ export default function App() {
         )}
         {!busy && tab === 'library' && shelf === 'alphabet' && <AlphabetView key={drill} onStart={(all) => setDrill(all ? -Date.now() : Date.now())} />}
         {!busy && tab === 'today' && <Today key={homeKey} onPractice={() => setPractice(true)} onPath={() => go('path')} />}
-        {!busy && tab === 'path' && <PathList onOpen={openPassage} onStart={setSession} />}
+        {!busy && tab === 'path' && (
+          <ProgressView
+            onRead={(id) => {
+              pickChapter(id)
+              go('reader')
+            }}
+          />
+        )}
         {!busy && tab === 'reader' && (
           <ReaderView passageId={passageId} onSelect={setPassageId} chapterId={chapterId} onChapter={pickChapter} onQuiz={(questions, title) => setSession({ questions, title })} />
         )}
@@ -480,16 +482,16 @@ function Welcome({ onStart }: { onStart: () => void }) {
     <section className="welcome">
       <div className="tib huge center">ཀུན་བཟང་</div>
       <h1 className="center">普贤上师言教 · 藏文学习</h1>
-      <p>从零开始学安多音的藏文拼读，最后能跟着念、读懂《普贤上师言教》的原文。</p>
+      <p>从零开始学安多音的藏文拼读，再按原文里出现的多少学词，最后能跟着念、读懂《普贤上师言教》的原文，也能说几句安多话。</p>
       <ul>
         <li>
-          <b>每天做一次“今日练习”</b>：打开 App 首页就是今天要做的几步，点按钮一步接一步做。字卡、复习、拼读一关，再加一点原文和安多会话，大约 15–20 分钟。字卡做完就算签到。
+          <b>每天点一次“开始”</b>：大约 15 分钟，三段——卡片（复习和新内容混在一起）、安多会话 3 句、原文一句或一段。卡片做完就算签到。
         </li>
         <li>
           <b>开着声音</b>：读音都靠听。字母、元音和会话是老师的真人录音。
         </li>
         <li>
-          <b>答错没关系</b>：第一次选错会给提示再选一次，错过的过几天会再出。
+          <b>先想，再看答案</b>：复习时多数卡片不给选项，先自己想意思、念出来，再翻面对照，自己打分。想不起来的会早点再出。
         </li>
         <li>
           <b>记录只存在这台设备上</b>：可以在“我的”里导出备份。

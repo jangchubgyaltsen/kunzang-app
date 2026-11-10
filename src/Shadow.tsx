@@ -12,9 +12,10 @@ export default function ShadowCard({ q }: { q: Shadow }) {
   const [err, setErr] = useState('')
   const canRecord = typeof MediaRecorder !== 'undefined' && !!navigator.mediaDevices?.getUserMedia
 
+  const audio = q.line ? q.line.audio : q.audio
   useEffect(() => {
-    play(q.line.audio)
-  }, [q])
+    play(audio)
+  }, [audio])
   useEffect(() => () => void (mine && URL.revokeObjectURL(mine)), [mine])
 
   const start = async () => {
@@ -45,23 +46,30 @@ export default function ShadowCard({ q }: { q: Shadow }) {
 
   // 先放原音，原音放完再放自己的
   const compare = () => {
-    play(q.line.audio, () => playMine())
+    play(audio, () => playMine())
   }
 
   return (
     <div className="intro-card shadow">
-      <div className="intro-label">跟读</div>
-      <div className="shadow-words">
-        {q.line.words.map((w) => (
-          <span key={w.id} className="shadow-word tap" onClick={() => play(w.audio)}>
-            <span className="tib">{w.tibetan}</span>
-            <span className="pron">{w.yitong}</span>
-          </span>
-        ))}
-      </div>
-      <p className="small muted">先听整句，再自己大声读一遍。点单个词可以听这个词。</p>
+      <div className="intro-label">{(!q.line && q.label) || '跟读'}</div>
+      {q.line ? (
+        <div className="shadow-words">
+          {q.line.words.map((w) => (
+            <span key={w.id} className="shadow-word tap" onClick={() => play(w.audio)}>
+              <span className="tib">{w.tibetan}</span>
+              <span className="pron">{w.yitong}</span>
+            </span>
+          ))}
+        </div>
+      ) : (
+        <>
+          <div className="tib big center tap" onClick={() => play(audio)}>{q.text}</div>
+          {q.note && <div className="gloss-big">{q.note}</div>}
+        </>
+      )}
+      <p className="small muted">先听整句，再自己大声读一遍{q.line ? '。点单个词可以听这个词。' : '，录下来和原音前后连着听。'}</p>
       <div className="actions">
-        <button onClick={() => play(q.line.audio)}>▶ 听整句</button>
+        <button onClick={() => play(audio)}>▶ 听整句</button>
         {canRecord && !rec && <button onClick={start}>● {mine ? '重录' : '录我读的'}</button>}
         {rec && (
           <button className="recording" onClick={() => rec.stop()}>
@@ -72,7 +80,7 @@ export default function ShadowCard({ q }: { q: Shadow }) {
         {mine && !rec && <button onClick={compare}>▶ 原音 → 我的</button>}
       </div>
       {err && <p className="small warn">{err}</p>}
-      <p className="small muted">注音是一本通式，按规律推出来的，还没逐个核对；以音频为准。</p>
+      {q.line && <p className="small muted">注音是一本通式，按规律推出来的，还没逐个核对；以音频为准。</p>}
     </div>
   )
 }

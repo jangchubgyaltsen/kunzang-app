@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { Rating, type Grade } from 'ts-fsrs'
-import { TALK_BASE, buildLevel, kcLabel, levelById, partsOf, questionFor, readQuestion, unitByN, type Intro, type KC, type Question, type Scored, type Shadow } from './course.ts'
+import { TALK_BASE, buildLevel, kcLabel, levelById, partsOf, questionFor, readQuestion, unitByN, type Ctx, type Intro, type KC, type Question, type Scored, type SelfRated, type Shadow } from './course.ts'
+import WriteCard from './WriteCard.tsx'
 import { syllableMap } from './content.ts'
 import { wylieOn } from './prefs.ts'
 import { finishLevel, recordAnswer, seenKCs, speedMedians, speedRating, weakKCs } from './progress.ts'
@@ -29,6 +30,8 @@ type Props = {
   resumeKey?: string
   /** 做完后的小结页底部换成这个（今日练习里显示“下一步是什么”） */
   footer?: ReactNode
+  /** 学习者已经认识的知识点：答错补练时换问法，干扰项只用这些 */
+  known?: Set<KC>
 }
 type Saved = { day: string; level?: string; queue: Question[]; known?: KC[]; i: number; firstTry: [string, boolean][]; misses: [string, number][] }
 const today = () => new Date().toLocaleDateString('sv')
@@ -37,11 +40,11 @@ const resumeId = (k: string) => 'lesson-resume:' + k
 export const clearResume = (k: string) => db.settings.delete(resumeId(k))
 type Done = { accuracy: number } & Result
 
-export default function Lesson({ level, questions, title, onExit, onFinish, onComplete, exitLabel, resumeKey, footer }: Props) {
+export default function Lesson({ level, questions, title, onExit, onFinish, onComplete, exitLabel, resumeKey, footer, known: knownProp }: Props) {
   const lv = level ? levelById.get(level) : undefined
   const unit = lv?.unit
   const [queue, setQueue] = useState<Question[] | null>(resumeKey ? null : (questions ?? null))
-  const [known, setKnown] = useState<Set<KC> | undefined>()
+  const [known, setKnown] = useState<Set<KC> | undefined>(knownProp)
   const [i, setI] = useState(0)
   const [chosen, setChosen] = useState<string | number | null>(null)
   const [firstTry, setFirstTry] = useState<Map<string, boolean>>(new Map())
@@ -148,6 +151,31 @@ export default function Lesson({ level, questions, title, onExit, onFinish, onCo
       </section>
     )
 
+  if (q.kind === 'recall' || q.kind === 'write')
+    return (
+      <section className="lesson">
+        {top}
+        <SelfCard
+          key={i}
+          q={q}
+          onRate={async (r) => {
+            if (r !== null) {
+              const ok = r !== Rating.Again
+              await recordAnswer(q.kc, ok, unit, 'self', r, { kind: q.kind, ms: Math.round(performance.now() - shownAt.current) })
+              if (!firstTry.has(q.kc + q.kind)) setFirstTry(new Map(firstTry).set(q.kc + q.kind, ok))
+              // 不会的：过几张再来一次（只补一次）
+              if (!ok && !misses.get(q.kc)) {
+                setMisses(new Map(misses).set(q.kc, 1))
+                const at = Math.min(queue.length, i + 4)
+                setQueue([...queue.slice(0, at), q, ...queue.slice(at)])
+              }
+            }
+            next()
+          }}
+        />
+      </section>
+    )
+
   if (q.kind === 'shadow')
     return (
       <section className="lesson">
@@ -211,7 +239,9 @@ export default function Lesson({ level, questions, title, onExit, onFinish, onCo
       await recordAnswer(q.kc, false, unit, 'hint', ok ? Rating.Hard : Rating.Again, extra)
       miss()
     } else if (ok) {
-      pending.current = { kc: q.kc, ok: true, rating: speedRating(ms, medians.current.get(q.kind)), kind: q.kind, ms }
+      // 选择题能靠排除法蒙对，答得再快也最多记 Good；真正的“记牢了”交给回忆卡
+      const sr = speedRating(ms, medians.current.get(q.kind))
+      pending.current = { kc: q.kc, ok: true, rating: sr === Rating.Easy ? Rating.Good : sr, kind: q.kind, ms }
     } else {
       await recordAnswer(q.kc, false, unit, undefined, Rating.Again, extra)
       miss()
@@ -301,8 +331,74 @@ function IntroCard({ q }: { q: Intro }) {
           ))}
         </div>
       )}
-      {q.note && <p className={'intro-note' + (q.kc.startsWith('W:') ? ' gloss-big' : '')}>{q.note}</p>}
+      {q.note && <p className={'intro-note' + (q.kc.startsWith('W:') || q.kc.startsWith('F:') ? ' gloss-big' : '')}>{q.note}</p>}
+      {q.ctx && <CtxLine ctx={q.ctx} />}
     </div>
+  )
+}
+
+/** 例句：整句原文，要学的词标出来；点一下听整句 */
+function CtxLine({ ctx }: { ctx: Ctx }) {
+  return (
+    <div className="ctx tap" onClick={() => ctx.audio && play(ctx.audio)}>
+      <div className="small muted">原文例句{ctx.audio ? ' · 点一下听整句' : ''}</div>
+      <div className="tib ctx-line">
+        {ctx.words.map((w, k) => (
+          <span key={k} className={k === ctx.i ? 'ctx-hit' : ''}>
+            {w}
+            {k < ctx.words.length - 1 ? '་' : '།'}
+          </span>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+/**
+ * 自评卡：回忆卡（先想，再翻面）和写字卡。
+ * onRate(null)：不记分（照着描字），直接下一张。
+ */
+function SelfCard({ q, onRate }: { q: SelfRated; onRate: (r: Grade | null) => void }) {
+  const [flipped, setFlipped] = useState(false)
+  useEffect(() => {
+    if (q.kind === 'recall' && q.autoplay && q.audio) play(q.audio)
+    if (q.kind === 'write' && !q.trace) play(q.audio)
+  }, [q])
+  if (q.kind === 'write') return <WriteCard q={q} onRate={onRate} />
+  const flip = () => {
+    setFlipped(true)
+    if (q.back.audio) play(q.back.audio)
+  }
+  return (
+    <>
+      <div className="intro-card recall">
+        <div className="intro-label">{q.ask}</div>
+        {q.hideFront && !flipped ? (
+          <button className="play-big" onClick={() => q.audio && play(q.audio)}>▶</button>
+        ) : (
+          <div className={'tib tap ' + (q.front.length > 12 ? 'big center' : 'huge')} onClick={() => q.audio && play(q.audio)}>{q.front}</div>
+        )}
+        {!flipped && q.audio && !q.hideFront && <p className="small muted">想不起来可以点字听读音，再想意思。</p>}
+        {q.ctx && <CtxLine ctx={q.ctx} />}
+        {flipped && (
+          <div className="recall-back">
+            <div className="recall-main">{q.back.main}</div>
+            {q.back.sub && <div className="small muted">{q.back.sub}</div>}
+            {q.back.note && q.back.note !== q.back.main && <p className="small">{withTib(q.back.note)}</p>}
+            {q.back.uncertain && <p className="small warn">释义是推测的，还没核对。</p>}
+          </div>
+        )}
+      </div>
+      {flipped ? (
+        <div className="rate3">
+          <button className="rate-again" onClick={() => onRate(Rating.Again)}>不会</button>
+          <button className="rate-hard" onClick={() => onRate(Rating.Hard)}>模糊</button>
+          <button className="rate-good primary" onClick={() => onRate(Rating.Good)}>会</button>
+        </div>
+      ) : (
+        <button className="primary" onClick={flip}>想好了，翻面</button>
+      )}
+    </>
   )
 }
 
@@ -513,7 +609,7 @@ function Summary({ level, done, firstTry, onExit, exitLabel = '返回', footer }
     <section className="lesson summary">
       <h1>{done.unitDone ? '本单元通过' : done.passed ? (lv ? '本关通过' : '完成') : '再练一次'}</h1>
       <div className="big-number">{Math.round(done.accuracy * 100)}%</div>
-      <p className="muted">首次作答正确率，通过需要 80%</p>
+      <p className="muted">{lv ? '首次作答正确率，通过需要 80%' : '第一次就答对（或自评“会”）的比例'}</p>
       {wrong.length > 0 && (
         <>
           <p>需要加强：</p>

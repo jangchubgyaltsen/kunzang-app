@@ -1,139 +1,222 @@
 import { db } from './db.ts'
-import { dailyDue } from './alphabet.ts'
-import { PATH, levelById, unitByN, type Track } from './course.ts'
-import { dueChecks, dueKCs, ensureChecks, getPathState } from './progress.ts'
+import { ALL_CARDS, CV_MARKS, ROWS, isWarm, loadStats } from './alphabet.ts'
+import { SPELL_SEQ, introFor, questionFor, recallFor, recallQuestion, shuffle, writeQuestion, type KC, type Question } from './course.ts'
+import { amdoSets } from './amdo.ts'
+import { readLines } from './reading.ts'
+import { reviveCard } from './progress.ts'
 import { dayKey } from './daily.ts'
+import { fwords } from './fwords.ts'
+import { loadVocab } from './vocab.ts'
 
 /**
- * 今日练习：每天打开 App 自动开始，一步接一步做完。
- * 1. 字卡（做完就算签到）
- * 2. 到期的单元抽查（最多 2 次）
- * 3. 到期的复习（最多 15 题）
- * 4. 拼读线的下一关
- * 5. 诵读开篇的下一关（一关一句或半句；没过就停在这关，明天再来）
- * 6. 安多会话的下一关（新句子一关 3–4 句）
- * 当天第一次打开时排好，之后一整天不变；没到期的复习、抽查到时自动跳过。
- * 一天大约 DAILY_BUDGET 题：复习多的日子先省掉会话、开篇的新内容（做完后可以点“再学一点”加回来）。
+ * 今天：一个按钮，大约 15 分钟，按顺序三段：
+ * 1. cards 卡片：到期复习和新卡混在一个队列里（字母、组合、规则、词、原文高频词交替出）。做完就算签到。
+ * 2. talk  安多会话：3 句新的（听、看、跟读录音）+ 到期的会话句复习。
+ * 3. read  原文：高频词学到 300 个以前，听开篇的一句（只听不考）；之后是“今天的一段”有声精读。
+ *
+ * 学的顺序只有一条线：拼读（字母、元音、组合、加字、简单词）→ 原文高频词（30 个字母都学过以后开始，和拼读并行）→ 有声精读。
+ * 不再有关卡、单元小测和定时抽查：FSRS 排的到期复习就是持续的抽查。
+ * 新卡当天：介绍 → 选择题 → 过一会儿再一道选择题；以后复习都用回忆卡（先想再翻面，自评）。
  */
-export type StepKey = string // 'drill' | 'check:<id>' | 'review' | 'next:<线>'
+export type StepKey = 'cards' | 'talk' | 'read'
+export const STEPS: StepKey[] = ['cards', 'talk', 'read']
+export type DayPlan = { date: string; steps: StepKey[]; done: StepKey[] }
+const KEY = 'practice-day-v2'
 
-/** 每条线在今日练习里一步，一步最多连着做几关 */
-export const PER_DAY: Record<Track, number> = { spell: 1, read: 1, talk: 1 }
-const CHECKS_PER_DAY = 2
-export const REVIEW_SIZE = 15
-
-/** failed：做完了但这一关没过的步骤（清单上标“未过，明天再来”） */
-/** extra：因为今天复习多、超出总量而先省掉的新内容，做完后可以点“再学一点”加回来 */
-export type DayPlan = { date: string; steps: StepKey[]; done: StepKey[]; failed?: StepKey[]; extra?: StepKey[] }
-const KEY = 'practice-day'
+/** 卡片一段的大小：复习最多这么多张；新卡按复习多少浮动 */
+const REVIEW_CAP = 60
+const TARGET = 30
+const NEW_MIN = 4
+const NEW_MAX = 14
+/** 刚开始一周，每天新卡最多这么多 */
+const EARLY_NEW = 8
+const TALK_NEW = 3
+/** 一天最多几张默写字母（写字慢，太多会累） */
+const WRITE_MAX = 4
+const TALK_REVIEW = 5
+/** 学会这么多原文高频词以后，每天的原文从“听一句”换成“精读一段” */
+export const READ_FROM = 300
 
 export async function loadPlan(): Promise<DayPlan> {
   const today = dayKey()
   const saved = (await db.settings.get(KEY))?.value as DayPlan | undefined
-  if (saved?.date === today) {
-    // 旧版本一条线排成好几步（next:read:0、next:read:1），合成一步
-    const steps = [...new Set(saved.steps.map((k) => k.replace(/^(next:\w+):\d+$/, '$1')))]
-    const done = [...new Set(saved.done.map((k) => k.replace(/^(next:\w+):\d+$/, '$1')))]
-    return { ...saved, steps, done }
-  }
-  const plan: DayPlan = { date: today, done: [], ...(await buildSteps()) }
+  if (saved?.date === today) return saved
+  const plan: DayPlan = { date: today, steps: [...STEPS], done: [] }
   await db.settings.put({ key: KEY, value: plan })
   return plan
 }
 
-export async function markStep(key: StepKey, failed = false) {
+export async function markStep(key: StepKey) {
   const plan = await loadPlan()
   if (!plan.done.includes(key)) plan.done.push(key)
-  if (failed && !plan.failed?.includes(key)) plan.failed = [...(plan.failed ?? []), key]
   await db.settings.put({ key: KEY, value: plan })
   return plan
 }
 
-/**
- * 一天大约做多少题。字卡、抽查、到期复习一定做；剩下的额度按 拼读 → 诵读开篇 → 安多会话 的顺序排新内容，
- * 排不下的放进 extra（做完后可以点“再学一点”）。拼读至少留一关，免得复习多的日子主线停下来。
- */
-export const DAILY_BUDGET = 65
-/** 每一步大约多少题（含介绍卡） */
-const COST: Record<string, number> = { drill: 20, check: 10, 'next:spell': 15, 'next:read': 16, 'next:talk': 10 }
+// ───── 学到哪了 ─────
 
-async function buildSteps(): Promise<{ steps: StepKey[]; extra: StepKey[] }> {
-  const steps: StepKey[] = ['drill']
-  // 以前就通过、还没排抽查的单元先排上
-  await ensureChecks((await getPathState()).units)
-  const checks = (await dueChecks()).slice(0, CHECKS_PER_DAY)
-  for (const c of checks) steps.push('check:' + c.id)
-  steps.push('review')
-  let used = COST.drill + checks.length * COST.check + (await dueKCs(REVIEW_SIZE)).length
-  const extra: StepKey[] = []
-  for (const track of ['spell', 'read', 'talk'] as Track[]) {
-    const key = `next:${track}`
-    if (track === 'spell' || used + COST[key] <= DAILY_BUDGET) {
-      steps.push(key)
-      used += COST[key]
-    } else extra.push(key)
+export type Progress = {
+  introduced: Set<KC>
+  /** 拼读阶段还没学的（不算组合） */
+  spellLeft: KC[]
+  /** 能开始学的字母元音组合（字母和 4 个元音都有点熟了），还没学的 */
+  cvOpen: KC[]
+  cvLeft: number
+  /** 30 个字母都学过了：开始学原文高频词 */
+  vocabOn: boolean
+  fLearned: number
+  readOn: boolean
+  /** 做卡片的天数（签到天数） */
+  days: number
+}
+
+export async function getProgress(): Promise<Progress> {
+  const introduced = new Set((await db.cards.toCollection().primaryKeys()) as KC[])
+  const stats = await loadStats()
+  const vowelsWarm = CV_MARKS.every((m) => isWarm(stats['V:' + m]))
+  const cvAll = ALL_CARDS.filter((x) => x.key.startsWith('CV:'))
+  const cvOpen = vowelsWarm ? cvAll.filter((x) => !introduced.has(x.key) && isWarm(stats['L:' + x.base])).map((x) => x.key) : []
+  const letters = ROWS.flat()
+  const fLearned = [...introduced].filter((k) => k.startsWith('F:')).length
+  return {
+    introduced,
+    spellLeft: SPELL_SEQ.filter((k) => !introduced.has(k)),
+    cvOpen,
+    cvLeft: cvAll.filter((x) => !introduced.has(x.key)).length,
+    vocabOn: letters.every((l) => introduced.has('L:' + l)),
+    fLearned,
+    readOn: fLearned >= READ_FROM,
+    days: await db.checkins.count(),
   }
-  return { steps, extra }
 }
 
-/** 今天的都做完了，再加一步新内容 */
-export async function addExtra(): Promise<DayPlan> {
-  const plan = await loadPlan()
-  const key = plan.extra?.shift()
-  if (key && !plan.steps.includes(key)) plan.steps.push(key)
-  await db.settings.put({ key: KEY, value: plan })
-  return plan
+const endOfToday = () => new Date(new Date().setHours(23, 59, 59, 999)).getTime()
+
+/** 到期的复习（会话句 A: 在会话那段里复习；全书段落题 B: 不进复习） */
+async function dueList(filter: (k: KC) => boolean, cap: number) {
+  const rows = await db.cards.where('due').belowOrEqual(endOfToday()).toArray()
+  return rows
+    .filter((r) => filter(r.kc))
+    .sort((a, b) => a.due - b.due)
+    .slice(0, cap)
+}
+
+/** 今天的新卡：拼读的和高频词各占多少 */
+async function pickNew(p: Progress, dueCount: number): Promise<KC[]> {
+  let n = Math.max(NEW_MIN, Math.min(NEW_MAX, TARGET - dueCount))
+  if (p.days < 7) n = Math.min(n, EARLY_NEW)
+  const spell = [...p.spellLeft.slice(0, 6), ...p.cvOpen]
+  const vocab = p.vocabOn ? fwords.filter((f) => !p.introduced.has('F:' + f.w)).map((f) => 'F:' + f.w) : []
+  if (!vocab.length) return spell.slice(0, n)
+  if (!spell.length) return vocab.slice(0, n)
+  const half = Math.ceil(n / 2)
+  return [...spell.slice(0, half), ...vocab.slice(0, n - Math.min(half, spell.length))]
+}
+
+/** 复习用哪种卡：大多是回忆卡；字母每隔几次凭记忆写一次；加字规则用原来的题；音节有时听音拼字 */
+async function reviewQuestion(kc: KC, writes = { n: 0 }): Promise<Question> {
+  if (kc.startsWith('L:') && writes.n < WRITE_MAX) {
+    const row = await db.cards.get(kc)
+    const reps = row ? reviveCard(row.card).reps : 0
+    if (reps % 3 === 2) {
+      writes.n++
+      return writeQuestion(kc.slice(2), false)
+    }
+  }
+  if ((kc.startsWith('S:') || kc.startsWith('P:')) && Math.random() < 1 / 3) {
+    const r = recallFor(kc)
+    if (r) return r
+  }
+  const listen = /^[FWDT]:/.test(kc) && Math.random() < 1 / 4
+  return recallQuestion(kc, listen) ?? questionFor(kc)
+}
+
+const shuffleInPlace = <T,>(a: T[]) => a.splice(0, a.length, ...shuffle(a))
+
+/** 把 b 均匀地插进 a */
+function interleave<T>(a: T[], b: T[]) {
+  if (!a.length) return b
+  if (!b.length) return a
+  const out: T[] = []
+  const step = a.length / b.length
+  let j = 0
+  for (let i = 0; i < a.length; i++) {
+    while (j < b.length && j * step <= i) out.push(b[j++])
+    out.push(a[i])
+  }
+  return [...out, ...b.slice(j)]
 }
 
 /**
- * 'next:read' 这类步骤：做到这一步时，再看这条线上现在该做哪一关。
- * 同一条线上下一关要等前一关通过才解锁，所以不能一早就定死是哪一关。
+ * 卡片这一段：
+ * 新卡 4 张一组：先看介绍（新字母后面接两遍描字），马上每张考一道选择题；全部组做完以后，每张新卡再换个问法考一次。
+ * 到期复习打散，插在各组之间。
  */
-export async function levelFor(key: StepKey): Promise<string | undefined> {
-  const track = key.split(':')[1] as Track
-  const st = await getPathState()
-  const open = PATH.filter((u) => u.track === track)
-    .flatMap((u) => u.levels)
-    .filter((l) => st.levels.get(l.id)?.status === 'available')
-  // 主线上的关优先，补课关（单元通过后才加进来的）放后面
-  return (open.find((l) => !st.levels.get(l.id)?.optional) ?? open[0])?.id
-}
-
-/** 这一步现在还有没有东西可做（没到期的复习、抽查，学完了的线，都跳过） */
-export async function stepHasWork(key: StepKey) {
-  if (key === 'drill') return dailyDue()
-  if (key === 'review') return (await dueKCs(1)).length > 0
-  if (key.startsWith('check:')) {
-    const c = await db.checks.get(key.slice(6))
-    return !!c && !c.doneAt
+export async function buildCards(): Promise<{ questions: Question[]; known: Set<KC> }> {
+  await loadVocab().catch(() => {})
+  const p = await getProgress()
+  const due = await dueList((k) => !k.startsWith('A:') && !k.startsWith('B:') && (!k.startsWith('F:') || fwords.length > 0), REVIEW_CAP)
+  const fresh = await pickNew(p, due.length)
+  const known = new Set([...p.introduced, ...fresh])
+  const writes = { n: 0 }
+  const reviews: Question[] = []
+  for (const r of due) reviews.push(await reviewQuestion(r.kc, writes))
+  shuffleInPlace(reviews)
+  const blocks: Question[][] = []
+  for (let k = 0; k < fresh.length; k += 4) {
+    const g = fresh.slice(k, k + 4)
+    const intro: Question[] = g.flatMap((kc) => (kc.startsWith('L:') ? [introFor(kc), writeQuestion(kc.slice(2), true)] : [introFor(kc)]))
+    const first = shuffle(g).map((kc) => questionFor(kc, 0, known))
+    // 刚看完介绍的那张不紧接着考
+    if (first.length > 1 && first[0].kc === g[g.length - 1]) first.push(first.shift()!)
+    blocks.push([...intro, ...first])
   }
-  if (key.startsWith('next:')) return !!(await levelFor(key))
-  return false
+  const second = shuffle(fresh).map((kc) => questionFor(kc, 1, known))
+  const share = Math.ceil(reviews.length / (blocks.length + 1))
+  const out: Question[] = []
+  blocks.forEach((b, k) => out.push(...reviews.slice(k * share, (k + 1) * share), ...b))
+  const tail = reviews.slice(blocks.length * share)
+  // 新卡的第二次放在最后一段复习里，和第一次隔开
+  return { questions: [...out, ...interleave(tail, second)], known }
 }
 
-export function stepLabel(key: StepKey) {
-  if (key === 'drill') return '字卡'
-  if (key === 'review') return '到期复习'
-  if (key.startsWith('check:')) return '单元抽查'
-  return { spell: '拼读', read: '诵读开篇', talk: '安多会话' }[key.split(':')[1] as Track] ?? '练习'
+/** 安多会话：按教材顺序 3 句新的（听 → 跟读录音），到期的会话句听音回忆；最后新句子各听一遍选意思 */
+export async function buildTalk(): Promise<{ questions: Question[]; known: Set<KC> }> {
+  const introduced = new Set((await db.cards.where('kc').startsWith('A:').primaryKeys()) as KC[])
+  const order = amdoSets.flatMap((s) => s.ids).map((id) => 'A:' + id)
+  const fresh = order.filter((k) => !introduced.has(k)).slice(0, TALK_NEW)
+  const due = await dueList((k) => k.startsWith('A:'), TALK_REVIEW)
+  const known = new Set([...introduced, ...fresh])
+  const out: Question[] = []
+  for (const kc of fresh) {
+    const intro = introFor(kc)
+    out.push(intro, { kind: 'shadow', kc, text: intro.big, audio: intro.audio!, note: intro.note, label: '跟读 · 录下来对比' })
+  }
+  out.push(...shuffle(await Promise.all(due.map((r) => reviewQuestion(r.kc)))))
+  out.push(...shuffle(fresh).map((kc) => questionFor(kc, 0, known)))
+  return { questions: out, known }
 }
 
-/** 首页清单和每步小结里，一步的说明：做什么、大约几题、几分钟 */
+/** 高频词还不够时：开篇里的一句，只听、跟读，不考。按天轮换 */
+export function lineOfToday() {
+  const d = new Date()
+  const n = Math.floor(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 86400000)
+  return readLines[n % readLines.length]
+}
+
+/** 今天这几段的说明（首页清单用） */
 export type StepInfo = { label: string; detail: string; minutes: number }
-export async function stepInfo(key: StepKey): Promise<StepInfo> {
-  const label = stepLabel(key)
-  if (key === 'drill') return { label, detail: '字母和元音 · 做完就签到', minutes: 4 }
-  if (key === 'review') {
-    const n = (await dueKCs(REVIEW_SIZE)).length
-    return { label, detail: n ? `${n} 题 · 按遗忘曲线到期的` : '今天没有到期的', minutes: Math.max(1, Math.round(n / 5)) }
+export async function stepInfo(key: StepKey, p?: Progress): Promise<StepInfo> {
+  p ??= await getProgress()
+  if (key === 'cards') {
+    const n = (await dueList((k) => !k.startsWith('A:') && !k.startsWith('B:'), REVIEW_CAP)).length
+    const stage = p.spellLeft.length || p.cvLeft ? (p.vocabOn ? '拼读收尾 + 原文高频词' : '拼读：字母、元音、加字') : '原文高频词'
+    return { label: '卡片', detail: `${stage} · 复习 ${n} 张 · 做完就签到`, minutes: Math.max(5, Math.round((n * 8 + 10 * 30) / 60)) }
   }
-  if (key.startsWith('check:')) {
-    const c = await db.checks.get(key.slice(6))
-    return { label, detail: c ? `单元 ${c.unit} · 10 题` : '10 题', minutes: 2 }
+  if (key === 'talk') {
+    const done = (await db.cards.where('kc').startsWith('A:').count())
+    return { label: '安多会话', detail: `第 ${done + 1}–${done + TALK_NEW} 句 · 听、跟读`, minutes: 3 }
   }
-  const id = await levelFor(key)
-  const lv = id ? levelById.get(id) : undefined
-  const u = lv ? unitByN.get(lv.unit) : undefined
-  const unitName = u ? (u.track === 'spell' ? `单元 ${u.n}` : u.title.replace(/^原文：/, '')) : ''
-  return { label, detail: lv ? `${unitName} · ${lv.title}` : '这条线学完了', minutes: Math.round((COST[key] ?? 10) / 5) }
+  if (p.readOn) return { label: '原文', detail: '今天的一段：听着读、自己读、跟读', minutes: 5 }
+  return { label: '原文', detail: `听开篇的一句，只听不考 · 高频词学到 ${READ_FROM} 个后开始精读`, minutes: 1 }
 }
