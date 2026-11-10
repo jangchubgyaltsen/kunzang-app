@@ -1,6 +1,6 @@
 import { passages, passageTitles, realAudioOf, syllables, syllableMap, type Syllable } from './content.ts'
 import { wylieOn } from './prefs.ts'
-import { lineById, linesOf, readLines, tokenMap, yitongOf, type ReadLine } from './reading.ts'
+import { lineById, linesOf, readLines, tokenMap, yitongOf, yitongOfLine, type ReadLine } from './reading.ts'
 import wordsRaw from './words.json'
 import { CV_PRON, CV_SOURCE, PRON, shapeMates, soundMates } from './pron.ts'
 import { fwordAudio, fwordMap, fwordSentAudio, fwords, type FWord } from './fwords.ts'
@@ -284,7 +284,7 @@ export function introFor(kc: KC): Intro {
   if (type === 'F') {
     const f = fwordMap.get(val)!
     return {
-      kind: 'intro', kc, label: `原文高频词 · 第 ${f.rank + 1} · 全书出现 ${f.n} 次`, big: f.w, audio: fwordAudio(f),
+      kind: 'intro', kc, label: `原文高频词 · 第 ${f.rank + 1} · 全书出现 ${f.n} 次`, big: f.w, pron: yitongOf(f.w), audio: fwordAudio(f),
       note: f.gloss + (f.uncertain ? '（推测，还没核对）' : ''), ctx: fctx(f),
     }
   }
@@ -315,15 +315,15 @@ export function introFor(kc: KC): Intro {
   }
   if (type === 'A') {
     const s = sentenceById.get(val)!
-    return { kind: 'intro', kc, label: '会话 · 真人录音', big: s.tib, note: s.zh, audio: s.audio }
+    return { kind: 'intro', kc, label: '会话 · 真人录音', big: s.tib, pron: yitongOfLine(s.tib), note: s.zh, audio: s.audio }
   }
   if (type === 'D') {
     const w = amdoWordById.get(val)!
-    return { kind: 'intro', kc, label: '口语词 · 真人录音', big: w.tib, note: w.zh, audio: w.audio }
+    return { kind: 'intro', kc, label: '口语词 · 真人录音', big: w.tib, pron: yitongOfLine(w.tib), note: w.zh, audio: w.audio }
   }
   if (type === 'P') {
     const c = cellById.get(val)!
-    return { kind: 'intro', kc, label: '听拼读 · ' + c.part, big: c.cell.tib, audio: c.cell.audio }
+    return { kind: 'intro', kc, label: '听拼读 · ' + c.part, big: c.cell.tib, pron: yitongOfLine(c.cell.tib), audio: c.cell.audio }
   }
   if (type === 'T') {
     const t = tokenMap.get(val)!
@@ -334,7 +334,7 @@ export function introFor(kc: KC): Intro {
     return { kind: 'intro', kc, label: '整句', big: l.words.map((w) => w.tibetan).join('་'), pron: l.words.map((w) => w.yitong).join(' '), audio: l.audio }
   }
   const s = syllableMap.get(val)!
-  return { kind: 'intro', kc, label: '音节', big: s.tibetan, sub: wylieOn() ? s.wylie : undefined, audio: s.audio, parts: partsOf(s) }
+  return { kind: 'intro', kc, label: '音节', big: s.tibetan, sub: wylieOn() ? s.wylie : undefined, pron: yitongOf(s.tibetan), audio: s.audio, parts: partsOf(s) }
 }
 
 const wylieOf = (t: string) => t.split('་').map((x) => syllableMap.get(x)?.wylie ?? '?').join(' ')
@@ -1010,7 +1010,7 @@ export function recallQuestion(kc: KC, listen = false): SelfRated | undefined {
     case 'F': {
       const f = fwordMap.get(val)
       if (!f) return
-      return think(f.w, fwordAudio(f), { main: f.short, note: f.gloss, uncertain: f.uncertain }, fctx(f))
+      return think(f.w, fwordAudio(f), { main: f.short, sub: yitongOf(f.w), note: f.gloss, uncertain: f.uncertain }, fctx(f))
     }
     case 'W': {
       const w = wordMap.get(val)
@@ -1018,11 +1018,11 @@ export function recallQuestion(kc: KC, listen = false): SelfRated | undefined {
     }
     case 'D': {
       const w = amdoWordById.get(val)
-      return w && think(w.tib, w.audio, { main: w.zh })
+      return w && think(w.tib, w.audio, { main: w.zh, sub: yitongOfLine(w.tib) })
     }
     case 'A': {
       const a = sentenceById.get(val)
-      return a && think(a.tib, a.audio, { main: a.zh })
+      return a && think(a.tib, a.audio, { main: a.zh, sub: yitongOfLine(a.tib) })
     }
     case 'T': {
       const t = tokenMap.get(val)
@@ -1041,7 +1041,7 @@ export function recallQuestion(kc: KC, listen = false): SelfRated | undefined {
     }
     case 'P': {
       const c = cellById.get(val)
-      return c && { kind: 'recall', kc, ask: '先自己念出来，再翻面听录音', front: c.cell.tib, back: { main: c.part, audio: c.cell.audio } }
+      return c && { kind: 'recall', kc, ask: '先自己念出来，再翻面听录音', front: c.cell.tib, back: { main: yitongOfLine(c.cell.tib) || c.part, sub: c.part, audio: c.cell.audio } }
     }
     case 'X': {
       const l = lineById.get(val)

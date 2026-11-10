@@ -20,6 +20,7 @@ import { BookChapter, GlossBlock } from './BookReader.tsx'
 import { glossOf, loadGloss, type WordGloss } from './gloss.ts'
 import AmdoView from './Amdo.tsx'
 import { setWylie, wylieOn } from './prefs.ts'
+import PronGuide from './PronGuide.tsx'
 
 type Tab = 'today' | 'path' | 'reader' | 'library' | 'me'
 // 资料库里分两块：字母表、安多会话教材
@@ -108,6 +109,7 @@ export default function App() {
             </button>
           </div>
         )}
+        {!busy && tab === 'library' && <PronGuide />}
         {!busy && tab === 'library' && shelf === 'alphabet' && <AlphabetView key={drill} onStart={(all) => setDrill(all ? -Date.now() : Date.now())} />}
         {!busy && tab === 'today' && <Today key={homeKey} onPractice={() => setPractice(true)} onPath={() => go('path')} />}
         {!busy && tab === 'path' && (
@@ -269,7 +271,7 @@ function Toc({ chapterId, passageId, onClose, onPassage, onChapter }: { chapterI
 function DisplaySheet({ book, onClose }: { book: boolean; onClose: () => void }) {
   const [p, set] = useReaderPrefs()
   const rows: [keyof typeof p, string, string, boolean][] = [
-    ['pron', '注音', book ? '只在开篇出现过的音节上有' : '一本通式注音', true],
+    ['pron', '注音', '安多类拼音，按规律推出来，以录音为准', true],
     ['gloss', '逐词释义', '每个词下面一行小字', book],
     ['zh', '中文', '需要先在“我的”里导入译文包', true],
     ['bySent', '逐句对照', '中文按句子放到对应的藏文下面', book && p.zh],
@@ -460,7 +462,7 @@ function WylieSetting() {
   return (
     <>
       <h2>Wylie 转写</h2>
-      <p className="small muted">用拉丁字母拼写藏文的方法（如 ཀློང་ཆེན 写成 klong chen）。只学念诵和读懂的话用不上，默认不显示，也不出转写题。</p>
+      <p className="small muted">用拉丁字母逐个字母拼写藏文的方法（如 ཀློང་ཆེན 写成 klong chen），写的是字怎么拼，不是安多话怎么念。读音看藏文下面的类拼音注音就行（见上面“注音怎么读”）。Wylie 默认不显示，也不出转写题；查词典、对照别的资料时可以打开。</p>
       <label className="small">
         <input
           type="checkbox"
@@ -560,6 +562,7 @@ function SettingsView() {
         </label>
       </div>
       {msg && <p>{msg}</p>}
+      <PronGuide />
       <WylieSetting />
       <SoundCheck />
       <h2>重新开始</h2>

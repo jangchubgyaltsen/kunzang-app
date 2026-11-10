@@ -3,6 +3,7 @@ import { amdoLessons, amdoPages, amdoSets, amdoTables, amdoWordById, sentenceByI
 import { play, playSeq, preload, stop } from './audio.ts'
 import { questionFor, shuffle, type Question } from './course.ts'
 import type { Session } from './session.ts'
+import { yitongOfLine } from './reading.ts'
 import './amdo.css'
 
 type Part = 'talk' | 'words' | 'spell' | 'lessons'
@@ -72,6 +73,7 @@ function Talk({ onStart }: { onStart: (s: Session) => void }) {
             <span className="num">{s.n}</span>
             <div>
               <div className="tib talk-tib">{s.tib}</div>
+              <div className="pron">{yitongOfLine(s.tib)}</div>
               <div className="talk-zh">{s.zh}</div>
             </div>
           </li>
@@ -108,6 +110,7 @@ function Words({ onStart }: { onStart: (s: Session) => void }) {
         {items.map((w) => (
           <button key={w.id} className="word-cell" onClick={() => play(w.audio)}>
             <span className="tib">{w.tib}</span>
+            <span className="pron">{yitongOfLine(w.tib)}</span>
             <span className="small">{w.zh}</span>
           </button>
         ))}
