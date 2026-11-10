@@ -39,7 +39,7 @@ export default defineConfig({
           },
           {
             // 章节文本、词表有改动时，下次打开就换成新的
-            urlPattern: ({ url }) => /\/book\/(ch\d+|gloss)\.json$/.test(url.pathname),
+            urlPattern: ({ url }) => /\/book\/(ch\d+|gloss|vocab)\.json$/.test(url.pathname),
             handler: 'StaleWhileRevalidate',
             options: { cacheName: 'book-text', cacheableResponse: { statuses: [200] } },
           },

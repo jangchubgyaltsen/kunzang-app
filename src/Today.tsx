@@ -1,23 +1,22 @@
 import { useEffect, useState } from 'react'
 import { AUSPICIOUS, dayKey, streakInfo } from './daily.ts'
-import { loadPlan, stepInfo, type DayPlan, type StepInfo, type StepKey } from './practice.ts'
-import { getPathState } from './progress.ts'
-import { PATH } from './course.ts'
+import { getProgress, loadPlan, stepInfo, type DayPlan, type StepInfo, type StepKey } from './practice.ts'
+import { coverageOf, learnedF, loadVocab } from './vocab.ts'
 import { Icon, StateDot } from './icons.tsx'
 // 签到印章和日历的样式在 games.css 里（小游戏收起来了，样式还在用）
 import './games.css'
 
 type Info = Awaited<ReturnType<typeof streakInfo>>
-type Current = { unit: string; title: string; done: number; total: number }
+type Current = { stage: string; title: string; pct: number; note: string }
 
 /**
- * 首页「今天」：今天要做的几步直接列出来（做完打勾、现在这步高亮、每步大约几分钟），
- * 按钮写明下一步是什么。不再每次打开弹提醒框。下面一张「正在学」的卡通往路径。
+ * 首页「今天」：今天的三段（卡片、安多会话、原文）列出来，做完打勾、每段大约几分钟，一个按钮接着做。
+ * 下面一张卡：现在在哪个阶段，原文里认识的词占多少，通往“进度”。
  */
 export default function Today({ onPractice, onPath }: { onPractice: () => void; onPath: () => void }) {
   const [info, setInfo] = useState<Info | null>(null)
   const [plan, setPlan] = useState<DayPlan | null>(null)
-  const [steps, setSteps] = useState<Record<StepKey, StepInfo>>({})
+  const [steps, setSteps] = useState<Partial<Record<StepKey, StepInfo>>>({})
   const [cur, setCur] = useState<Current | null>(null)
   const [showCal, setShowCal] = useState(false)
 
@@ -28,12 +27,14 @@ export default function Today({ onPractice, onPath }: { onPractice: () => void; 
       const all = await Promise.all(p.steps.map(async (k) => [k, await stepInfo(k)] as const))
       setSteps(Object.fromEntries(all))
     })
-    getPathState().then((st) => {
-      const units = PATH.filter((u) => u.track === 'spell')
-      const u = units.find((x) => x.levels.some((l) => st.levels.get(l.id)?.status === 'available' && !st.levels.get(l.id)?.optional)) ?? units[0]
-      const main = u.levels.filter((l) => !l.optional)
-      setCur({ unit: `单元 ${u.n}`, title: u.title, done: main.filter((l) => st.levels.get(l.id)?.status === 'passed').length, total: main.length })
-    })
+    ;(async () => {
+      const p = await getProgress()
+      await loadVocab().catch(() => {})
+      const cov = coverageOf(await learnedF())
+      const spellTotal = p.spellLeft.length + p.cvLeft
+      if (spellTotal && !p.vocabOn) setCur({ stage: '阶段一 · 拼读', title: '字母、元音、加字', pct: 0, note: `还有 ${p.spellLeft.length} 项拼读内容、${p.cvLeft} 个字母元音组合没学；30 个字母学完开始学原文高频词` })
+      else setCur({ stage: p.readOn ? '阶段三 · 有声精读' : '阶段二 · 原文高频词', title: `认识原文 ${Math.round(cov * 100)}% 的词`, pct: cov, note: `已学 ${p.fLearned} 个高频词${spellTotal ? ` · 拼读还剩 ${p.spellLeft.length} 项、组合 ${p.cvLeft} 个` : ''}` })
+    })()
   }, [])
 
   const left = plan ? plan.steps.filter((k) => !plan.done.includes(k)) : []
@@ -67,7 +68,7 @@ export default function Today({ onPractice, onPath }: { onPractice: () => void; 
       {plan && (
         <div className="plan-card">
           <div className="plan-head">
-            <b>今日练习</b>
+            <b>今天</b>
             <span className="small muted">
               {plan.done.length} / {plan.steps.length}
               {left.length ? ` · 约 ${minutes} 分钟` : ''}
@@ -75,15 +76,15 @@ export default function Today({ onPractice, onPath }: { onPractice: () => void; 
           </div>
           <ol className="plan-steps">
             {plan.steps.map((k) => {
-              const s = plan.failed?.includes(k) ? 'fail' : plan.done.includes(k) ? 'done' : k === next ? 'now' : 'todo'
+              const s = plan.done.includes(k) ? 'done' : k === next ? 'now' : 'todo'
               return (
                 <li key={k} className={s}>
                   <StateDot state={s} />
                   <div className="grow">
                     <div className="step-name">{steps[k]?.label ?? '…'}</div>
-                    <div className="small muted">{s === 'fail' ? '这关没过，明天接着练' : k === 'drill' && s === 'done' ? '已签到' : steps[k]?.detail}</div>
+                    <div className="small muted">{k === 'cards' && s === 'done' ? '已签到' : steps[k]?.detail}</div>
                   </div>
-                  {s !== 'done' && s !== 'fail' && steps[k] && <span className="small muted">{steps[k].minutes} 分钟</span>}
+                  {s !== 'done' && steps[k] && <span className="small muted">{steps[k].minutes} 分钟</span>}
                 </li>
               )
             })}
@@ -97,16 +98,15 @@ export default function Today({ onPractice, onPath }: { onPractice: () => void; 
       {cur && (
         <button className="now-card" onClick={onPath}>
           <div className="grow">
-            <div className="small muted">
-              正在学 · {cur.unit} · {cur.done} / {cur.total} 关
-            </div>
+            <div className="small muted">{cur.stage}</div>
             <div className="now-title">{cur.title}</div>
             <div className="meter">
-              <i style={{ width: `${(cur.done / Math.max(1, cur.total)) * 100}%` }} />
+              <i style={{ width: `${cur.pct * 100}%` }} />
             </div>
+            <div className="small muted">{cur.note}</div>
           </div>
           <span className="link small">
-            路径 <Icon name="chevron" size={14} />
+            进度 <Icon name="chevron" size={14} />
           </span>
         </button>
       )}

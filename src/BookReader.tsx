@@ -11,6 +11,7 @@ import { glossOf, glossTerms, loadGloss, shortGloss, type WordGloss } from './gl
 import { alignPara, findTerm, type AlignGroup } from './align.ts'
 import { useReaderPrefs } from './readerPrefs.ts'
 import { Icon } from './icons.tsx'
+import { useSaying } from './karaoke.ts'
 
 const PAGE = 20 // 一次排出来的段落数，往下翻再接着排
 const POS_KEY = 'reader-pos'
@@ -124,6 +125,9 @@ export function BookChapter({ info, onPick, onQuiz }: { info: ChapterInfo; onPic
     return m
   }, [ch, dict, zh, glosses])
 
+  const playingSent = useMemo(() => (ch && playing?.startsWith('book/') ? ch.paras.flatMap((p) => p.sents).find((s) => sentAudio(s) === playing) : undefined), [ch, playing])
+  const saying = useSaying(playingSent ? playing : null, playingSent?.words)
+
   if (err) return <p className="warn">{err}。请检查网络后重新打开这一章。</p>
   if (!ch) return <p className="muted">正在下载第 {Number(info.id)} 章…</p>
 
@@ -178,7 +182,7 @@ export function BookChapter({ info, onPick, onQuiz }: { info: ChapterInfo; onPic
                         </button>
                         <div className="syls">
                           {s.words.map((w, j) => (
-                            <span key={j} className={'word' + (word?.s === s && word.w === w ? ' on' : '')} onClick={() => setWord({ w, s, zh: g.zh })}>
+                            <span key={j} className={'word' + (word?.s === s && word.w === w ? ' on' : '') + (playingSent === s && saying === j ? ' say' : '')} onClick={() => setWord({ w, s, zh: g.zh })}>
                               <span className="tib big">
                                 {w[0]}
                                 {j < s.words.length - 1 ? '་' : ' །'}

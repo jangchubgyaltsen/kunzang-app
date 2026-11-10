@@ -3,6 +3,7 @@ import { wylieOn } from './prefs.ts'
 import { lineById, linesOf, readLines, tokenMap, yitongOf, type ReadLine } from './reading.ts'
 import wordsRaw from './words.json'
 import { CV_PRON, CV_SOURCE, PRON, shapeMates, soundMates } from './pron.ts'
+import { fwordAudio, fwordMap, fwordSentAudio, fwords, type FWord } from './fwords.ts'
 import { amdoSentences, amdoSets, amdoTables, amdoWordById, amdoWords, cellById, sentenceById, sylsOf } from './amdo.ts'
 
 export const LETTERS: [string, string][] = [
@@ -68,12 +69,14 @@ export const RULES: Record<string, Rule> = {
   },
 }
 
-export type KC = string // L:ཀ  V:ི  R:suf  W:བླ་མ  S:བླ  T:原文里的词  X:原文的一句（行 id）
+export type KC = string // L:ཀ  V:ི  CV:ཀི  R:suf  W:བླ་མ  S:བླ  T:原文里的词  X:原文的一句（行 id）  F:全书高频词
 
 /** pron 是一本通式注音，按对照表推出来的，还没逐个核对 */
-export type Intro = { kind: 'intro'; kc: KC; label: string; big: string; sub?: string; pron?: string; note?: string; audio?: string; parts?: { ch: string; role: string }[] }
+export type Intro = { kind: 'intro'; kc: KC; label: string; big: string; sub?: string; pron?: string; note?: string; audio?: string; parts?: { ch: string; role: string }[]; ctx?: Ctx }
+/** 例句：整句的词、要突出的是第几个、整句录音 */
+export type Ctx = { words: string[]; i: number; audio?: string }
 /** 跟读：先听整句连读，再自己读（可以录下来对比），不计分 */
-export type Shadow = { kind: 'shadow'; kc: KC; line: ReadLine }
+export type Shadow = { kind: 'shadow'; kc: KC; line: ReadLine } | { kind: 'shadow'; kc: KC; line?: undefined; text: string; audio: string; note?: string; label?: string }
 export type Question =
   | Intro
   | Shadow
@@ -93,7 +96,16 @@ export type Question =
   | { kind: 'listen'; kc: KC; audio: string; options: string[]; answer: string; explain: string; zh?: boolean; ask?: string }
   | { kind: 'meaning'; kc: KC; prompt: string; options: string[]; answer: string; audio?: string; explain: string }
   | { kind: 'meaning2word'; kc: KC; prompt: string; options: string[]; answer: string; audio?: string; explain: string }
-export type Scored = Exclude<Question, Intro | Shadow>
+  | SelfRated
+/**
+ * 回忆卡：先自己想（意思、读音），再翻面对答案，自评“不会 / 模糊 / 会”。
+ * hideFront：只放声音不给字（听音想意思）；autoplay：一出来就放声音
+ */
+export type SelfRated =
+  | { kind: 'recall'; kc: KC; ask: string; front: string; audio?: string; autoplay?: boolean; hideFront?: boolean; ctx?: Ctx; back: { main: string; sub?: string; note?: string; audio?: string; uncertain?: boolean } }
+  /** 写字：trace 时照着淡色的字描；否则听音凭记忆写，写完和标准字叠在一起对照，自评 */
+  | { kind: 'write'; kc: KC; glyph: string; audio: string; pron: string; trace: boolean }
+export type Scored = Exclude<Question, Intro | Shadow | SelfRated>
 
 const I = 'V:ི', U = 'V:ུ', E = 'V:ེ', O = 'V:ོ'
 
@@ -243,6 +255,7 @@ export function rootReason(s: WordSyl) {
 
 /** 给人看的知识点名称 */
 export function kcLabel(kc: KC) {
+  if (kc.startsWith('CV:')) return kc.slice(3)
   if (kc.startsWith('A:')) return sentenceById.get(kc.slice(2))?.tib ?? kc
   if (kc.startsWith('D:')) return amdoWordById.get(kc.slice(2))?.tib ?? kc
   if (kc.startsWith('P:')) return cellById.get(kc.slice(2))?.cell.tib ?? kc
@@ -263,7 +276,18 @@ const pronLabel = (l: string) => `${PRON[l][0]} ${PRON[l][1]}`
 
 /** 第一次遇到某个知识点时的介绍卡 */
 export function introFor(kc: KC): Intro {
+  if (kc.startsWith('CV:')) {
+    const t = kc.slice(3)
+    return { kind: 'intro', kc, label: '字母 + 元音', big: t, sub: CV_PRON[t][0], audio: cvAudio(t[0], t[1]), note: `${t[0]} ${PRON[t[0]][0]} + ◌${t[1]} → ${CV_PRON[t][0]}` }
+  }
   const [type, val] = [kc.slice(0, 1), kc.slice(2)]
+  if (type === 'F') {
+    const f = fwordMap.get(val)!
+    return {
+      kind: 'intro', kc, label: `原文高频词 · 第 ${f.rank + 1} · 全书出现 ${f.n} 次`, big: f.w, audio: fwordAudio(f),
+      note: f.gloss + (f.uncertain ? '（推测，还没核对）' : ''), ctx: fctx(f),
+    }
+  }
   if (type === 'L') {
     const shape = [...(shapeMates.get(val) ?? [])], sound = [...(soundMates.get(val) ?? [])]
     const note = [
@@ -343,6 +367,8 @@ export function questionFor(kc: KC, variant?: number, known: Set<KC> = ALL): Sco
 const isWylieQuestion = (q: Question) => (q.kind === 'glyph2wylie' || q.kind === 'wylie2glyph') && !q.ask
 
 function questionFor0(kc: KC, variant?: number, known: Set<KC> = ALL): Scored {
+  if (kc.startsWith('CV:')) return cvQuestion(kc, variant ?? Math.floor(Math.random() * 2), known)
+  if (kc.startsWith('F:')) return fQuestion(kc, variant ?? Math.floor(Math.random() * 2))
   // 随机出题时（复习、练一练、小测、抽查），三分之一换成要自己拼、自己排的回忆题
   if (variant === undefined && Math.random() < 1 / 3) {
     const r = recallFor(kc, known)
@@ -924,3 +950,113 @@ export function buildSpotCheck(unit: number, weak: KC[] = []): Question[] {
   const picked = [...new Set([...weak.filter((k) => inPool.has(k)).slice(0, 4), ...shuffle(pool)])].slice(0, 10)
   return shuffle(picked.map((k, j) => (u.track === 'read' ? readQuestion(k, j, known) : questionFor(k, k.startsWith('X:') ? 0 : undefined, known))))
 }
+
+// ───────────────────────── 改版：高频词、字母元音组合、回忆卡、写字 ─────────────────────────
+
+const fctx = (f: FWord): Ctx | undefined => (f.ex ? { words: f.ex.t.map((x) => x[0]), i: f.ex.i, audio: fwordSentAudio(f) } : undefined)
+
+/** 高频词的选择题：看词选意思，或听音选词。干扰项用排名相近的词 */
+function fQuestion(kc: KC, v: number): Scored {
+  const f = fwordMap.get(kc.slice(2))!
+  const near = fwords.slice(Math.max(0, f.rank - 30), f.rank + 30).filter((x) => x.w !== f.w)
+  const explain = `${f.w}：${f.gloss}`
+  const audio = fwordAudio(f)
+  if (v % 2 === 0 || !audio) {
+    const pool = near.map((x) => x.short).filter((x) => x !== f.short && x !== '（虚词）')
+    return { kind: 'meaning', kc, prompt: f.w, answer: f.short, audio, explain, options: optionsWith(f.short, pool) }
+  }
+  // 听音选词：优先用长得像的（同一个开头音节、同样长）
+  const syl0 = f.w.split('་')[0]
+  const alike = near.filter((x) => x.w.split('་')[0] === syl0 || x.w.length === f.w.length).map((x) => x.w)
+  return { kind: 'listen', kc, audio, answer: f.w, explain, options: optionsWith(f.w, near.map((x) => x.w), alike) }
+}
+
+/** 字母 + 元音组合：看字选读音，或听音选字。读音是按规律推出来的（来源 2）只考听 */
+function cvQuestion(kc: KC, v: number, known: Set<KC>): Scored {
+  const t = kc.slice(3)
+  const [p, src] = CV_PRON[t]
+  const knownCV = Object.keys(CV_PRON).filter((x) => known === ALL || known.has('CV:' + x))
+  const pool = knownCV.length >= 6 ? knownCV : Object.keys(CV_PRON)
+  const same = Object.keys(CV_PRON).filter((x) => x[0] === t[0] || x[1] === t[1])
+  const explain = `${t} = ${t[0]} ${PRON[t[0]][0]} + ◌${t[1]} → ${p}（${CV_SOURCE[src]}）。`
+  const audio = cvAudio(t[0], t[1])
+  if (v % 2 === 0 && src !== 2) {
+    const prons = [...new Set(pool.map((x) => CV_PRON[x][0]))]
+    return { kind: 'glyph2wylie', kc, ask: '这个怎么读？', prompt: t, answer: p, audio, explain, options: optionsWith(p, prons, same.map((x) => CV_PRON[x][0])) }
+  }
+  const differ = (x: string) => x === t || CV_PRON[x][0] !== p
+  return { kind: 'listen', kc, audio, answer: t, explain, options: optionsWith(t, pool.filter(differ), same.filter(differ)) }
+}
+
+/**
+ * 复习用的回忆卡：不给选项，先自己想，再翻面对答案、自评。
+ * listen：只放声音（词和会话句：听音想意思）。没有合适回忆问法的知识点（加字规则）返回 undefined。
+ */
+export function recallQuestion(kc: KC, listen = false): SelfRated | undefined {
+  if (kc.startsWith('CV:')) {
+    const t = kc.slice(3)
+    return { kind: 'recall', kc, ask: '先自己念出来，再翻面听录音', front: t, back: { main: CV_PRON[t][0], sub: `${t[0]} ${PRON[t[0]][0]} + ◌${t[1]}`, audio: cvAudio(t[0], t[1]) } }
+  }
+  const [type, val] = [kc.slice(0, 1), kc.slice(2)]
+  const think = (front: string, audio: string | undefined, back: { main: string; sub?: string; note?: string; uncertain?: boolean }, ctx?: Ctx): SelfRated => {
+    const canListen = listen && !!audio
+    return {
+      kind: 'recall', kc, front, audio, ctx: canListen ? undefined : ctx, hideFront: canListen, autoplay: canListen,
+      ask: canListen ? '听一遍，想想是什么意思' : '先想想是什么意思，再翻面',
+      back: { ...back, audio },
+    }
+  }
+  switch (type) {
+    case 'F': {
+      const f = fwordMap.get(val)
+      if (!f) return
+      return think(f.w, fwordAudio(f), { main: f.short, note: f.gloss, uncertain: f.uncertain }, fctx(f))
+    }
+    case 'W': {
+      const w = wordMap.get(val)
+      return w && think(w.tibetan, w.audio, { main: w.gloss, sub: w.yitong })
+    }
+    case 'D': {
+      const w = amdoWordById.get(val)
+      return w && think(w.tib, w.audio, { main: w.zh })
+    }
+    case 'A': {
+      const a = sentenceById.get(val)
+      return a && think(a.tib, a.audio, { main: a.zh })
+    }
+    case 'T': {
+      const t = tokenMap.get(val)
+      const g = glossOf(val)
+      return t && g ? think(t.tibetan, t.audio, { main: g, sub: t.yitong }) : undefined
+    }
+    case 'L':
+      return { kind: 'recall', kc, ask: '先自己念出来，再翻面听录音', front: val, back: { main: `${PRON[val][0]} ${PRON[val][1]}`, audio: letterAudio(val) } }
+    case 'V': {
+      const [mark, , name] = VOWELS.find((x) => x[0] === val)!
+      return { kind: 'recall', kc, ask: '这个元音叫什么、ཀ 加上它怎么读？想好再翻面', front: '◌' + mark, back: { main: name, sub: `ཀ${mark} → ${CV_PRON['ཀ' + mark][0]}`, note: VOWEL_RULE[mark], audio: cvAudio('ཀ', mark) } }
+    }
+    case 'S': {
+      const s = syllableMap.get(val)
+      return s && { kind: 'recall', kc, ask: '先自己念出来，再翻面听录音', front: s.tibetan, back: { main: yitongOf(s.tibetan) ?? '', sub: partsOf(s).map((p) => `${p.ch} ${p.role}`).join(' · '), audio: s.audio } }
+    }
+    case 'P': {
+      const c = cellById.get(val)
+      return c && { kind: 'recall', kc, ask: '先自己念出来，再翻面听录音', front: c.cell.tib, back: { main: c.part, audio: c.cell.audio } }
+    }
+    case 'X': {
+      const l = lineById.get(val)
+      return l && { kind: 'recall', kc, ask: '先自己读一遍，再翻面听录音', front: l.words.map((w) => w.tibetan).join('་'), back: { main: l.words.map((w) => w.yitong).join(' '), audio: l.audio } }
+    }
+  }
+}
+
+/** 写字卡：新字母先照着描，复习时听音凭记忆写 */
+export function writeQuestion(letter: string, trace: boolean): SelfRated {
+  return { kind: 'write', kc: 'L:' + letter, glyph: letter, audio: letterAudio(letter), pron: `${PRON[letter][0]} ${PRON[letter][1]}`, trace }
+}
+
+/**
+ * 拼读阶段要学的东西，按学的顺序：1–9 单元的字母、元音、加字规则和主线里的简单词。
+ * 字母和元音组合（CV:）不在这里，一个字母和 4 个元音都学过以后，它的组合跟在后面（见 queue.ts）。
+ */
+export const SPELL_SEQ: KC[] = [...new Set(UNITS.filter((u) => u.n <= 9).flatMap((u) => u.kcs))]
