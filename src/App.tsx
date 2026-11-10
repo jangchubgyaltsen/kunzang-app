@@ -367,7 +367,7 @@ function OpeningReader({ passageId, onSelect, onPick }: { passageId: string; onS
         )}
       </div>
       <p className="muted small">
-        读音为安多音 TTS 自动生成：整句是连读，点词听的是从整句里切出来的那一段。注音是一本通式，按对照表规律推出来，尚未逐个核对。点词看意思和音节结构。
+        读音为安多音 TTS 自动生成：整句是连读，点词听的是从整句里切出来的那一段。注音是安多拼音，按规律推出来，尚未逐个核对。点词看意思和音节结构。
       </p>
       {word && <WordSheet w={word} onPick={onPick} onClose={() => setWord(null)} />}
     </>

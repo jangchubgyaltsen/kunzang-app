@@ -75,7 +75,7 @@ export function AlphabetView({ onStart }: { onStart: (all?: boolean) => void }) 
       </div>
 
       <h2>比较发音</h2>
-      <p className="muted small">《一本通》练习：比较下列成对字母的发音。书上很多对注音一样，读音不一样，点字听真人录音。</p>
+      <p className="muted small">《一本通》练习：比较下列成对字母的发音。有几对注音一样（如 ཀ/ག 都写 ga），读音略有不同，点字听真人录音。</p>
       <div className="pairs">
         {SOUND_PAIRS.map(([a, b]) => (
           <Pair key={a + b} a={a} b={b} />
@@ -120,8 +120,8 @@ export function AlphabetView({ onStart }: { onStart: (all?: boolean) => void }) 
       </div>
       <h2>字母 + 元音组合表</h2>
       <p className="muted small">
-        第一列是 30 个字母本身，后面四列是每个字母配四个元音的 120 个组合。灰色的行还没开始考：这个字母和 4 个元音都有点熟了才考它的组合；记牢了的亮金色。点格子听真人录音。黑字是《一本通》上的注音，红字是书上例词里出现过的，
-        灰色斜体是按书上的规律推出来的，以录音为准。
+        第一列是 30 个字母本身，后面四列是每个字母配四个元音的 120 个组合。灰色的行还没开始考：这个字母和 4 个元音都有点熟了才考它的组合；记牢了的亮金色。点格子听真人录音。注音是安多拼音：黑字和《一本通》书上的注音一样，红字和书上例词一样，
+        灰色斜体是书上没有或和书上不同、按安多读音规律写的，以录音为准。
       </p>
       <div className="cv-table">
         <div className="cv-row cv-head">
@@ -147,7 +147,7 @@ export function AlphabetView({ onStart }: { onStart: (all?: boolean) => void }) 
         ))}
       </div>
 
-      <p className="muted small">注音和汉字近音照《安多藏语一本通》第一章；读音是安多会话教材里的真人录音。</p>
+      <p className="muted small">字母的汉字近音照《安多藏语一本通》第一章，注音写法见资料库的“注音怎么读”；读音是安多会话教材里的真人录音。</p>
     </section>
   )
 }

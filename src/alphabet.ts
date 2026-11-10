@@ -4,7 +4,7 @@ import { db } from './db.ts'
 import { recordAnswer, reviveCard } from './progress.ts'
 import { CV_PRON, PRON, shapeMates, soundMates } from './pron.ts'
 
-// 字母表和每日字卡的数据。注音体系见 pron.ts（《安多藏语一本通》）。
+// 字母表和每日字卡的数据。注音写法见 amdoPron.ts（安多拼音），字母的汉字近音见 pron.ts（《安多藏语一本通》）。
 export { PRON, CV_PRON, CV_SOURCE, SHAPE_PAIRS, HOOK_PAIRS, SOUND_PAIRS } from './pron.ts'
 
 

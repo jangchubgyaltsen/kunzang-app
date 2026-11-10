@@ -71,7 +71,7 @@ export const RULES: Record<string, Rule> = {
 
 export type KC = string // L:ཀ  V:ི  CV:ཀི  R:suf  W:བླ་མ  S:བླ  T:原文里的词  X:原文的一句（行 id）  F:全书高频词
 
-/** pron 是一本通式注音，按对照表推出来的，还没逐个核对 */
+/** pron 是安多拼音注音，按规律推出来的，还没逐个核对 */
 export type Intro = { kind: 'intro'; kc: KC; label: string; big: string; sub?: string; pron?: string; note?: string; audio?: string; parts?: { ch: string; role: string }[]; ctx?: Ctx }
 /** 例句：整句的词、要突出的是第几个、整句录音 */
 export type Ctx = { words: string[]; i: number; audio?: string }
@@ -265,12 +265,12 @@ export function kcLabel(kc: KC) {
   return kc.slice(2)
 }
 
-/** 《一本通》第 12–16 页：元音和字母拼起来以后的读法 */
+/** 元音和字母拼起来以后的安多读法（注音写法见 amdoPron.ts） */
 export const VOWEL_RULE: Record<string, string> = {
-  'ི': '写在上面。安多话里 ི 常常读得像 e：མི me、ཀི ge；在 ཅ ཆ ཇ ཞ ཡ 后面读 i（ཞི xi）。',
-  'ུ': '写在下面。安多话里 ུ 也常读得像 e：ཀུ ge、སུ se，所以 ཀི 和 ཀུ 听起来差不多；ཕུ pu 保留 u。',
-  'ེ': '写在上面。多读 ei：མེ mei；在 ཅ ཆ ཇ ཞ 后面读 ie（ཆེ qie），ཏ ད 后面读 i（དེ di）。',
-  'ོ': '写在上面。多读 u：མོ mu、གོ gu；ཟ ས ལ 后面读 uo（ལོ luo），འོ 读 ao。',
+  'ི': '写在上面。安多话里读拼音的 e（“的”的韵母）：མི me、ཀི ge；在 ཅ ཆ ཇ ཞ ཤ ཡ 后面写 i（ཞི xi）。',
+  'ུ': '写在下面。安多话里也读 e：ཀུ ge、སུ se，所以 ཀི 和 ཀུ 读音一样。',
+  'ེ': '写在上面。读“欸”，注音写 ê：མེ mê、དེ dê；在 ཅ ཆ ཇ ཞ ཤ 后面写 ie（ཆེ qie）。',
+  'ོ': '写在上面。读 o：མོ mo、གོ go、ལོ lo。',
 }
 const pronLabel = (l: string) => `${PRON[l][0]} ${PRON[l][1]}`
 
