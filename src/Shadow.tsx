@@ -80,7 +80,7 @@ export default function ShadowCard({ q }: { q: Shadow }) {
         {mine && !rec && <button onClick={compare}>▶ 原音 → 我的</button>}
       </div>
       {err && <p className="small warn">{err}</p>}
-      {q.line && <p className="small muted">注音是一本通式，按规律推出来的，还没逐个核对；以音频为准。</p>}
+      {q.line && <p className="small muted">注音是安多拼音，按规律推出来的，还没逐个核对；以音频为准。</p>}
     </div>
   )
 }

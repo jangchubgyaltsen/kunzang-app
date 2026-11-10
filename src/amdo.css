@@ -19,3 +19,17 @@
 .seg { padding: 0; overflow: hidden; border-width: 2px; background: #fff; }
 .seg.on { border-color: var(--accent); }
 .seg img { display: block; width: 100%; height: auto; }
+.talk-list .pron { margin: 2px 0 2px; font-size: 14px; }
+.word-cell .pron { margin: 0; font-size: 13px; }
+
+/* 注音怎么读 */
+.pron-guide { margin: 8px 0 14px; border: 1px solid var(--line, #e6ddd0); border-radius: 12px; padding: 8px 12px; background: var(--card, transparent); }
+.pron-guide summary { cursor: pointer; font-weight: 600; padding: 4px 0; }
+.pron-guide dl { margin: 6px 0 0; }
+.pron-guide .pg-row { padding: 8px 0; border-top: 1px solid var(--line, #eee6da); }
+.pron-guide dt { font-weight: 600; margin-bottom: 2px; }
+.pron-guide dd { margin: 0; font-size: 14px; line-height: 1.5; }
+.pron-guide .pg-ex { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.pron-guide .pg-chip { display: inline-flex; align-items: baseline; gap: 6px; padding: 4px 10px; border-radius: 999px; font-size: 13px; }
+.pron-guide .pg-chip .tib { font-size: 18px; }
+.pron-guide .pg-chip .pron { margin: 0; font-size: 13px; }

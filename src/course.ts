@@ -1,6 +1,6 @@
 import { passages, passageTitles, realAudioOf, syllables, syllableMap, type Syllable } from './content.ts'
 import { wylieOn } from './prefs.ts'
-import { lineById, linesOf, readLines, tokenMap, yitongOf, type ReadLine } from './reading.ts'
+import { lineById, linesOf, readLines, tokenMap, yitongOf, yitongOfLine, type ReadLine } from './reading.ts'
 import wordsRaw from './words.json'
 import { CV_PRON, CV_SOURCE, PRON, shapeMates, soundMates } from './pron.ts'
 import { fwordAudio, fwordMap, fwordSentAudio, fwords, type FWord } from './fwords.ts'
@@ -71,7 +71,7 @@ export const RULES: Record<string, Rule> = {
 
 export type KC = string // L:ཀ  V:ི  CV:ཀི  R:suf  W:བླ་མ  S:བླ  T:原文里的词  X:原文的一句（行 id）  F:全书高频词
 
-/** pron 是一本通式注音，按对照表推出来的，还没逐个核对 */
+/** pron 是安多拼音注音，按规律推出来的，还没逐个核对 */
 export type Intro = { kind: 'intro'; kc: KC; label: string; big: string; sub?: string; pron?: string; note?: string; audio?: string; parts?: { ch: string; role: string }[]; ctx?: Ctx }
 /** 例句：整句的词、要突出的是第几个、整句录音 */
 export type Ctx = { words: string[]; i: number; audio?: string }
@@ -265,12 +265,12 @@ export function kcLabel(kc: KC) {
   return kc.slice(2)
 }
 
-/** 《一本通》第 12–16 页：元音和字母拼起来以后的读法 */
+/** 元音和字母拼起来以后的安多读法（注音写法见 amdoPron.ts） */
 export const VOWEL_RULE: Record<string, string> = {
-  'ི': '写在上面。安多话里 ི 常常读得像 e：མི me、ཀི ge；在 ཅ ཆ ཇ ཞ ཡ 后面读 i（ཞི xi）。',
-  'ུ': '写在下面。安多话里 ུ 也常读得像 e：ཀུ ge、སུ se，所以 ཀི 和 ཀུ 听起来差不多；ཕུ pu 保留 u。',
-  'ེ': '写在上面。多读 ei：མེ mei；在 ཅ ཆ ཇ ཞ 后面读 ie（ཆེ qie），ཏ ད 后面读 i（དེ di）。',
-  'ོ': '写在上面。多读 u：མོ mu、གོ gu；ཟ ས ལ 后面读 uo（ལོ luo），འོ 读 ao。',
+  'ི': '写在上面。安多话里读拼音的 e（“的”的韵母）：མི me、ཀི ge；在 ཅ ཆ ཇ ཞ ཤ ཡ 后面写 i（ཞི xi）。',
+  'ུ': '写在下面。安多话里也读 e：ཀུ ge、སུ se，所以 ཀི 和 ཀུ 读音一样。',
+  'ེ': '写在上面。读“欸”，注音写 ê：མེ mê、དེ dê；在 ཅ ཆ ཇ ཞ ཤ 后面写 ie（ཆེ qie）。',
+  'ོ': '写在上面。读 o：མོ mo、གོ go、ལོ lo。',
 }
 const pronLabel = (l: string) => `${PRON[l][0]} ${PRON[l][1]}`
 
@@ -284,7 +284,7 @@ export function introFor(kc: KC): Intro {
   if (type === 'F') {
     const f = fwordMap.get(val)!
     return {
-      kind: 'intro', kc, label: `原文高频词 · 第 ${f.rank + 1} · 全书出现 ${f.n} 次`, big: f.w, audio: fwordAudio(f),
+      kind: 'intro', kc, label: `原文高频词 · 第 ${f.rank + 1} · 全书出现 ${f.n} 次`, big: f.w, pron: yitongOf(f.w), audio: fwordAudio(f),
       note: f.gloss + (f.uncertain ? '（推测，还没核对）' : ''), ctx: fctx(f),
     }
   }
@@ -315,15 +315,15 @@ export function introFor(kc: KC): Intro {
   }
   if (type === 'A') {
     const s = sentenceById.get(val)!
-    return { kind: 'intro', kc, label: '会话 · 真人录音', big: s.tib, note: s.zh, audio: s.audio }
+    return { kind: 'intro', kc, label: '会话 · 真人录音', big: s.tib, pron: yitongOfLine(s.tib), note: s.zh, audio: s.audio }
   }
   if (type === 'D') {
     const w = amdoWordById.get(val)!
-    return { kind: 'intro', kc, label: '口语词 · 真人录音', big: w.tib, note: w.zh, audio: w.audio }
+    return { kind: 'intro', kc, label: '口语词 · 真人录音', big: w.tib, pron: yitongOfLine(w.tib), note: w.zh, audio: w.audio }
   }
   if (type === 'P') {
     const c = cellById.get(val)!
-    return { kind: 'intro', kc, label: '听拼读 · ' + c.part, big: c.cell.tib, audio: c.cell.audio }
+    return { kind: 'intro', kc, label: '听拼读 · ' + c.part, big: c.cell.tib, pron: yitongOfLine(c.cell.tib), audio: c.cell.audio }
   }
   if (type === 'T') {
     const t = tokenMap.get(val)!
@@ -334,7 +334,7 @@ export function introFor(kc: KC): Intro {
     return { kind: 'intro', kc, label: '整句', big: l.words.map((w) => w.tibetan).join('་'), pron: l.words.map((w) => w.yitong).join(' '), audio: l.audio }
   }
   const s = syllableMap.get(val)!
-  return { kind: 'intro', kc, label: '音节', big: s.tibetan, sub: wylieOn() ? s.wylie : undefined, audio: s.audio, parts: partsOf(s) }
+  return { kind: 'intro', kc, label: '音节', big: s.tibetan, sub: wylieOn() ? s.wylie : undefined, pron: yitongOf(s.tibetan), audio: s.audio, parts: partsOf(s) }
 }
 
 const wylieOf = (t: string) => t.split('་').map((x) => syllableMap.get(x)?.wylie ?? '?').join(' ')
@@ -1010,7 +1010,7 @@ export function recallQuestion(kc: KC, listen = false): SelfRated | undefined {
     case 'F': {
       const f = fwordMap.get(val)
       if (!f) return
-      return think(f.w, fwordAudio(f), { main: f.short, note: f.gloss, uncertain: f.uncertain }, fctx(f))
+      return think(f.w, fwordAudio(f), { main: f.short, sub: yitongOf(f.w), note: f.gloss, uncertain: f.uncertain }, fctx(f))
     }
     case 'W': {
       const w = wordMap.get(val)
@@ -1018,11 +1018,11 @@ export function recallQuestion(kc: KC, listen = false): SelfRated | undefined {
     }
     case 'D': {
       const w = amdoWordById.get(val)
-      return w && think(w.tib, w.audio, { main: w.zh })
+      return w && think(w.tib, w.audio, { main: w.zh, sub: yitongOfLine(w.tib) })
     }
     case 'A': {
       const a = sentenceById.get(val)
-      return a && think(a.tib, a.audio, { main: a.zh })
+      return a && think(a.tib, a.audio, { main: a.zh, sub: yitongOfLine(a.tib) })
     }
     case 'T': {
       const t = tokenMap.get(val)
@@ -1041,7 +1041,7 @@ export function recallQuestion(kc: KC, listen = false): SelfRated | undefined {
     }
     case 'P': {
       const c = cellById.get(val)
-      return c && { kind: 'recall', kc, ask: '先自己念出来，再翻面听录音', front: c.cell.tib, back: { main: c.part, audio: c.cell.audio } }
+      return c && { kind: 'recall', kc, ask: '先自己念出来，再翻面听录音', front: c.cell.tib, back: { main: yitongOfLine(c.cell.tib) || c.part, sub: c.part, audio: c.cell.audio } }
     }
     case 'X': {
       const l = lineById.get(val)

@@ -1,0 +1,951 @@
+# 孙宏开《藏缅语语音和词汇》(1991) 书面藏文、夏河（拉卜楞）、泽库三栏。数据取自 lexibank/suntb（CC BY 4.0），书面藏文由转写转成藏文字。
+concept	tibetan	labrang	zeku
+1_sky	གནམ	hnam	ɣnam
+2_sun	ཉི་མ	ȵə ma	ȵə ma
+3_moon	ཟླ་བ	hda wa	rda wa
+4_star	སྐར་མ	hkar ma	rkar ma
+5_thunder	འབྲུག་སྐད	ndʐək	mdʐək
+6_cloud	སྤྲིན་པ	ʂən	ʂən
+7_wind	ལྷག་པ	se re	wloŋ
+8_rain	ཆར་པ	tɕhar wa	ɣnam
+9_snow	གངས	khaŋ	khaŋ
+10_water	ཆུ	tɕhə	tɕhə
+11_ice	ཁྱགས་པ	tar	tar
+12_fog	སྨུག་པ	hmək kwa	rm̥ək ka
+13_frost	བ་མོ	wal	wal
+14_dew	ཟིལ་པ	si wa	wsi wa
+15_hail	སེར་བ	she ra	she tʂak
+16_rainbow	འཇའ	ndʑa	ndʑa
+17_earth	ས	sha	sha
+18_river	ཆུ	tɕhə wo	tɕhə
+19_sea	རྒྱ་མཚོ	hdʑam tsho	rɟja mtsho
+20_lake	མཚོ	ntsho	mtsho
+21_pond	རྫིང	hdzaŋ	ndəm tɕhə
+22_well	ཁྲོན་པ	toŋ tɕhə	toŋ tɕhə
+23_springwater	ཆུ་མིག	tɕhə ngo	tɕhə ngo
+24_ditch	ཡུར་བུ	tɕhər ka	tɕhə◦rka
+25_mountain	རི	rə	rə
+26_cliff	བྲག	tʂak	ptʂak
+27_field	ཞིང་ཀ	tɕhə ma	ɕaŋ ka
+28_ground	ཞིང་ཀ	rə ma	sha
+29_plain	ཐང	thaŋ	thaŋ
+30_slope	གྱེན	la	ken
+31_earth	ས	sha	sha
+32_mud	འདམ་པ	ndam pak	ndam bak
+33_cave	བྲག་ཕུང	rə hək	ptʂak khoŋ
+34_hole	ཨི་ཁུང	khoŋ thi	sha rko
+35_gold	གསེར	hser	ɣser
+36_silver	དངུལ	hŋu	rŋu
+37_copper	རག	saŋ	rak
+38_iron	ལྕགས	htɕak	rtɕak
+39_rust	གྱའ	htsa	ɣja
+40_steel	ངར་ལྕགས	hno	rno
+41_tin	གཤའ་དཀའ	htɕak kar	ɣɕa kar
+42_stonerock	རྡོ	hdo	rdo
+43_sand	བྱེ་མ	ɕe ma	wɕe ma
+44_coal	རྡོ་སོལ	hdo so	rdo sho
+45_fire	མེ	ȵe	mȵe
+46_smoke	དུ་བ	tə wa	to
+47_east	ཤར	xhar	xhar
+48_west	ནུབ	nəp	nəp
+49_south	ལྷོ	ɬo	ɬo
+50_north	བྱང	ɕaŋ	wɕaŋ
+51_front	མདུན	ndən	mdən
+52_backdirection	རྒྱབ་ལོགས	hdʑap ɕok	rɟjap
+53_left	གྱོན་མ	hjon	ɣjon
+54_right	གྱས་པ	hje	ɣji
+55_side	ཁྲིད	ndʐam	kha rdaŋ
+56_middle	དཀྱིལ	war	ɣcçi
+57_top	སྒང	thok	ɣtaŋ
+58_underneath	འོག	ok	ok
+59_inside	ནང	naŋ	naŋ
+60_outside	ཕྱི་ལོགས	ɕə tso	wɕə
+61_edge	ཟུར	sər ka	mtha
+62_time	དུས་ཚོད	ti tshol	ti tshol
+63_year	ལོ	lo	lo
+64_yearage	ལོ	lo	lo
+65_yearthis	ད་ལོ	ta lo	to tsək
+66_yearlast	ཟླ་ཉིང	na naŋ	na naŋ
+67_yearnext	དུས་སང	hʑə kə	wʑək kə
+68_yearbeforelast	གཞེས་ནིང་ལོ	hʑə naŋ	ɣʑə naŋ
+69_yearafternext	གཞེས་ཕོད	ɕər lo	ɣʑə naŋ
+70_spring	དཔྱིད་ཀ	ɕəl kha	ɣɕəl kha
+71_summer	དབྱར་ཀ	hjar kha	ɣjar kha
+72_autumn	སྟོན་ཀ	hton kha	rton kha
+73_winter	དགུན་ཀ	hgən kha	rgən kha³¹
+74_month	ཟླ་བ	hda	rdza
+75_monthintercalary	ཟླ་བཤོལ	hda ɬak	rdza ɬa
+76_january	ཟླ་བ་དང་པོ	hdʑa lo	rdza toŋ ŋu
+77_february	ཟླ་བ་གཉིས་པ	hda nȵi	rdza ȵi wa
+78_march	ཟླ་བ་གསུམ་པ	hda səm	rdza ɣsəm mba
+79_april	ཟླ་བ་བཞི་པ	hda hʑə	rdza wʑə wa
+80_may	ཟླ་བ་ལྔ་པ	hda ŋa	rdza rŋa wa
+81_june	ཟླ་བ་དྲུག་པ	hda tʂək	rdza tʂək ka
+82_july	ཟླ་བ་བདུན་པ	hda dən	rdza wdən mba
+83_august	ཟླ་བ་བརྒྱད་པ	hda dʑal	rdza wɟjal pa
+84_september	ཟླ་བ་དགུ་པ	hda gə	rdza rgə wa
+85_october	ཟླ་བ་བཅུ་པ	hda tɕə	rdza ɣtɕə wa
+86_november	ཟླ་བ་བཅུ་གཅིག་པ	hda tɕə htɕək	rdza ptɕək tɕək
+87_december	ཟླ་བ་བཅུ་གནིས་པ	hda tɕə hȵi	rdza ptɕek ȵi
+88_day24hours	ཉི་མ	ȵə ma	tshe wa
+89_today	དེ་རིང	te raŋ	te raŋ
+90_yesterday	ཁ་ས	kha rtsaŋ	kha rtsaŋ
+91_daybeforeyesterday	ཁའི་ཉìན་ཀ	khi ȵən kar	khi ȵən mbar
+92_tomorrow	སང་ཉིང	naŋ kha	naŋ rka
+93_dayaftertomorrow	གནངས་ཉིན་ཀ	naŋ ȵən	ɣnaŋ ȵən
+94_dayfirstofmonth	ཚེས་པ་གཅིག	tshe tɕək	tshe wa ɣtɕək
+95_daythirdofmonth	ཚེས་པ་གསུམ	tshe səm	tshe wa ɣsəm
+96_dayfifthofmonth	ཚེས་པ་ལྔ	tshe ŋa	tshe wa rŋa
+97_dayeleventhofmonth	ཚེས་པ་བཅུ་གཅིག	tshe wa tɕə tɕək	tshe wa ptɕək tɕək
+98_dayfifteenthofmonth	ཚེས་པ་བཅོ་ལྔ	tshe tɕo ŋa	tshe wa ptɕo ŋa
+99_daysixteenthofmonth	ཚེས་པ་བཅུ་དྲུག	tshe tɕə rək	tshe wa ptɕu tʂək
+100_daytwentiethofmonth	ཚེས་པ་ཉི་ཤུ	tshe ȵə xhə	tshe wa ȵə xhə
+101_daythirtiethofmonth	གནམ་གང	hnam kaŋ	ɣnam ngaŋ
+102_daytime	ཉིན་མོ	ȵən kar	ȵən ngaŋ
+103_morning	ཞོགས་པ	naŋ di	rŋ̊a shi
+104_noon	ཉིན་དགུང	ȵən koŋ	ȵən mə goŋ
+105_night	མཚན་མོ	koŋ mo	nam ngoŋ
+106_now	ད་ལྟ	ta	lam saŋ
+107_pastinthe	སྔོན་མ	hŋən na	rŋ̊an tɕha
+108_fromnowon	རྗེས་མ	ɕən tɕhal	wʑək ne
+109_bovine	སྤུ་ནག	sok	nor
+110_waterbuffalo	མ་ཧེ	ma xhe	ma he
+111_cattlecommon	བ་གླང	hlaŋ	wa ɣlaŋ
+112_mule	དྲེལ	tʂi	ptʂi
+113_horse	རྟ	hta	rta
+114_donkey	བོང་བུ	oŋ lə	woŋ lə
+115_pig	ཕག་པ	hak	hak
+116_goatsheepgeneric	ར་ལུག	ra lək	ra lək
+117_goat	ར	ra ma	ra
+118_sheep	ལུག	lək	lək
+119_dog	ཁྱི	tɕhə	cçhə
+120_cat	ཞི་མི	lu lə	lu
+121_rabbit	རི་བོང	rə ɣoŋ	rə ɣoŋ
+122_dragon	འབྲུག	ndʐək	mdʐək
+123_elephant	གླང་ཆེན	hlaŋ tɕhe	ɣloŋ ŋo tɕhe
+124_tiger	སྟག	htak	rtak
+125_bear	དོམ	tom	tom
+126_leopard	གཟིག	hzək	ɣzək
+127_boar	རི་ཕག	hak gol	hak gol
+128_monkey	སྤྲེ◦འུ	hwi	wsi
+129_deer	ཤྭ་བ	xha	xha
+130_wolf	སྤྱང་ཀི	htɕaŋ khə	wcçaŋ khə
+131_roebuck	གླ་བ	hla	ɣla
+132_fox	ཝ་མོ	ɣa	ɣa
+133_otter	སྲམ	ʂam	ʂam
+134_ratmouse	ཙི་ཙི	tsə ɣə	tsə ɣə
+135_chicken	བྱ་དེ	ɕa wo	wɕa wo
+136_rooster	བྱ་ཕོ	hop ɕa	wɕa wo
+137_hen	བྱ་མོ	mop ɕa	wɕa mo
+138_duck	ཡ་༑ཙེ	tɕhəp ɕa	tɕhə wɕa
+140_pigeon	འང་གུ	hək tə	phək tə
+142_bird	བྱ	ndap tɕhak	wɕa
+143_eagle	རྒོད	wu she le	ku
+144_wildgoose	ངང་པ	tɕhoŋ tɕhoŋ	tʂuŋ tʂuŋ
+145_crow	ཕོ་རོག	kha ta	kha ta
+146_magpie	སྐྱ་ཀ	tɕa ɣa tɕha mo	rcça ɣa
+147_swallow	འདག་བྱིའུ	kha la jək	kha la jək
+148_sparrow	ཁང་བྱིའུ	ɕi tə	khaŋ wɕi
+149_bat	ཕ་ཝང	ɕi phaŋ wa	tsəɣə rgaŋ mbo
+150_frog	སྦལ་བ	wa wa	ɣza wa
+151_fish	ཉ	ȵa	ȵa
+152_snake	སྦྲུལ	ru	ru
+153_honeybee	སྦྲང་ནོར་བུ	hbaŋ̩ ma	mboŋ̩ ma
+154_butterfly	ཕྱེ་མ་ལེབ	ça ma lep tse	wɕe ma lep tse
+155_dragonfly	འབུ་བླ་མ་མ་ནི	tɕhə lep	dza ma ma ni
+157_ant	གྲོག་མ	tɕok ma	cçɔk ma
+158_centipede	རྐང་བརྒྱ་ལག་བརྒྱ	nbə shok le	rkaŋ rdʑa lak rdʑa
+159_spider	སྡོམ་ཐག	hdom	rdom
+160_bedbug	འདྲེ་ཤིག	hdʑa ɕək	rɟja ɕək
+161_flea	ལྗི་བ	hdʑe	rdʑe
+162_louse	ཤིག	ɕək	ɕək
+163_nit	སྲོ་མ	ʂo moŋ	ʂo tsə
+164_fly	སྦྲང་བུ	nbə nak	mbə
+165_mosquito	དུག་སྦྲང	nbə a jaŋ tsə	a jaŋ dzə
+166_earthworm	འབུ་དམར	sha hbə thak ne	mbə ɣmar
+168_maggot	ཤ་འབུ	xha nbə	mbə loŋ
+169_insectworm	འབུ	nbə	mbə
+170_egg	སྒོ་ང	ḥgoŋ wa	rgoŋ ŋwa
+171_wing	གཤོག་པ	ɕok kwa	ɣɕok kwa
+172_hairfur	སྤུ	hwə	wsə
+173_feather	སྒྲོ	hdʑo	rɟjo
+174_claw	སྡེར་མོ	hder mo	rder mo
+175_hoof	རྨིག་པ	hȵək kwa	rɕək ka
+176_horn	རྭ་ཅོ	ra tɕo	ra cço
+177_tail	རྔ་མ	hŋa ma	rŋa ma
+178_tree	ཤིང་སྡོང	hdoŋ wo	xhəŋ rdoŋ
+179_pine	ཐང་ཤིང	thaŋ lo	thaŋ xhəŋ
+181_fir	སོམ	thaŋ xhaŋ	rlok kwa
+182_willow	ལྕང་མ	htɕaŋ ma	rtɕaŋ ma
+183_bamboo	སྨྱུག་མ	hȵək ma	rȵ̥ək ma
+184_bambooshoot	སྨྱུག་སོན	hȵək ɣə	rȵ̥ək shən
+185_crops	སྟོན་ཏོག	lo tok	lo tok
+186_riceplant	འབྲས	ndʐe	mdʐi
+188_wheat	གྲོ	tɕo	cço
+189_barleytibetan	ནས	ne	ni
+193_maize	མ་རྨོས་ལོ་ཏོག	mar me lo tok	mar mi lo thok
+195_potato	ཞོག་ཁོག	jaŋ ji	joŋ ri
+197_sugarcane	བུར་ཤིང	wər xhaŋ	xhaŋ ŋər
+198_peanut	བ་དམ	ndʐək ra	xua ʂən
+199_cotton	སྲིན་བལ	ma mok	shin mbe
+200_ramie	སོ་མ་ར་ཛ	htso ma	ɣza po
+201_beans	སྲན་མ	ʂan ma	ʂan ma
+202_melon	ཀྭ	kwa	kwa
+206_vegetable	སྔོ⁵³◦ཚལ	tsho ma	ɣŋ̊o tshe
+208_turnip	ལ་ཕུག	la wək	la wək
+209_oniongreen	ཙོང	tsoŋ	tsoŋ
+210_garlic	སྒོག་པ	hgok kwa	ɣgok kwa
+211_ginger	སྒ	tɕar ga hlon pa	ɣga sər
+212_pepperhotchili	སི་པན	la tɕo	la gu
+213_fruit	ཤིང་ཏོག	si tok	shi tok
+214_peach	ཁམ་བུ	kham bə	kha mbə
+215_persimmon	ཤིང་ཏོག་ཨ་མྲ	si oŋ na	si woŋ na
+216_grape	ཆུ་རྒུན་འབྲུམ	hgən dʐəm	rgən ndʐəm
+217_tobacco	རྡོ་ཐ	to	tolama
+218_grass	རྩྭ ༼རྩྭ༽	tsa	rtsa
+219_mushroom	ཤ་མོ	xha mo	mo kho
+220_seed	སོན	sha won	soŋ wən
+221_seedling	ལྗང་པ	hŋor ma	rŋ̊o ma
+222_root	རྩ་བ	htsa pa	rtsa wa
+224_leaf	ལོ་མ	lo ma	lo ma
+225_branch	ཡལ་ཀ	ra ɣa	ɣa lak
+226_bud	མཆེ་བ	ȵə ɣə	rdʑaŋ
+227_stonepit	འབྲུ་གུ	kham ȵaŋ	naŋ rȵoŋ
+228_flower	མེ་ཏོག	me tok	me tok
+229_earofgrainproducingplant	སྙེ་མ	hȵə ma	rȵ̥ə ma
+230_thorn	ཚེར་མ	tsher ma	tsher ma
+231_body	གཟུགས་པོ	hzək	ɣzək
+232_head	མགོ	ngo	ngo
+233_forehead	དཔྲལ་བ	thol pa	tho pa
+234_hairofhead	སྐྲ	htɕa	rcɕa
+235_plait	ལྕང་ལོ	səm le	ra wa
+236_face	གདོང	ŋo	ŋo
+237_eyebrow	མིག་སྤུ	hdzə ma	ɣȵək wsə
+238_eye	མིག	hȵək	ɣȵək
+239_tear	མིག་ཆུ	hȵək tɕhə	ɣȵək tɕhə
+240_nose	སྣ	hna	rn̥a
+241_ear	རྣ	hnam dʑok	hnam dʑok
+242_mouth	ཁ	kha	kha
+243_lip	མཆུ	kha xha	mtɕhə lə
+244_tooth	སོ	sho	sho
+245_tongue	ལྕེ	htɕe	rtɕi
+246_beard	སྨ་ར	kha hwə	kha wsə
+247_chin	མ་ནེ	ma ne	ma ne
+248_neck	སྐེ	hke	rke tə
+249_throat	མིད་པ	ȵə tok	u cçhok
+250_shoulder	དཔུང་པ	tʂhak kha	hwoŋ tə
+251_hand	ལག་པ	lak kwa	lok kwa
+252_fist	མུར་མཛོག	khə tshər	khə tshər
+253_arm	ལག་པ	hwoŋ wa	lək ŋər
+254_elbow	གྲུ་མོ	tɕaŋ ŋar	cçə mo
+255_finger	མཛུབ་མོ	ndzək ɣə	ndzə ɣə
+256_fingernail	སེན་མོ	she mo	she mo
+257_chest	བྲང	tʂaŋ◦kha	ptʂaŋ kha
+258_backofbody	སྒལ་པ	hga wa	rga wa
+259_breast	ནུ་མ	nə ma	nə ma
+260_belly	གྲོད་ཁོག	ho	hɔ
+261_waist	རྐེད་པ	hke pa	rke pa
+262_buttocks	རྐུབ	oŋ toŋ	oŋ xha
+263_foot	རྐང་པ	hkaŋ wa	rkoŋ ŋwa
+264_leg	རྐང་པ	hkaŋ wa	wla
+265_armpit	མཆན་ཁུང	tɕhan jak	mtɕhan jək
+266_skin	པགས་པ	wak kwa	wok kwa
+267_sinew	རྒྱུས་པ	htsa	rtsa
+268_blood	ཁྲག	tɕhak	cçhak
+269_stomach	ཕོ་བ	ho kha	loŋ kha
+270_kidney	མཁལ་མ	kha ma	mkha ma
+271_intestines	རྒྱུ་མ	hdʑə ma	rɟjə ma
+272_heart	སྙིང	hȵaŋ	rȵ̥aŋ
+273_liver	མཆིན་པ	tɕhəm ba	mtɕhən mba
+274_lung	གློ་བ	hlo	ɣlɔ
+275_gall	མཁྲིས་པ	tʂhi wa	mtʂhi wa
+276_bladder	ལྒང་བུ	hgaŋ lə	rgaŋ lə
+277_sweat	རྔུལ་ནག	hŋəl tɕhə	rŋu tɕhə
+278_snot	སྣ་སྟུག	hnap	rn̥a tɕhə
+279_phlegm	ལུད་པ	kha lə	kha ləl
+280_salivaspittle	ཁ་ཆུ	kha tɕhə	mtɕhi ma
+281_milk	འོ་མ	o ma	o ma
+282_excrement	སྐྱག་པ	htɕak	ɣcçok kwa
+283_urine	གཅིན་པ	htɕən	ɣtɕən
+284_fart	རྟུག་དྲི	hjak	ɣjək
+285_boil	གཉན་འབུར	hma	rma kha
+286_pus	རྣག	hnak	rnak
+287_smallpox	ལྷ་འབྲུམ	me tok	me thok
+288_malaria	འདར་ནད	tɕaŋ xha	ndar jək
+289_person	མི	ȵə	mȵə
+290_manmaleperson	ཁྱོ་ཀ	ho	ho rcçi
+291_woman	སྐྱེ་དམན	mo	wo mo
+292_oldperson	རྒན་འཁོག	hga po	rga pə
+293_youngman	ཕོ་གསར	sa rə	ɣsa rə tar ma
+294_youngwoman	མོ་གསར	ɕə mo	mo sər
+295_child	ཕྲུ་གུ	ɕa ji	ɕa ji
+296_friend	གྲོགས་པོ	rok kwa	rok kwa
+297_enemy	དགྲ	hdʑa ja	rɟja ja
+298_host	བདག་པོ	hdak kwo	wdok kwo
+299_guest	མགྲོན་པོ	ndʂu wa	ndʐu wa
+300_blindperson	ལོང་བ	ɕa ra	ɕa ra
+301_deafperson	འོན་པ	on pa	on mba
+302_mute	ལྐུགས་པ	hlu	ŋak mel
+303_madperson	སྨྱོན་པ	ȵon pa	wȵ̥o mba
+304_lameperson	རྐང་ཀྱོག་པ	tɕu wo	tɕu wu
+305_carpenter	ཤིང་བཟོ་བ	xhaŋ zo	xhaŋ wzo
+306_official	དཔོན་པོ	hwon po	hwon bo
+307_soldier	དམག་མི	hmak ȵə	ɣmak
+308_army	དམག་དཔུང	hmak hoŋ	ɣmak
+309_worker	བཟོ་པ	hzo wa	wzo wa
+310_farmer	སོ་ནམ་པ	ɕaŋ wa	wɕoŋ mba
+311_doctor	ཨེམ་རྗེ	hman pa	ɣm̥an mba
+312_teacher	དགེ་རྒན	hger gan	rge rgan
+313_student	སློབ་གྲྭ་བ	ɬop ma	ɬop tʂa wa
+314_nationality	མི་རིགས	ȵə rək	mȵə rək
+315_chinese	རྒྱ་རིགས	hdʑa rək	rɟja rək
+316_autonym	བོད་རིགས	wol	wol
+317_grandfather	ཨ་མེས	a mȵi	a mȵi
+318_grandmother	ཨ་ཕྱི	a ji	a ji
+319_father	པ་པ	a rdʑa	a pa
+320_mother	ཨ་མ	a ma	a ma
+321_unclepaternalelder	ཨ་ཁུ	a khə	a khə
+322_auntpaternalelder	ཨ་ཁུའི་ཨ་ཅེ	ʂu mo	a ma
+323_unclepaternalyounger	ཨ་ཁུ	a khə	a khə
+324_auntwifeofyoungerpaternal	ཨ་ཁུའི་ཨ་ཅེ	ʂu mo	a ma
+325_unclepaternalauntshusband	ཨ་ནེའི་ཁྱོཁ	a khə	a khə
+326_auntpaternal	ཨ་ནེ	a ne	a ne
+327_unclematernal	ཞང་ཞང	a pʑaŋ	a wʑaŋ
+330_auntmaternal	སྲུ་མོ	a ne	a ne
+331_fatherinlaw	ཨ་ཅེའི་པ་པ	ap ʑaŋ	a wa
+332_motherinlaw	ཨ་ཅེའི་ཨ་མ	a ma	a ma
+333_brotherelder	ཇོ་ཇོ	a rga	a tɕa
+334_sisterelder	ཨ་ཅག	a tɕe	a tɕhi
+335_brotheryounger	འོག་མ	nu wo	mȵoŋ ŋo
+336_sisteryounger	འོག་མ	ʂaŋ mo	ʂaŋ mo
+337_husband	ཁྱོ་ག	ȵə ru	ho rcçi
+338_wife	ཨ་ཅེ	nak mo	wə ɣȵəl
+339_son	བུ	wə	wə
+340_daughter	བུ་མོ	wə mo	ɣɕə mo
+341_daughterinlaw	མནའ◦མ	wok ma	mna ma
+342_soninlaw	མག་པ	mak kwa	ɣmak kwa
+343_nephew	ཚ་བོ	tshu	tsha wə
+344_niece	ཚ་མོ	tsha mo	tsha mo
+345_grandson	ཚ་བོ	tshu	tsha wə
+346_granddaughter	ཚ་མོ	tsha mo	tsha mo
+347_relative	གཉེན་ཚན	xha tɕak	xha cçhak
+348_house	ཁང་པ	khaŋ wa	khoŋ ŋwa
+349_home	ནང	tɕhəm tshaŋ	naŋ
+350_wall	རྩིག་པ	tɕaŋ	cçaŋ
+351_pole	ཀ་བ	ka	ka
+352_beam	གདུང་མ	hdoŋ ma	ɣdoŋ ŋwa
+353_door	སྒོ	hgo	rgo
+354_window	སྒེའུ་ཁུང	hgi khoŋ	ptʂa ma
+355_fireplace	ཐབ	thap kha	tahp ka
+356_lime	རྡོ་ཐལ	ɕar do	sha ɣar
+357_brick	ས་ཕག	tɕo mok	tɕək tshe
+359_boardplank	སྤང་ལེབ	xhaŋ lep	wan xhaŋ
+360_nailtool	ལྕགས་གཟེར	ndzer ma	ndzer ma
+361_city	གྲོང་ཁྱེར	tʂoŋ tɕher	tʂhoŋ cçher
+362_village	གྲོང	tʂoŋ de	tʂoŋ ɣsep
+363_temple	དགོན་པ	hgon pa	ɣgon mba
+364_grave	བང་སོ	tər sha	tə tʂol
+365_granary	འབྲུ་ཁང	ndʐə dzol	ɣȵer khaŋ
+366_vegetablegarden	ཚལ་ཞིང	tshe ra	me thok ra
+367_enclosure	བ་ར	shok ra	nor ra
+368_nest	ཚང	tshaŋ	tshaŋ
+369_scarffortheheadturban	མགོ་རས	ngo re	ngo phər
+370_hat	ཞྭ་མོ	ɕa	ɕa
+371_hatbamboo	ཆུ་ར	htsa ʑa	dza ɣgam
+372_earring	ཨ་ལོང	hna loŋ	rna loŋ
+373_bracelet	སྒྲོག་གདུབ	hdə ɣə	rdə ɣə
+374_wristwatch	ཆུ་ཚོད	ti tshol khor lo	ti tshəl
+375_ring	ཚིགས་ཁོག	ndzək tɕi	mdzək rcçi
+376_clothes	དུག་ལོག	kon dʑə	kon vɟjə
+377_sleeve	ཕུ་ཐུང	phə roŋ	phə roŋ
+379_pantstrousers	གོས་ཐུང	hkaŋ nam	hwək mbi
+380_skirt	སྨད་གྱོགས	xham thap	rm̥an ɣjok
+381_legging	ཉྭ་དཀྲིས	hkaŋ tɕi	na rcçi
+382_shoe	ལྷམ	ham	ham
+383_socks	ཨུ་སུ	wa tsə	ʔa mo shə la
+384_mosquitonet	ཉལ་གུར	ȵa kər	ɣȵəl kər
+385_quilt	ཉལ་ཆས	ȵa thu	ȵa ɣe
+386_mat	རྩ་གདན	htsa dan	rtən ɕi
+387_pillow	སྔས	ŋe ngo	rȵ̥i ngo
+388_cloth	རས	re	ri
+389_silkcloth	གྲུའུ་ཙེ	tʂhu tsə	tʂhu tsə
+390_riceuncooked	འབྲས	ndʐe	ndʐi
+391_flour	གྲོ་ཞིབ	ɕe	cço wɕi
+392_ricecooked	ཁ་ལག	sa ma	sa ma
+396_gruel	འབྲས་ཐུག	thək kwa	ndʐi thək
+397_oil	སྣུམ	hnəm	rn̥əm
+398_salt	ཚྭ	tsha	tsha
+399_meatflesh	ཤ	xha	xha
+400_dish	ཚལ	tsho ma	tshol ma
+401_soup	ཁུ་བ	kho	khə
+402_liquor	ཆང	tɕhaŋ	rm̥an tɕhaŋ
+403_noodles	ཐུག་པ	thək raŋ	həp
+404_sugar	ཀ་ར	ka ra	wh rəm
+407_feed	ལྟོ	tɕhe	sa rɟjə
+408_ax	སྟ་རི	hta re	rta ri
+409_knife	གྲི	tɕə	cçə
+410_sickle	ཟོར་བ	so ra	so ra
+411_flail	རྒྱ་དབྱུག	kho lep	ɣjək ma
+412_hoe	འཇོར	ndʑor	ndʑor
+413_wedge	ཤིང་གཟེར	tɕhə	ndzer ma
+414_plough	ཐོང་གཤོལ	ɕu	ɣɕu
+415_rake	ཤལ་བ	ndel	jo
+416_yoke	གཉའ་ཤིང	hȵa xhaŋ	rke xhaŋ
+417_loom	ཐགས་ཁྲི	thak tɕha	rtak ma
+418_spade	ལྕགས་ཁྱེམ	tɕha ndze	thɔ
+419_saw	སོག་ལེ	shok le	shok le
+420_needle	ཁབ	khap	khap
+421_thread	སྐུད་པ	hkəl pa	rkə pa
+422_rope	ཐག་པ	thak kwa	thok kwa
+423_gun	མེ་མདའ	wu	wu
+424_cannon	མེ་སྒྱོགས	ɯu tɕhe	wu tɕhen
+425_bullet	མདེའུ	wu di	wur di
+426_gunpowder	རྫས	wu man	mə rm̥an
+427_bowweapon	གཞུ	hʑə	ɣʑə
+428_arrow	མདའ	nda	nda
+429_stick	རྒྱུག་པ	or tɕo	o cçho
+430_whip	རྟ་ལྕག	htar tɕak	rta rtɕak
+431_saddle	སྒ	hga	rga
+433_sieve	ཞིབ་མ	hȵək tshak	kor tsak
+434_mill	ཆུ་འཁོར	raŋ tak	raŋ rtak
+438_lock	སྒོ་ལྕགས	sa	sɑ
+439_key	ལྡེ་མིག	hdem ȵək	rede mȵək
+440_broom	ཕྱགས་མ	hdə ma	rdən ma
+441_potwok	ཁྲོ	saŋ ŋa	saŋ ŋa
+442_lid	ཁ་གཅོད	kha lep	kha lep
+443_barrelpailbucket	ཟོམ	tɕhə zo	ɣzɔ
+444_hoop	ཤན	tɕi	so rcçi
+445_washbasin	དུང་པན	lan hwa	la hwa
+446_chopper	ཚལ་ཏོ	tshon ti	ɣdʑə
+447_bowl	དཀར་ཡོལ	ka wu	ka wu
+448_chopsticks	ཁོའི་ཙེ	thər ma	thər ma
+449_plate	སྡེར་མ	hder ma	ɣɕoŋ ŋa
+450_cup	པི་ཙི	kar tsək	ka wə
+451_bottle	ཤེལ་དམ	tam pi	wə mba
+452_table	ཅོག་ཙེ	tɕok tse	tɕok tsi
+453_chair	རྐུབ་ཀྱག	oŋ tɕak	oŋ rcçak
+454_stool	རྐུབ་ཀྱག	oŋ tɕak	oŋ rcçak
+455_bed	ཉལ་ཁྲི	ȵa tʂhə	ȵa tʂhoŋ
+456_ladder	སྐས་ཀ	hke	xhaŋ cçak
+457_trunkbox	སྒམ	hgam	rgam
+458_mirror	ཤེལ་སྒོ	ŋor ta	ŋorta
+459_comb	རྒྱུག་ཤད	sho maŋ	so maŋ
+460_scissors	ཇེམ་ཙེ	χe tɕə	tɕen tsə
+461_brush	ཕང་ཏོ	hwə ɕal	wsə len
+462_soap	ཡི་ཙེ	ji dzə	ji ɣdzə
+463_lamp	བཞུ་མར	kar me	kar me
+464_candle	ཡན་ལ	jaŋ la	jaŋ la
+465_match	མུ་ཟི	nbar ʑən	mbar ɣʑən
+466_steelyard	རྒྱ་མ	hdʑa ma	rɟja ma
+467_metalweightonsteelyard	རྒྱ་རྡོ	hdʑa rdo	rɟja thok
+468_firewood	མེ་ཤིང	tɕha ma	xhaŋ
+469_wood	ཤིང	xhaŋ	xhaŋ
+470_fertilizer	ལུད	ləl	ləl
+471_dungmanure	སྐྱག་པ	ləl	rtɕe
+472_ashes	གོ་ཐལ	tha	rdu
+473_garbage	གས་སྙིགས	tɕhəm ɕak	rdu re
+474_roadway	ལམ	lam	lam
+475_railroad	ལྕགས་ལམ	htɕak lam	tɕak lam
+476_highway	གཞུང་ལམ	hdʑa lam	rɟja lam
+477_bridge	ཟམ་པ	sam	wzam mba
+479_train	མེ་འཁོར	ȵe nkhor	xo tʂhə
+480_car	མོ་ཏʂཨ	hlaŋ khor	cçhə tʂhə
+481_boat	གྲུ	tʂə	tʂə
+482_airplane	གནམ་གྲུ	htɕak ɕa	wɕa tʂhə
+483_marketplace	ཁྲོམ	tshoŋ ra	tshoŋ ra
+484_shop	ཚོང་ཁང	tshoŋ khaŋ	tshoŋ khaŋ
+485_money	དངུལ	hŋu	rŋu
+486_price	གོང	koŋ	koŋ
+487_bank	དངུལ་ཁང	hŋu khaŋ	rŋu khaŋ
+488_interest	སྐྱེད་ཁ	ndok	nphi
+489_wages	ཕོགས	phok	phok
+490_paper	ཤོག་བུ	ɕok wə	xhok wə
+491_pen	ལྕགས་སྨྱུག	htɕak ȵək	ɕa ptɕak
+492_pencil	ཤ་སྨྱུག	ɕa ȵək	ɕa ȵə
+493_inkcake	སྣག་ཚ	nak tsha	rn̥ak tsha
+494_ink	སྣག་ཚ	nak tsha	rn̥ak tsha
+495_wordcharacter	ཡི་གེ	je ɣe	jə ke
+496_book	དཔེ་ཆ	hwe tɕha	hwe tɕha
+497_letter	ཡི་གེ	hkər jək	jə ke
+498_song	གཞས	hlə	ɣʑa
+499_folksong	དམངས་གཞས	la ji	ɣlə
+500_storytale	སྒྲུང	hdʑaŋ	rna ta tam
+501_ball	སྤོ་ལོ	hgaŋ lə	rgaŋ lo
+502_flag	དར་ཆ	tar tɕha⁵³	tar
+504_gong	འཁར་རྔ	khar ŋa	mkhar rŋa
+505_drum	རྔ	hŋa	rŋa
+506_flute	འཕྲེད་གླིང	wə jaŋ	mtʂhel ɣlaŋ
+508_bell	ཅོང	tɕaŋ	tsuŋ
+509_medicine	སྨན	hman	rm̥ən
+510_poison	དུག	tək	tuk
+511_language	སྐད་ཆ	hkal	rkal tɕha
+512_voice	སྒྲ	hŋak	ɣdʐa
+513_strength	ཤུགས	xhel	xhel
+514_courage	བློ་ཁོག	ho pa	ɣlo tɕhen
+515_thingmatterevent	ལས་ཀ	ton tak	li ton
+517_name	མིང	ȵaŋ	mȵaŋ
+518_thing	ཅ་ལག	tɕa lak	tɕa lak
+519_dream	གཉིད་ལམ	ȵə lam	rȵə lam
+520_shadow	གྲིབ་མ	tɕə ma	cçən ma
+521_goddeity	ལྷ	ɬa	ɬa
+522_mark	རྟགས	htak	rtak
+523_ghostdemon	གདོན་འདྲེ	ndʐe	ndʐe
+524_soulspirit	རྣམ་ཤེས	hnam ɕi	ɣnam ɕi
+525_countrynation	རྒྱལ་ཁབ	hdʑal khap	rɟja khap
+526_meansmethod	ཐབས་ཤེས	ko pa	ko pa
+527_school	སློབ་གྲྭ	ɬop tʂa	ɬop tʂak
+528_look	ལྟ	hta	rta
+529_see	མཐོང	rək	rək
+530_closeeye	བཙུམ	tsəm	tsəm
+531_openeye	གདངས	ɕel	ɣdaŋ
+532_listen	ཉན	ȵan	ȵan
+533_eat	ཟ	sa	sa
+534_drink	འཐུང	thoŋ	nthoŋ
+535_bite	སོ་བརྒྱབ	sho tap	sho ndep
+536_chew	ཁ་བཅག	hdʑəp	rdal
+537_lick	ལྡག	hdak	rdak
+539_gnaw	འབྲད	tok	sho ndʑap
+540_swallow	མིད་ཁྱུར་བཏང	ȵəl	ngam
+541_swallow	མིད་ཁྱུར་བཏང	ȵəl	mȵəl
+542_spit	དབྱུགས	tap	ɣtɕək
+543_vomit	སྐྱུག	htɕek	rcçek
+544_blowwithmouth	ཕུ་བརྒྱབ	wi	əkrɟjak
+545_sayspeak	བཤད	ɕal	wɕal
+546_read	ཀློག	ndon	ndon
+547_cryoutyell	སྐད་བརྒྱབ	hkal tap	rkal rdʑap
+548_smell	སྣོམ༌༌༌	hnəm	rn̥əm
+549_take	འཁྱེར	len	lən
+550_strikewithopenpalm	རྡེབ	hdap	lak rda
+551_griphold	འཇུས	hzoŋ	ndʑə
+552_twisttogether	སྒྲིམ	hdʑəm	nkhi
+553_tear	དབྲལ	ɕak	ɣte
+554_wringegwetcloth	བཙིར	tɕi	ɣtɕə
+555_scratch	འཕུར	tʂhək	wdzi
+556_pickup	སྒྲུག	thi	nthə
+557_catch	ཟིན	ndzən	ndzən
+558_throw	དབྱུགས	hjək	ɣjok
+559_scatterbroadcast	གཏོར	htor	ɣtor
+560_cast	དབྱུགས	hdo dʑap	rdʑap
+561_reachouthand	རྐྱོང	ʂaŋ	ʂoŋ
+562_pull	འཐེན	then	nthen
+563_push	འབུད	ho	ho
+564_holdbabyinarms	པང་པར་ལེན	waŋ	ndzən
+565_kick	རྡོག་རྒྱག་གཞུས	hkaŋ ti hdʑap	kaŋ ti
+566_kneel	པུས་མོ་འཛུགས	we tshək	ptsək
+567_tread	རྡོག་བརྫིས་བཏང	hwe	cçak
+568_jump	མཆོང	tɕhoŋ	mtɕhoŋ
+569_stand	ལང	laŋ	laŋ
+570_steppassoverditch	བགོམས	hgom	rga
+571_ride	ཞོན	ɕon	ɕon
+572_walk	འགྲོ	ndʑo	ndʑo
+573_run	རྒྱུག	hdʑək	rɟjək
+574_sit	སྡོད	hdal	ndək
+575_carryonback	སྒལ་པར་འཁྱེར	khər	nkhər
+576_gothroughahole	འཛུལ	hək	ndzu
+577_falldown	རིལ	sha lok	lok
+578_crawl	གོག	kok ndʐo je	ngo
+579_lean	སྙེ	khen	rten
+580_dwelllive	སྡོད	hdal	rdal
+581_rest	ངལ་གསོ་བརྒྱབ	ma ʂe	ma ʂo
+582_sleep	ཉལ	ȵal	ȵa
+583_wakeup	གཉིད་སད	sal	wzə toŋ
+584_do	བྱེད	le	li
+585_worklabor	ངལ་རྩོལ་བྱེད	ler ka	lirka li
+586_repair	བཟོ་བཅོས་བརྒྱབ	or le	wzo
+587_connect	མཐུད	thəl	nthəl
+588_refine	བཞུ	hʑe	rno ɣʑe
+589_strikeiron	རྡུང	htɕak gar je	ɣʑe
+590_laybricks	རྩིག	hdʑap	rtsi
+591_movesomethingtoanewplace	སྤོས	hor	wsor
+592_carryonapoletwopeople	བཀྱགས	tɕhok	pcçak
+593_carryonshoulder	དཔུང་པར་འཁྱེར	khər	cçhok
+594_pry	བཀན	kok	ɣduk
+595_plough	རྨོན་པ་བརྒྱབ	hmən lok	rmo
+596_rake	ཤལ་བ་བརྒྱབ	hdʑap	pa
+597_dig	འདྲུ	hke	rko
+598_plant	བཏབ	ndep	ptap
+599_water	ཆུ་བཏང	tɕhə tʂaŋ	rdək
+600_pourliquidinto	བླུགས	hlək	wlək
+601_cut	རྔ	ndʐak	ndʐak
+602_choptree	གཅོད	tɕal	ptɕal
+603_skinflay	བཤུ	ɕi	wɕi
+604_cutfirewood	གཤག	ɕak	ɣɕak
+605_sieve	འཚག	tsak	ptsak
+606_pullout	འགོག	wa	ngok
+607_graze	འཚོ	sok tsho	ɣlo
+608_feed	༼ལྟོ༽ སྟེར	tsho	ɣləl
+610_castrate	བྱ་བཅད	ɕa je	ɣtɕo
+611_milk	བཞོ	hʑi	ptsər
+612_leadanimal	འཁྲིད	tɕhəl	cçhəl
+613_weave	འཐག	thak	wla
+614_spinyarn	འཁལ	khəl	wla
+615_measure	ཚད	tshal	ncʑa
+616_buy	ཉོ	ȵo	ȵo
+617_sell	འཚོང	tshoŋ	tsoŋ
+618_count	བྲོང	htsi	rtsə
+619_calculate	རྩི	htsi dʑap	rtsə
+620_weigh	བཀྱགས	tshal	ndʑa
+621_teach	སློབ	htsop	rtsap
+622_learn	སློབ	tɕoŋ	rtsop
+623_write	འབྲི	tʂi	ndʐə
+624_wipe	འཕྱིད	ɕi	wɕə
+625_correctchange	འཆོས	tɕe	tɕi ɣdʐor
+626_pastegluestick	སྦྱར	hdʑar	ndʑar
+627_cookboilrice	འཚོད	hku	rku
+628_deepfry	སྲེག	tse	ptso
+629_stirfry	རྔོད	hŋo	rŋə
+630_kneaddough	རྫི	hȵi	ra ndak
+631_dryclothesnearfire	སྲོ	ʂak	ʂo
+632_warmoneselfnearfire	སྲོ	ʂe	ʂo
+633_kill	གསོད	sal	ɣsal
+634_cutvegetable	གཏུབ	htap	ɣtəp
+635_mincemeatwithknife	གཙབ	htsap	ɣtsap
+637_prick	འཛུགས	sək	ɣtsuk
+638_stirchurn	དཀྲུགས	htʂək	ɣtʂuk
+639_insertstickinto	འཛུགས	htsək	ntshək
+640_sharpen	བདར	hdar	wdar
+641_grind	འཐག	thak	wthak
+643_rubtosoftenanimalskin	མཉེད	ȵel	wʑar
+644_scoop	འཆུ	htɕi	ptɕe
+645_straintea	འཚག	tsak	ptsak
+646_putonwear	གྱོན	kon	kon
+647_takeoffclothing	འཕུད	həl	həl
+648_washhand	འཁྲུད	tɕə	pcçə
+649_washclothes	འཧཀྲུད	tɕə	pcçə
+650_bathe	ཆུ་རྒལ	hwaŋ wo tɕə	hoŋ ŋo pcçə
+651_shavehairofhead	གཞར	hʑar	wʑar
+652_dye	འཚོད	kha dzok	ngi
+653_patch	གློན	ɬen pa hdʑap	kha ɬoŋ
+654_comb	ཤད	sho maŋ hdʑap	ngo la
+655_braid	སླེ	la	rgək
+656_makebed	འདིང	taŋ	cçam
+657_sweep	འཕྱག	ɕak	wɕel
+658_opendoor	ཕྱེ	ɕe	wɕe
+659_openlid	ཕྱེ	kha ɕe	wɕe
+660_putplace	འྱོག	hʑak	wʑak
+661_hangobject	འགེལ	tak	ptak
+662_untie	འགྲོལ	ɕək	cçhu
+663_wrap	གཏུམ	tɕək	rdʐi
+664_tieegfirewoodintoabund	སྡོམ	ɕok dʑap	wdam
+665_load	ལྡུག	hdzaŋ	xhan
+666_stuffholeup	འགོག	hdzaŋ	rdzoŋ
+667_burysomething	སྦེད	hdi	rdi
+668_hide	སྦེད	wel	wzal
+669_pickselect	འདམ	ndem	ndem
+670_pileupegearth	སྤུངས	hoŋ	wsoŋ
+671_press	གནོན	nan	ɣnon
+673_lightcandle	སྤར	kar	nbar
+674_want	དགོས	ko kə	rgo
+675_get	རག	thop	thop
+676_takebackputaway	སྡུད	hdi	ɣdə ɣso
+677_losemisplace	རླག	wor	nbor
+678_search	འཚོལ	tsa	ptsa
+679_use	སྤྱོད	ko	ɣa
+680_play	རྩེ	htse mo tse	rtse
+681_win	འཐོབ	thop	nthəp
+682_loseagame	ཤོར	xhor	xhor
+683_sing	༼གཞས༽གཏོང	lan	ɣlə len
+684_dance	༼ཞབས་བྲོ༽ བརྒྱབ	tɕham	tʂu
+685_celebratenewyear	ལོ་གསར་གཏོང	lo sar je	lo sa jel
+686_hunt	རྔོན	rə tak hda	rə dak wda
+687_surround	སྐོར	tha kor je	rkor
+688_shoot	འཕེན	hen	hen
+689_hittarget	འཕོག	khi	phol
+690_askinquire	འདྲི	tʂə	ndʐə
+691_answer	གློན	len dʑap	kha len
+692_borrowlend	གྱར	hjar	ɣiar
+693_return	འཇལ	ter	ndʑa
+694_givesenddeliver	སྟེར	ɕen	rcçj
+695_exchange	རྗེ	hdʑe	rdʑi
+696_marryaman	སྟེར	htsoŋ	rcçi
+697_marryawoman	ལེན	lan	len
+698_tell	ལབ	lap	wɕal
+699_help	རོགས་རམ་བྱེད	rok je	rok ram
+700_saverescue	སྐྱོབ	htɕap	rcçap
+701_treatcure	སྨན་བཅོས་བྱེད	hman le je	ɣtɕol
+702_giveoutdistribute	སྤྲོད	taŋ	rter
+703_divide	བགོད	hge	wgo
+704_owe	ཆད	tɕal	tɕhal kə
+705_payindemnityto	སྐྱིན་པ་སྤྲད	ndʑal	khi khər taŋ
+706_wait	སྒུག	hgək	rgək
+707_encountermeet	ཐུག	thək	thək
+708_scold	ཁ་རྡུང་གཏོང	hkək	wɕal wɕal ɣtaŋ
+709_fight	རྒྱག་རེས་རྒྱག	hdʑak ri je	rdoŋ ri jel
+710_hitbeat	གཞུ	ȵe doŋ je	ɣȵək
+711_escape	འབྲོས	tʂe	thar
+712_chaserunafter	འདེད	hdza tɕhol	ndel
+713_driveaway	འདེད	hdel	wda
+714_rob	འཕྲོག	tɕom	mtʂhok
+715_steal	རྐུ	hki	rkə
+716_cheatswindle	མགོ་སྐོར་གཏོང	ngo jok taŋ	ngo ɣjok
+717_laugh	དགོད	hgal	wgal
+718_weep	ངུ	ŋə	ŋə
+719_love	དགའ	xha tsha	rga
+720_like	དགའ	hga	rga
+721_believe	ཡིད་ཆེས	hlo khi	tan cçhen
+722_know	ཤེས	ɕi	ha ko
+723_understand	ཧ་གོ	ko	xhi
+724_guess	ཚོད	khi	the tshəm
+725_remember	དྲན	shem ma hzaŋ	wlo ndzən
+726_forget	བརྗེད	hdʑel	wdʑel
+727_think	བསམ	htaŋ dʑak	tʂan
+728_angry	འཚིག	ho laŋ	ʂo laŋ
+729_hate	འཁོན	shem ma hzaŋ	khon shem
+730_fear	ཞེད	htɕak	rcçak
+731_dare	ནུས	ho pa	nəl
+732_knowalanguagecanbeabl	ཤེས	ɕi	xhi
+733_becopula	ཡིན	jən	rel
+734_negcopula	མིན	mən	man
+735_have	ཡོད	jol	jol
+736_neghave	མེད	mel	mel
+737_come	ཡོང	joŋ	joŋ
+738_go	འགྲོ	ndʑo	ndʑo
+739_returngoback	ལོག	ɕər soŋ	wɕə ra
+740_arrive	སླེབ	thon	thon
+741_crossriver	རྒལ	nga	rga
+742_passby	རྒྱུད	ndʐəm	ɣdʑe
+743_ascend	འཛེག	nge	jar
+744_descend	འབབ	nbap	mar
+745_exit	དོན	wəl	nbəl
+748_existbepresent	ཡོད	jol	jol
+749_dryinthesun	སྲོ	hʑi	rkam
+750_rain	འབབ	wap	nbap
+751_riseofthesun	ཤར	xhar	xhar
+752_setofthesun	ནུབ	ndʑa	mbap
+753_blowofwind	ལྷགས་པ་རྒྱག	hjək	rdʑap
+754_flashoflightning	གློག་འཁྱུག	hlok tɕha	ɣlok mcçha
+755_thunder	༼འབརག་སྐད༽ རྒྱག	ndʐək tɕak	mdʐək cçak
+756_flow	རྒྱུག	jər	ɣoŋ
+757_overflow	ལུད	mel	ɣmer
+758_float	གྱེང	hjaŋ	ɣjaŋ
+759_crack	གས	kha ki	sher kha
+760_collapse	ཞིག	hdəp	rdəp
+761_chipped	ཁ་འཆད	tɕhak xho	kha joŋ
+762_rollegrock	རིལ	ri	ri
+763_rotatespin	འཁོར	hkor	nkhor
+764_dropfall	ཟག	si	ɬoŋ
+765_breakviofropeetc	འཆད	tɕhal	tɕhol
+766_break	འཆག	thəm	tɕhak
+767_soakimmerseegseed	སྦོང	waŋ	wzaŋ
+768_ladledredge	ལེན	laŋ	ɬoŋ
+769_leak	འཛག	ndzak	cçhə
+770_drip	འཐིག	thək kwa hdʑap	thək
+771_boil	འཁོལ	khol	khol
+772_melt	བཞུ	hʑi	ɕə
+773_changetransform	འགྱུར	lok	wɟjər
+774_birthgive	སྐྱེ	htɕe	rcçe
+775_grow	སྐྱེད	ngo then	rtɕi
+776_illsick	ན	khu	khu
+777_tremble	འདར	ndar	ndar
+778_swollen	སྐྲང	htɕaŋ	rcçaŋ
+779_drunk	བཟི	hzə	wzə
+780_die	འཤི	xhə	xhə
+781_alive	གསོན་པ	son po	ɣsom◦bo
+782_fly	འཕུར	phər	mphər
+783_bark	ཟུག	sək	ɣsak
+784_crow	བྱ་སྐད་རྒྱག	hdʑak	tɕhaŋ
+785_layegg	སྒོ་ང་གཏོང	taŋ	ɣtaŋ
+786_hatch	སྙོལ	rəm	ɣȵər
+788_bud	མཆེ་བ་གཏོང	shak kha wəl	thon
+789_bloom	ཤར	hkal	xhər
+790_bearfruit	འབྲས་བུ་སྐྱེ	ndʐe wə	ndʐop ndʐi
+791_wither	སྐམ	hȵə pa	rȵəl
+792_rotspoil	རུལ	ru wa	ru
+793_begin	འགོ་འཚུགས	ngo tsək	ngo ndzək
+794_manage	དོ་དམ་བྱེད	to tam	ɣdək rə
+795_holdameeting	ཚོགས་འདུ་འཚོགས	tshok də tshok	ntshok ndək
+796_protect	སྲུང་སྐྱོབ་བྱེད	ʂoŋ tɕop	ɣsoŋ rcçop
+797_wintriumph	རྒྱལ	hdʑal kha	rɟjal kha
+798_lose	འཕམ	pham	cçhə mphap
+799_oppose	རྒོལ	ŋo lok jie	lon ndzok
+800_big	ཆེན་པོ	tɕhe po	tɕhe
+801_small	ཆུང་ཆུང	tɕhoŋ tɕhoŋ	tɕhoŋ tɕhoŋ
+802_hightall	མཐོ་པོ	thon po	mthon mbo
+803_low	དམའ་པོ	hmal	ɣma mo
+804_deep	གཏིང་རིང་པོ	htaŋ kə	toŋ raŋ ngo
+805_shallow	གཏིང་ཐུང་ཐུང	ʂap kə	toŋ thoŋ ngo
+806_pointed	རྣོ་པོ	htse mo	rtsi kha
+807_round	རིལ་རིལ	hkor kor	ro lə ma
+808_square	གྲུ་བཞི	tʂəp ʑə	tʂə wʑə
+809_long	རིང་པོ	raŋ wo	raŋ
+810_short	ཐུང་ཐུང	thoŋ thoŋ	thoŋ thoŋ
+811_thick	སྦོམ་པོ	rom po	rdzop to
+812_thinslender	ཕྲ་པོ	tʂha wo	mtʂha wə
+813_thick	མཐུག་པོ	thək kwo	mthək po
+814_thin	སྲབ་པོ	ʂa wə	ʂap
+815_wide	ཞེང་ཆེན་པོ	ɕaŋ	ɕaŋ tɕhen
+816_narrow	ཞེང་ཆུང་ཆུང	tok	ɕaŋ tɕhoŋ
+817_far	ཐག་རིང་པོ	thak raŋ	thak raŋ
+818_near	ཐག་ཉེ་པོ	thak ȵe	thak ȵe
+819_manymuch	མང་པོ	maŋ wo	maŋ
+820_littlefew	ཉུང་ཉུང	ȵoŋ ȵoŋ	ȵoŋ
+821_straight	འདྲོང་པོ	tʂaŋ mo	tʂaŋ mo
+822_crooked	གུག་གུག	kək thi	kək kək
+823_horizontal	འཕྲེད	tʂhel	mtʂhe
+824_upright	གཞུང	hʑoŋ	ɣʑoŋ
+825_flatlevelland	སྙོམ་པོ	ȵam ȵam	ȵam ȵam
+826_steep	གཟར་པོ	hzar mo	cçen
+828_slantingnotupright	ཀྱོག་ཀྱོག	hjon thi	ɣjon
+829_light	ཡང་པོ	jaŋ mo	jaŋ mo
+830_heavy	ལྗིད་པོ	ndʑə mo	rdʑə mo
+831_hard	མཁྲེགས་པོ	ʂa mo	ʂa mo
+832_soft	མཉེན་པོ	hȵe mo	rȵən mo
+833_bright	གསལ་པོ	sa wo	sha wo
+834_dark	ནག་ཁུང	mə nak	mə nak
+835_sunny	དྭངས་པོ	hman taŋ	ɣnam taŋ
+836_cloudy	ཐིབས་པོ	hman thəp	ɣnam rəp
+837_red	དམར་པོ	hma ro	ɣma ro
+838_yellow	སེར་པོ	she ro	she ro
+839_blue	སྔོན་པོ	hŋon po	rŋ̊on mbo
+840_white	དཀར་པོ	hka ro	ka ro
+841_black	ནག་པོ	hnak kwo	nak kwo
+842_green	ལྗང་ཁུ	hdʑaŋ khə	rdʑaŋ khə
+843_multicolored	ཁྲ་ཁྲ	tɕha tɕha	he laŋ
+844_thick	གར་པོ	nər wo	nthə ko
+845_thinwatery	སླ་པོ	ɕe ro	taŋ mo
+846_full	གང	kaŋ	kaŋ
+847_beautiful	སྙིན་རྫེ་པོ	jak kwa	mo rgo
+848_ugly	མདོག་ཉེས་པོ	me wo	rm̥e wo
+849_fatofpeople	རྒྱགས་པ	tsho po	tsho mbo
+850_fatmeat	རྒྱགས་པ	tsho	tshi
+851_leanmeat	སྐམ་པོ	hkam	rkom mbo
+852_thinofpeople	སྐམ་པོ	hkam po	rkom mbo
+853_clean	གཙང་མ	htsaŋ ma	rtsaŋ ma
+854_dirty	བཙོག་པ	hdzop to	rtsok kwa
+855_clearwater	དྭངས་མ	taŋ ma	taŋ mo
+856_turbidmuddy	རྙོག་པོ	hȵok kwa	ɣȵok kwa
+857_oldofpeople	རྒད་པོ	hga◦n	rgi
+858_young	གཞོན་གཞོན	sa rə	ɣsa rə
+860_good	ཡག་པོ	hzaŋ	jak
+861_bad	སྡུག་ཅག	ŋan	ŋan mba
+862_fast	མགྱོགས་པོ	ndʑok kwa	mɟjok
+863_slow	འགོར་པོ	ta mo	ngə li
+864_dry	སྐམ་པོ	hkam	rkam
+865_wet	རློན་པ	hlon pa	ɣlon mba
+866_new	གསར་པ	sho ma	sho ma
+867_oldthings	རྙིང་པ	hȵa◦ŋ wa	rȵoŋ ŋwa
+868_raw	རྗེན་པ	hlon pa	ɣlon
+869_cooked	འཚོས་པོ	tshi	rki
+870_sharp	རྣོ་པོ	hno po	rno mbo
+872_early	སྔ་པོ	hŋa	rŋ̊ən na
+873_late	ཕྱི་པོ	ngor	ngor
+874_true	དྲང་པོ	ŋo ma	wden mba
+875_false	རྫུན་མ	hdzən	ɣɕop
+876_expensive	གོང་ཆེན་པོ	koŋ tɕhe	rtsa tɕhen
+877_cheap	ཁེ་པོ	koŋ tsa ɣə	rtsa mo
+878_easy	ལས་སླ་པོ	htsa mo	rtsa mo
+879_difficult	ཁག་པོ	hka ɣə	rka mo
+880_looselax	ལྷུག་ལྷུག	ɬop to	ɬo po
+881_tight	དམ་པོ	tam po	to mbo
+882_smooth	འཇམ་པོ	ndʑam po	ʔol lu
+883_hot	ཚ་པོ	tsha nde	tsha ndi
+884_cold	གྲང◦མོ	tɕaŋ kə	cçaŋ
+885_warm	དྲོ་པོ	tʂon po	tʂoŋ po
+886_cool	བསིལ་པོ	si mo	wsi
+887_sour	སྐྱུར་མོ	htɕər to	rcçər
+888_sweet	མངར་མོ	hŋar mo	ŋar
+889_bitter	ཁ་ཏིག	kha wo	kha
+890_hotspicy	ཁ་ཚི་པོ	kha tsha wa	tsha
+891_salty	ཚྭ་ཁུ	tsha kha	tsha khə
+892_fragrant	ཞིམ་པོ	ɕəm kə	ɕəm
+893_delicious	ཞིམ་པོ	ɕəm po	ɕəm
+896_fullsatiated	རྒིཨགས	hdʑak	wɟjak
+897_hungry	ལྟོགས	htok	rtok
+898_thirsty	སྐོམ	hkom	rkom
+899_tired	ཐང་ཆད	tɕhal	tɕhal
+900_itch	ཟཕྲུག	tʂhək	rtsaŋ
+901_painache	ན	khu	khu
+902_rightcorrect	ཡང་དག་པ	jaŋ tak kwa	tak po
+903_wrongmistaken	ནོར་འཁྲུལ	nor tʂhu	nər wa
+904_intelligent	སྤྱང་པོ	rək gol	ɣtɕaŋ mbo
+905_stupid	གླེན་པ	hlan pa	ɣlu
+906_diligent	ཧུར་པོ	tshak jaŋ	rtson ndʐi
+907_lazy	ལེལོ	lal po	rɟjə rdək
+908_glad	དགའ་པོ	hga wa	rga
+909_poor	སྐྱོ་པོ	me po	mel po
+910_rich	ཕྱུག་པོ	ɕək kwo	wɕək kə
+911_one	གཅིག	htɕək	ɣtɕek
+912_two	གཉིས	hȵi	ɣȵi
+913_three	གསུམ	hsəm	ɣsəm
+914_four	བཞི	hʑə	wʑə
+915_five	ལྔ	hŋa	rŋa
+916_six	དྲུག	tʂək	tʂək
+917_seven	བདུན	hdən	wdən
+918_eight	བརྒྱད	hdʑal	wɟjal
+919_nine	དགུ	hgə	rgə
+920_ten	བཅུ	tɕə	ptɕə
+921_eleven	བཅུ་གཅིག	tɕək tɕək	ptɕək tɕək
+922_twelve	བཅུ་གཉིས	tɕək ȵi	ptɕək ȵi
+923_thirteen	བཅུ་གསུམ	tɕək səm	ptɕək səm
+924_fourteen	བཅུ་བཤི	tɕəp ʑə	ptɕə wʑə
+925_fifteen	བཅོ་ལྔ	tɕo ŋa	ptɕol ŋa
+926_sixteen	བཅུ་དྲུག	tɕə tʂək	ptɕu tʂək
+927_seventeen	བཅུ་བདུན	tɕəp dən	ptɕə wdən
+928_eighteen	བཅུ་བརྒྱད	tɕop dʑal	ptɕop ɟjal
+929_nineteen	བཅུ་དགུ	tɕər gə	ptɕu rgo
+930_twenty	ཉི་ཤུ	ȵə xhə	ȵə xhə
+931_twentyone	ཉི་ཤུ་རྩ་གཅིག	ȵə xhə htsa tɕək	ȵə xhə rtsa tɕək
+932_thirty	སུམ་ཅུ	shəm tɕə	shəm tɕə
+933_forty	བཞི་བཅུ	hʑəp tɕə	wʑə ptɕə
+934_fifty	ལྔ་བཅུ	hŋap tɕə	rŋa ptɕə
+935_sixty	དྲུག་ཅུ	tʂək tɕə	tʂək tɕə
+936_seventy	བདུན་ཅུ	hdən tɕə	wdən tɕə
+937_eighty	བརྒྱད་ཅུ	hdʑa tɕə	wɟjal tɕə
+938_ninety	དགུ་ཅུ	hgəp tɕə	rgo tɕə
+939_hundred	བརྒྱ	hdʑa	wɟja
+940_thousand	སྟོང	htoŋ	rtoŋ
+941_tenthousand	ཁྲི	tʂhə	tʂhə
+942_hundredmillion	དུང་ཕྱུར	toŋ ɕər	toŋ wɕər
+943_zero	ཀླད་ཀོར	ra	ɣləl kor
+944_first	དང་པོ	taŋ wo	taŋ ŋwo
+945_fifth	ལྔ་པ	hŋa wa	rŋa wa
+946_eighth	བརྒྱད་པ	hdʑal pa	wɟjal pa
+947_half	ཕྱེད་ཀ	tsha wa	kha tsha
+956_drop	ཐིགས་པ	hthək	thək
+958_pair	ཆ	tɕha	tɕha
+959_fathom6feet	འདོམ་པ	ndom	ndom
+960_handspan	མཐོ	tho	ntho
+961_inch	ཚུན	tshən	tshən
+962_footmeasure	ཁྲེ་ཙེ	tʂhə dzə	tʂhən ndzə
+963_acre	མུ	mo	mu
+964_drymeasurepint	བྲེ	tʂe	ptʂi
+965_drymeasurepeck10sheng	འབོ	xhaŋ tse	xhaŋ
+966_tael	སྲང	ʂaŋ	ʂaŋ
+967_catty500grams	རྒྱ་མ	hdʑa ma	rɟja ɣaŋ
+968_monetaryunitdollar	སྒོར་མོ	hgor mo	rgo mo
+969_i	ང	ŋa	ŋa
+970_wetwo	ང་གཉིས	ŋə ȵi ɣa	ŋa ɣȵi
+971_we	ང་ཚོ	ŋə zo	ŋə zo
+972_weinclusive	ངརང་ཚོ	ə tɕho	ʔək zo
+973_yousg	ཁྱེད་རང	tɕhol	cçho
+974_youtwo	ཁྱེད་རང་གཉིས	tɕhe ȵi ɣa	cçho ɣȵi
+975_youpl	ཁྱེདྲང་ཚོ	tɕhe tɕho	cçhə zo
+976_heshe	ཁོང	khor ka	khə rge
+977_theytwo	ཁོང་གཉིས	kho ȵi ɣa	khə ɣȵi
+978_they	ཁོང་ཚོ	khə tɕho	khər zo
+979_self	རང	raŋ	raŋ nge
+980_others	མི་གཞནདག	hde	ɣȵən ɣdək
+981_this	འདི	ndə	ndə
+982_here	འདིར	tshər	ndə
+983_that	དེ	kan	ka
+984_there	དེར	har	ka na
+985_who	སུ	shə	shə
+986_what	ག་རེ	tɕhə zək	tɕhə zək
+987_which	ག་གི	kaŋ rə	kan ngə
+988_where	ག་པར	kaŋ na	kan na
+989_howmanymuch	ག་ཚོད	tɕhə mo zək	maŋ ȵoŋ
+990_justnow	ད་གིན	ta sho ma	ta cçhi
+991_first	སྔོན	hŋən na	ngo ma
+992_laterintime	རྗེས	hdza ɣə	wʑək ne
+993_immediatelyrightaway	ལམ་སང	ta ta	rem ma
+994_often	ཡངྱང	xo xo	nam jən na
+995_slowly	ག་ལེར	ta mo	ta mo
+996_fastadv	མགྱོགས་པོ	rem pa	mɟjok kwo
+997_very	ཞེ་དྲག	hon ta	ɣɕi ɣə
+999_alleven	གང་ག	tshaŋ ma	tshaŋ ma
+1000_also	ཡང	ra	jaŋ
+1001_again	ཡང་སྐྱར	or kə	rtɕɕə nɐ
+1002_certainly	ཏན་ཏན	ŋe ŋe	tan tan
+1003_neg	མི	mə	mi
+1004_dont	མ	ma	ma
+196_taro	ཡུར་ཙེ		jur tsə

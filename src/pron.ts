@@ -1,3 +1,5 @@
+import { amdoPinyin } from './amdoPron.ts'
+
 // 《安多藏语一本通》的注音体系：30 个字母、120 个字母 + 元音组合，以及书上练习里成对比较的字。
 // 字母注音照书第一章抄录；组合注音一部分是书上原有的，其余按书上的规律推出来（见 CV_PRON 的第二项）。
 // 书上 ཀ/ག、ཏ/ད 这类清浊字注音相同，实际读音不同，以真人录音为准。浊音那个的汉字后面加“·浊”，一眼看出两个不一样。
@@ -5,7 +7,7 @@
 /** 字母 → [一本通注音, 汉字近音] */
 export const PRON: Record<string, [string, string]> = {
   ཀ: ['ga', '嘎'], ཁ: ['ka', '咔'], ག: ['ga', '嘎·浊'], ང: ['nga', '那'],
-  ཅ: ['jia', '佳'], ཆ: ['qia', '恰'], ཇ: ['jia', '贾·浊'], ཉ: ['nya', '尼啊'],
+  ཅ: ['jia', '佳'], ཆ: ['qia', '恰'], ཇ: ['jia', '贾·浊'], ཉ: ['nia', '尼啊'],
   ཏ: ['da', '达'], ཐ: ['ta', '塔'], ད: ['da', '搭·浊'], ན: ['na', '那'],
   པ: ['ba', '吧'], ཕ: ['pa', '帕'], བ: ['wa', '哇'], མ: ['ma', '玛'],
   ཙ: ['za', '杂'], ཚ: ['ca', '嚓'], ཛ: ['za', '杂·浊'], ཝ: ['wa', '哇'],
@@ -17,7 +19,7 @@ export const PRON: Record<string, [string, string]> = {
 /** 字母 + 元音组合 → [注音, 来源]。来源 0：书上第 12–16 页原有；1：书上例词里出现过；2：按规律推出来的。
  *  规律：ི ུ 多读 e（ཀི ཀུ 都是 ge），ཅ ཆ ཇ ཞ ཤ ཡ 后面读 i/ie；ེ 读 ei，舌面音后读 ie，ཏ ད 后读 i，ཙ ཚ ཛ 后读 ai；
  *  ོ 多读 u（གོ gu、མོ mu），ཟ ས ལ ར ཧ 后读 uo，འ ཨ 读 ao，舌面音后读 iu/iao。 */
-export const CV_PRON: Record<string, [string, 0 | 1 | 2]> = {
+const BOOK_CV: Record<string, [string, 0 | 1 | 2]> = {
   ཀི: ['ge', 0], ཀུ: ['ge', 0], ཀེ: ['gei', 0], ཀོ: ['go', 2],
   ཁི: ['ke', 2], ཁུ: ['ke', 0], ཁེ: ['kei', 2], ཁོ: ['ko', 0],
   གི: ['ge', 2], གུ: ['ge', 2], གེ: ['gei', 2], གོ: ['gu', 0],
@@ -50,6 +52,14 @@ export const CV_PRON: Record<string, [string, 0 | 1 | 2]> = {
   ཨི: ['e', 2], ཨུ: ['e', 2], ཨེ: ['ei', 2], ཨོ: ['ao', 2],
 }
 export const CV_SOURCE = ['书上注音', '书上例词', '按规律推'] as const
+
+/** 字母 + 元音组合 → [安多拼音, 来源]。注音统一用 amdoPron.ts 的新写法；和《一本通》一样的保留书上的来源，不一样的记“按规律推”。 */
+export const CV_PRON: Record<string, [string, 0 | 1 | 2]> = Object.fromEntries(
+  Object.entries(BOOK_CV).map(([k, [book, src]]) => {
+    const py = amdoPinyin(k) ?? book
+    return [k, [py, py === book ? src : 2]]
+  }),
+)
 
 /** 书上练习“比较下列成对字母的发音” */
 export const SOUND_PAIRS: [string, string][] = [['ཀ', 'ག'], ['ཅ', 'ཆ'], ['ཏ', 'ད'], ['པ', 'བ'], ['ཙ', 'ཛ'], ['ཞ', 'ཤ'], ['ཟ', 'ས']]

@@ -316,7 +316,7 @@ function IntroCard({ q }: { q: Intro }) {
       <div className={'tib tap ' + (q.kc.startsWith('A:') ? 'big center' : 'huge')} onClick={() => (q.audio ? play(q.audio) : say(q.big))}>{q.big}</div>
       {q.sub && <div className="latin-mid">{q.sub}</div>}
       {q.pron && (
-        <div className="pron" title="一本通式注音，尚未逐个核对">
+        <div className="pron" title="安多类拼音，按规律推出来，以录音为准">
           {q.pron}
         </div>
       )}
