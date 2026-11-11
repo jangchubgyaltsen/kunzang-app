@@ -201,7 +201,7 @@ export default function TodayReading({ onExit, onComplete, footer }: { onExit: (
       )}
       {step === 3 && (
         <>
-          {zh ? <div className="zh sent-zh">{zh}</div> : <p className="small muted">还没有中文译文（“我的”页最下面可以导入全书译文包）。词下面的小字是释义。</p>}
+          {zh ? <div className="zh sent-zh">{zh}</div> : <p className="small muted">还没有中文译文（首页右上角“设置”里可以导入全书译文包）。词下面的小字是释义。</p>}
           <button className="primary" onClick={() => setStep(quiz ? 4 : 5)}>下一步</button>
         </>
       )}

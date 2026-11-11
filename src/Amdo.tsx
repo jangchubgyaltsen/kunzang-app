@@ -6,13 +6,7 @@ import type { Session } from './session.ts'
 import { yitongOfLine } from './reading.ts'
 import './amdo.css'
 
-type Part = 'talk' | 'words' | 'spell' | 'lessons'
-const PARTS: [Part, string][] = [
-  ['talk', '会话 300 句'],
-  ['words', '单词'],
-  ['spell', '拼读表'],
-  ['lessons', '课文'],
-]
+export type Part = 'talk' | 'words' | 'spell' | 'lessons'
 
 /** 一组知识点 → 一次练习：每个知识点出两种题，打乱顺序 */
 function practice(kcs: string[], title: string): Session {
@@ -20,22 +14,14 @@ function practice(kcs: string[], title: string): Session {
   return { questions: qs.slice(0, 20), title }
 }
 
-/** 资料库：《安多方言会话教材》里的会话、单词、拼读表和课文，全部是真人录音；主线在路径里，这里用来单独强化 */
-export default function AmdoView({ onStart }: { onStart: (s: Session) => void }) {
-  const [part, setPart] = useState<Part>(() => (localStorage.getItem('amdo-part') as Part) ?? 'talk')
-  useEffect(() => localStorage.setItem('amdo-part', part), [part])
+/**
+ * 资料里的安多会话教材：会话、单词、拼读表、课文，各是资料页里的一项（第二层），全部是真人录音。
+ * 主线在“今天”里按进度学到这些，这里用来单独翻看、强化。
+ */
+export default function AmdoView({ part, onStart }: { part: Part; onStart: (s: Session) => void }) {
   useEffect(() => () => stop(), [])
   return (
     <section className="amdo">
-      <h1>资料库</h1>
-      <p className="muted small">阿坝《安多方言会话教材》的全部内容，每一段都是安多话真人录音。路径里会按进度学到这些，这里用来单独翻看、强化。</p>
-      <div className="chips">
-        {PARTS.map(([k, label]) => (
-          <button key={k} className={part === k ? 'on' : ''} onClick={() => setPart(k)}>
-            {label}
-          </button>
-        ))}
-      </div>
       {part === 'talk' && <Talk onStart={onStart} />}
       {part === 'words' && <Words onStart={onStart} />}
       {part === 'spell' && <Spell />}

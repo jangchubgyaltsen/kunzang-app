@@ -16,25 +16,49 @@ import { letterAudio, type Question } from './course.ts'
 import { type Session } from './session.ts'
 import { linesOf, yitongOf, type Token } from './reading.ts'
 import { chapters } from './book.ts'
+import { chapterRead } from './overview.ts'
 import { BookChapter, GlossBlock } from './BookReader.tsx'
 import { glossOf, loadGloss, type WordGloss } from './gloss.ts'
-import AmdoView from './Amdo.tsx'
-import { setWylie, wylieOn } from './prefs.ts'
+import AmdoView, { type Part as AmdoPart } from './Amdo.tsx'
+import { retention, RETENTION_LEVELS, setRetention, setWylie, wylieOn } from './prefs.ts'
 import PronGuide from './PronGuide.tsx'
 
-type Tab = 'today' | 'path' | 'reader' | 'library' | 'me'
-// 资料库里分两块：字母表、安多会话教材
-type Shelf = 'alphabet' | 'amdo'
+/**
+ * 界面最多三层：
+ * 第一层是底部三个页签：今天（练习 + 学习进度）、原文、资料。
+ * 第二层是从页签点进去的一页（详细进度、设置、资料里的一项、目录），顶上有返回。
+ * 第三层是在第二层里打开的东西（一课课文、一次练习、流利度测验）。
+ */
+type Tab = 'today' | 'reader' | 'library'
+type Page = 'progress' | 'settings' | 'alphabet' | 'pron' | AmdoPart
 const TABS: [Tab, string, Parameters<typeof Icon>[0]['name']][] = [
   ['today', '今天', 'today'],
-  ['path', '进度', 'path'],
   ['reader', '原文', 'book'],
-  ['library', '资料库', 'library'],
-  ['me', '我的', 'me'],
+  ['library', '资料', 'library'],
 ]
+const PAGE_TITLE: Record<Page, string> = {
+  progress: '详细进度',
+  settings: '设置',
+  alphabet: '字母表',
+  pron: '注音怎么读',
+  talk: '安多会话 300 句',
+  words: '单词',
+  spell: '拼读表',
+  lessons: '课文',
+}
+/** 资料页：一张清单，每项点进去是第二层 */
+const SHELF: [Page, string, string][] = [
+  ['alphabet', '字母表', '30 个字母、元音、形近字、字母元音组合表'],
+  ['talk', '安多会话 300 句', '按组听真人录音，可以单独练一组'],
+  ['words', '单词', '教材单词表，按页翻看'],
+  ['spell', '拼读表', '教材的拼读表，点格子听录音'],
+  ['lessons', '课文', '第 11–36 课，课本页面点哪段播哪段'],
+  ['pron', '注音怎么读', '安多拼音和普通话拼音不一样的几处'],
+]
+
 export default function App() {
   const [tab, setTab] = useState<Tab>('today')
-  const [shelf, setShelf] = useState<Shelf>('alphabet')
+  const [page, setPage] = useState<Page | null>(null)
   // 第一次打开：先看一屏欢迎页
   const [welcome, setWelcome] = useState(() => localStorage.getItem('welcomed') !== '1')
   const [passageId, setPassageId] = useState('title')
@@ -59,6 +83,11 @@ export default function App() {
 
   const go = (t: Tab) => {
     setTab(t)
+    setPage(null)
+    window.scrollTo(0, 0)
+  }
+  const open = (p: Page) => {
+    setPage(p)
     window.scrollTo(0, 0)
   }
 
@@ -76,6 +105,7 @@ export default function App() {
       </div>
     )
 
+  const show = !busy
   return (
     <div className="app">
       <main>
@@ -99,20 +129,17 @@ export default function App() {
           />
         )}
         {drill !== 0 && <Drill key={drill} all={drill < 0} onExit={() => setDrill(0)} />}
-        {!busy && tab === 'library' && (
-          <div className="chips">
-            <button className={shelf === 'alphabet' ? 'on' : ''} onClick={() => setShelf('alphabet')}>
-              字母表
+
+        {show && page && (
+          <header className="sub-head">
+            <button className="back" onClick={() => setPage(null)} aria-label="返回">
+              <Icon name="back" size={22} />
+              <span>{tab === 'today' ? '今天' : '资料'}</span>
             </button>
-            <button className={shelf === 'amdo' ? 'on' : ''} onClick={() => setShelf('amdo')}>
-              安多会话教材
-            </button>
-          </div>
+            <h1>{PAGE_TITLE[page]}</h1>
+          </header>
         )}
-        {!busy && tab === 'library' && <PronGuide />}
-        {!busy && tab === 'library' && shelf === 'alphabet' && <AlphabetView key={drill} onStart={(all) => setDrill(all ? -Date.now() : Date.now())} />}
-        {!busy && tab === 'today' && <Today key={homeKey} onPractice={() => setPractice(true)} onPath={() => go('path')} />}
-        {!busy && tab === 'path' && (
+        {show && page === 'progress' && (
           <ProgressView
             onRead={(id) => {
               pickChapter(id)
@@ -120,14 +147,18 @@ export default function App() {
             }}
           />
         )}
-        {!busy && tab === 'reader' && (
+        {show && page === 'settings' && <SettingsView onStart={setSession} />}
+        {show && page === 'alphabet' && <AlphabetView key={drill} onStart={(all) => setDrill(all ? -Date.now() : Date.now())} />}
+        {show && page === 'pron' && <PronGuide open />}
+        {show && (page === 'talk' || page === 'words' || page === 'spell' || page === 'lessons') && <AmdoView part={page} onStart={setSession} />}
+
+        {show && !page && tab === 'today' && <Today key={homeKey} onPractice={() => setPractice(true)} onDetail={() => open('progress')} onSettings={() => open('settings')} />}
+        {show && !page && tab === 'reader' && (
           <ReaderView passageId={passageId} onSelect={setPassageId} chapterId={chapterId} onChapter={pickChapter} onQuiz={(questions, title) => setSession({ questions, title })} />
         )}
-        {!busy && tab === 'library' && shelf === 'amdo' && <AmdoView onStart={setSession} />}
-        {!busy && tab === 'me' && <Review onStart={setSession} />}
-        {!busy && tab === 'me' && <SettingsView />}
+        {show && !page && tab === 'library' && <Library onOpen={open} />}
       </main>
-      {!busy && (
+      {show && (
         <nav className="tabs">
           {TABS.map(([k, label, icon]) => (
             <button key={k} className={tab === k ? 'on' : ''} aria-current={tab === k ? 'page' : undefined} onClick={() => go(k)}>
@@ -138,6 +169,29 @@ export default function App() {
         </nav>
       )}
     </div>
+  )
+}
+
+/** 资料（第一层）：一张清单。具体内容都在第二层 */
+function Library({ onOpen }: { onOpen: (p: Page) => void }) {
+  return (
+    <section className="library">
+      <h1>资料</h1>
+      <p className="small muted">每天的练习会按进度学到这些。这里用来单独翻看、多练。字母、元音和会话都是安多话真人录音。</p>
+      <ul className="shelf">
+        {SHELF.map(([k, name, note]) => (
+          <li key={k}>
+            <button onClick={() => onOpen(k)}>
+              <span className="grow">
+                <span className="shelf-name">{name}</span>
+                <span className="small muted">{note}</span>
+              </span>
+              <Icon name="chevron" size={18} />
+            </button>
+          </li>
+        ))}
+      </ul>
+    </section>
   )
 }
 
@@ -219,10 +273,6 @@ function Toc({ chapterId, passageId, onClose, onPassage, onChapter }: { chapterI
   useEffect(() => {
     db.settings.get(POS_KEY).then((r) => setPos((r?.value ?? {}) as Record<string, string>))
   }, [])
-  const progress = (id: string, paras: number) => {
-    const at = pos[id]
-    return at ? Math.min(1, Number(at.slice(1)) / Math.max(1, paras)) : 0
-  }
   return (
     <div className="sheet" onClick={onClose}>
       <div className="card toc" onClick={(e) => e.stopPropagation()} role="dialog" aria-label="目录">
@@ -246,7 +296,7 @@ function Toc({ chapterId, passageId, onClose, onPassage, onChapter }: { chapterI
             ))}
           </div>
           {chapters.map((c) => {
-            const p = progress(c.id, Number(pos[c.id] ? c.paras : 0) || c.paras)
+            const p = chapterRead(c.id, pos[c.id], c.paras)
             return (
               <button key={c.id} className={'toc-ch toc-row' + (chapterId === c.id ? ' on' : '')} onClick={() => onChapter(c.id)}>
                 <span className="grow">
@@ -273,7 +323,7 @@ function DisplaySheet({ book, onClose }: { book: boolean; onClose: () => void })
   const rows: [keyof typeof p, string, string, boolean][] = [
     ['pron', '注音', '安多类拼音，按规律推出来，以录音为准', true],
     ['gloss', '逐词释义', '每个词下面一行小字', book],
-    ['zh', '中文', '需要先在“我的”里导入译文包', true],
+    ['zh', '中文', '需要先在首页右上角“设置”里导入译文包', true],
     ['bySent', '逐句对照', '中文按句子放到对应的藏文下面', book && p.zh],
     ['wylie', 'Wylie 转写', '', !book && wylieOn()],
   ]
@@ -350,7 +400,7 @@ function OpeningReader({ passageId, onSelect, onPick }: { passageId: string; onS
           </div>
         ))}
         {prefs.zh && chinese && p.lines.length !== zhLines.length && <div className="zh">{chinese}</div>}
-        {prefs.zh && !chinese && <p className="muted small center">还没有中文译文。请在“我的”页最下面导入中文译文包。</p>}
+        {prefs.zh && !chinese && <p className="muted small center">还没有中文译文。请在首页右上角“设置”里导入中文译文包。</p>}
       </div>
       <div className="pager">
         {prev ? (
@@ -462,7 +512,7 @@ function WylieSetting() {
   return (
     <>
       <h2>Wylie 转写</h2>
-      <p className="small muted">用拉丁字母逐个字母拼写藏文的方法（如 ཀློང་ཆེན 写成 klong chen），写的是字怎么拼，不是安多话怎么念。读音看藏文下面的类拼音注音就行（见上面“注音怎么读”）。Wylie 默认不显示，也不出转写题；查词典、对照别的资料时可以打开。</p>
+      <p className="small muted">用拉丁字母逐个字母拼写藏文的方法（如 ཀློང་ཆེན 写成 klong chen），写的是字怎么拼，不是安多话怎么念。读音看藏文下面的类拼音注音就行（见“资料 · 注音怎么读”）。Wylie 默认不显示，也不出转写题；查词典、对照别的资料时可以打开。</p>
       <label className="small">
         <input
           type="checkbox"
@@ -496,7 +546,7 @@ function Welcome({ onStart }: { onStart: () => void }) {
           <b>先想，再看答案</b>：复习时多数卡片不给选项，先自己想意思、念出来，再翻面对照，自己打分。想不起来的会早点再出。
         </li>
         <li>
-          <b>记录只存在这台设备上</b>：可以在“我的”里导出备份。
+          <b>记录只存在这台设备上</b>：可以在设置里导出备份。
         </li>
       </ul>
       <button className="primary" onClick={onStart}>
@@ -524,7 +574,34 @@ function SoundCheck() {
   )
 }
 
-function SettingsView() {
+/** 记忆强度：FSRS 的目标记住率 */
+function RetentionSetting() {
+  const [ret, setRet] = useState(retention())
+  return (
+    <>
+      <h2>记忆强度</h2>
+      <p className="small muted">复习间隔按这个目标排：要求越高，每天复习越多，忘得越少。</p>
+      <div className="ret-seg">
+        {RETENTION_LEVELS.map(([r, name, desc]) => (
+          <button
+            key={r}
+            className={ret === r ? 'on' : ''}
+            onClick={() => {
+              setRetention(r)
+              setRet(r)
+            }}
+          >
+            <b>{name}</b>
+            <span className="small muted">{desc}</span>
+          </button>
+        ))}
+      </div>
+    </>
+  )
+}
+
+/** 设置（第二层，首页右上角进来）：多复习一次、记忆强度、显示、数据、标记过的问题 */
+function SettingsView({ onStart }: { onStart: (s: Session) => void }) {
   const [persisted, setPersisted] = useState<boolean | null>(null)
   const [msg, setMsg] = useState('')
   useEffect(() => {
@@ -551,9 +628,13 @@ function SettingsView() {
   }
 
   return (
-    <section>
-      <h1>设置与数据</h1>
-      <p>学习记录只保存在这台设备上。{persisted === false && '浏览器尚未允许长期保存，建议把 App 添加到主屏幕，并定期导出备份。'}</p>
+    <section className="settings">
+      <Review onStart={onStart} />
+      <RetentionSetting />
+      <WylieSetting />
+      <SoundCheck />
+      <h2>学习数据</h2>
+      <p className="small muted">学习记录只保存在这台设备上。{persisted === false && '浏览器尚未允许长期保存，建议把 App 添加到主屏幕，并定期导出备份。'}</p>
       <div className="actions col">
         <button onClick={doExport}>导出学习数据</button>
         <label className="button">
@@ -562,21 +643,6 @@ function SettingsView() {
         </label>
       </div>
       {msg && <p>{msg}</p>}
-      <PronGuide />
-      <WylieSetting />
-      <SoundCheck />
-      <h2>重新开始</h2>
-      <p className="small muted">清空全部学习进度：路径关卡、字卡和复习记录、抽查、签到。中文译文和标记的问题保留。建议先导出一份备份。</p>
-      <button
-        className="danger"
-        onClick={async () => {
-          if (!confirm('确定要清空全部学习进度吗？清空后无法撤销，除非从备份恢复。')) return
-          await resetProgress()
-          location.reload()
-        }}
-      >
-        重置学习进度
-      </button>
       <h2>中文译文</h2>
       <p className="small muted">中文译文有版权，不随网站发布。导入一次后只保存在这台设备上。</p>
       <label className="button">
@@ -596,6 +662,18 @@ function SettingsView() {
           }}
         />
       </label>
+      <h2>重新开始</h2>
+      <p className="small muted">清空全部学习进度：卡片和复习记录、签到。中文译文和标记的问题保留。建议先导出一份备份。</p>
+      <button
+        className="danger"
+        onClick={async () => {
+          if (!confirm('确定要清空全部学习进度吗？清空后无法撤销，除非从备份恢复。')) return
+          await resetProgress()
+          location.reload()
+        }}
+      >
+        重置学习进度
+      </button>
       <h2>关于内容</h2>
       <p className="small muted">
         原文与译文：《大圆满前行·普贤上师言教》，华智仁波切著，索达吉堪布译，德钦·曲美多吉编排藏汉对照版，仅供个人学习。读音：Meta MMS 安多藏语 TTS（mms-tts-adx）生成，未经人工校对。

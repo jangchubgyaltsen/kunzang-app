@@ -6,11 +6,11 @@ import { shuffle, SPELL_SEQ, RULES } from './course.ts'
 import { topSyls } from './fwords.ts'
 import { chapterCoverage, coverageOf, learnedF, loadVocab } from './vocab.ts'
 import { getProgress, READ_FROM, type Progress } from './practice.ts'
-import { retention, RETENTION_LEVELS, setRetention } from './prefs.ts'
 
 /**
- * 进度页（原来的“路径”）：不再闯关，只看三件事——
- * 现在在哪个阶段；原文里认识的词占多少（全书和每一章）；拼读学到哪了、拼读流利度测验。
+ * 详细进度（第二层，从首页“学习进度 · 详细”进来）：
+ * 原文里认识的词占多少（全书和每一章，点一章去读）；拼读学到哪了、拼读流利度测验。
+ * 三个阶段的总览在首页，记忆强度在设置里。
  */
 const FLUENCY_KEY = 'fluency-test'
 const FLUENCY_N = 20
@@ -31,7 +31,6 @@ export default function ProgressView({ onRead }: { onRead: (chapter: string) => 
   const [chs, setChs] = useState<Map<string, number>>(new Map())
   const [fluency, setFluency] = useState<FluencyResult | null>(null)
   const [testing, setTesting] = useState(false)
-  const [ret, setRet] = useState(retention())
 
   const load = async () => {
     setP(await getProgress())
@@ -51,21 +50,10 @@ export default function ProgressView({ onRead }: { onRead: (chapter: string) => 
   const intro = (pre: string) => [...p.introduced].filter((k) => k.startsWith(pre)).length
   const rulesDone = Object.keys(RULES).filter((k) => p.introduced.has(k)).length
   const spellDone = SPELL_SEQ.length - p.spellLeft.length
-  const stage = !p.vocabOn ? 0 : p.readOn ? 2 : 1
   const passed = fluency && fluency.score / fluency.total >= 0.9
 
   return (
     <div className="progress-page">
-      <h1>进度</h1>
-      <ol className="stages">
-        {['拼读', '原文高频词', '有声精读'].map((x, k) => (
-          <li key={x} className={k === stage ? 'now' : k < stage ? 'done' : ''}>
-            <b>{k + 1}</b>
-            <span>{x}</span>
-          </li>
-        ))}
-      </ol>
-
       <section className="plan-card">
         <div className="plan-head">
           <b>原文里认识的词</b>
@@ -123,20 +111,6 @@ export default function ProgressView({ onRead }: { onRead: (chapter: string) => 
         </div>
       </section>
 
-      <section className="plan-card">
-        <div className="plan-head">
-          <b>记忆强度</b>
-        </div>
-        <p className="small muted">复习间隔按这个目标排：要求越高，每天复习越多，忘得越少。</p>
-        <div className="ret-seg">
-          {RETENTION_LEVELS.map(([r, name, desc]) => (
-            <button key={r} className={ret === r ? 'on' : ''} onClick={() => { setRetention(r); setRet(r) }}>
-              <b>{name}</b>
-              <span className="small muted">{desc}</span>
-            </button>
-          ))}
-        </div>
-      </section>
     </div>
   )
 }

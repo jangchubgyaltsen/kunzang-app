@@ -1,23 +1,23 @@
 import { useEffect, useState } from 'react'
 import { AUSPICIOUS, dayKey, streakInfo } from './daily.ts'
-import { getProgress, loadPlan, stepInfo, type DayPlan, type StepInfo, type StepKey } from './practice.ts'
-import { coverageOf, learnedF, loadVocab } from './vocab.ts'
+import { loadPlan, stepInfo, type DayPlan, type StepInfo, type StepKey } from './practice.ts'
+import { getOverview, type Overview } from './overview.ts'
 import { Icon, StateDot } from './icons.tsx'
 // 签到印章和日历的样式在 games.css 里（小游戏收起来了，样式还在用）
 import './games.css'
 
 type Info = Awaited<ReturnType<typeof streakInfo>>
-type Current = { stage: string; title: string; pct: number; note: string }
 
 /**
- * 首页「今天」：今天的三段（卡片、安多会话、原文）列出来，做完打勾、每段大约几分钟，一个按钮接着做。
- * 下面一张卡：现在在哪个阶段，原文里认识的词占多少，通往“进度”。
+ * 首页「学习」（第一层）：上面是今天的三段，一个按钮接着做；下面是学习进度：
+ * 一条全程的条子分三段（拼读 → 原文高频词 → 有声精读），每段写明学了多少、还剩多少，再一句下一步是什么。
+ * 详细进度和设置是第二层，从这里点进去。
  */
-export default function Today({ onPractice, onPath }: { onPractice: () => void; onPath: () => void }) {
+export default function Today({ onPractice, onDetail, onSettings }: { onPractice: () => void; onDetail: () => void; onSettings: () => void }) {
   const [info, setInfo] = useState<Info | null>(null)
   const [plan, setPlan] = useState<DayPlan | null>(null)
   const [steps, setSteps] = useState<Partial<Record<StepKey, StepInfo>>>({})
-  const [cur, setCur] = useState<Current | null>(null)
+  const [ov, setOv] = useState<Overview | null>(null)
   const [showCal, setShowCal] = useState(false)
 
   useEffect(() => {
@@ -27,31 +27,29 @@ export default function Today({ onPractice, onPath }: { onPractice: () => void; 
       const all = await Promise.all(p.steps.map(async (k) => [k, await stepInfo(k)] as const))
       setSteps(Object.fromEntries(all))
     })
-    ;(async () => {
-      const p = await getProgress()
-      await loadVocab().catch(() => {})
-      const cov = coverageOf(await learnedF())
-      const spellTotal = p.spellLeft.length + p.cvLeft
-      if (spellTotal && !p.vocabOn) setCur({ stage: '阶段一 · 拼读', title: '字母、元音、加字', pct: 0, note: `还有 ${p.spellLeft.length} 项拼读内容、${p.cvLeft} 个字母元音组合没学；30 个字母学完开始学原文高频词` })
-      else setCur({ stage: p.readOn ? '阶段三 · 有声精读' : '阶段二 · 原文高频词', title: `认识原文 ${Math.round(cov * 100)}% 的词`, pct: cov, note: `已学 ${p.fLearned} 个高频词${spellTotal ? ` · 拼读还剩 ${p.spellLeft.length} 项、组合 ${p.cvLeft} 个` : ''}` })
-    })()
+    getOverview().then(setOv)
   }, [])
 
   const left = plan ? plan.steps.filter((k) => !plan.done.includes(k)) : []
-  const minutes = plan ? plan.steps.reduce((n, k) => n + (steps[k]?.minutes ?? 0), 0) : 0
+  const minutes = plan ? left.reduce((n, k) => n + (steps[k]?.minutes ?? 0), 0) : 0
   const next = left[0]
   return (
     <div className="home">
-      <div className="home-date small muted">{new Date().toLocaleDateString('zh-CN', { month: 'long', day: 'numeric', weekday: 'short' })}</div>
+      <div className="home-top">
+        <span className="small muted">{new Date().toLocaleDateString('zh-CN', { month: 'long', day: 'numeric', weekday: 'short' })}</span>
+        <button className="icon-btn" onClick={onSettings} aria-label="设置">
+          <Icon name="gear" size={22} />
+        </button>
+      </div>
       <div className="home-title">
         <h1>今天</h1>
         {info && (
-          <button className="link small" onClick={() => setShowCal(!showCal)} aria-expanded={showCal}>
-            连续 {info.streak} 天 · 累计 {info.total} 天
+          <button className="streak" onClick={() => setShowCal(!showCal)} aria-expanded={showCal}>
+            连续 <b>{info.streak}</b> 天 · 累计 {info.total} 天
           </button>
         )}
       </div>
-      {info && (showCal ? <Calendar done={info.done} rest={info.rest} /> : <Week done={info.done} rest={info.rest} />)}
+      {info && showCal && <Calendar done={info.done} rest={info.rest} />}
       {showCal && info && (
         <div>
           <div className="small muted">八吉祥 · 累计签到点亮</div>
@@ -68,11 +66,8 @@ export default function Today({ onPractice, onPath }: { onPractice: () => void; 
       {plan && (
         <div className="plan-card">
           <div className="plan-head">
-            <b>今天</b>
-            <span className="small muted">
-              {plan.done.length} / {plan.steps.length}
-              {left.length ? ` · 约 ${minutes} 分钟` : ''}
-            </span>
+            <b>今天的练习</b>
+            <span className="small muted">{left.length ? `约 ${minutes} 分钟` : '做完了'}</span>
           </div>
           <ol className="plan-steps">
             {plan.steps.map((k) => {
@@ -80,11 +75,8 @@ export default function Today({ onPractice, onPath }: { onPractice: () => void; 
               return (
                 <li key={k} className={s}>
                   <StateDot state={s} />
-                  <div className="grow">
-                    <div className="step-name">{steps[k]?.label ?? '…'}</div>
-                    <div className="small muted">{k === 'cards' && s === 'done' ? '已签到' : steps[k]?.detail}</div>
-                  </div>
-                  {s !== 'done' && steps[k] && <span className="small muted">{steps[k].minutes} 分钟</span>}
+                  <div className="grow step-name">{steps[k]?.label ?? '…'}</div>
+                  {s !== 'done' && steps[k] && <span className="small muted nowrap">{steps[k].minutes} 分钟</span>}
                 </li>
               )
             })}
@@ -95,47 +87,61 @@ export default function Today({ onPractice, onPath }: { onPractice: () => void; 
         </div>
       )}
 
-      {cur && (
-        <button className="now-card" onClick={onPath}>
-          <div className="grow">
-            <div className="small muted">{cur.stage}</div>
-            <div className="now-title">{cur.title}</div>
-            <div className="meter">
-              <i style={{ width: `${cur.pct * 100}%` }} />
-            </div>
-            <div className="small muted">{cur.note}</div>
-          </div>
-          <span className="link small">
-            进度 <Icon name="chevron" size={14} />
-          </span>
-        </button>
-      )}
+      {ov && <Journey ov={ov} onDetail={onDetail} />}
     </div>
   )
 }
+
+/** 学习进度：全程一条分三段的条子，下面每个阶段一行：学了多少 / 一共多少、还剩多少 */
+function Journey({ ov, onDetail }: { ov: Overview; onDetail: () => void }) {
+  return (
+    <section className="plan-card journey">
+      <div className="plan-head">
+        <b>学习进度</b>
+        <button className="link small" onClick={onDetail}>
+          详细 <Icon name="chevron" size={14} />
+        </button>
+      </div>
+      <div className="track" aria-hidden="true">
+        {ov.stages.map((s) => (
+          <span key={s.key} className={'seg ' + s.state}>
+            <i style={{ width: `${pct(s.done, s.total)}%` }} />
+          </span>
+        ))}
+      </div>
+      <ol className="stage-rows">
+        {ov.stages.map((s, k) => (
+          <li key={s.key} className={s.state}>
+            <span className="stage-n">{k + 1}</span>
+            <div className="grow">
+              <div className="stage-line">
+                <span className="stage-name">{s.name}</span>
+                <span className="stage-num">
+                  {s.done.toLocaleString()} <span className="muted">/ {s.total.toLocaleString()} {s.unit}</span>
+                </span>
+              </div>
+            </div>
+          </li>
+        ))}
+        <li className={'side ' + (ov.talk.done ? 'now' : 'todo')}>
+          <span className="stage-n">+</span>
+          <div className="grow">
+            <div className="stage-line">
+              <span className="stage-name">安多会话</span>
+              <span className="stage-num">
+                {ov.talk.done} <span className="muted">/ {ov.talk.total} 句</span>
+              </span>
+            </div>
+          </div>
+        </li>
+      </ol>
+    </section>
+  )
+}
+
+const pct = (a: number, b: number) => (b ? Math.min(100, (a / b) * 100) : 0)
 
 const WEEK = ['一', '二', '三', '四', '五', '六', '日']
-/** 这一周的签到：实心是签了，虚线圈是休息日（每周可以歇一天），描边是今天 */
-function Week({ done, rest }: { done: Set<string>; rest: Set<string> }) {
-  const now = new Date()
-  const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - ((now.getDay() + 6) % 7))
-  return (
-    <div className="week">
-      {WEEK.map((w, i) => {
-        const d = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + i)
-        const k = dayKey(d)
-        const cls = done.has(k) ? 'done' : rest.has(k) ? 'rest' : k === dayKey(now) ? 'now' : d > now ? 'later' : ''
-        return (
-          <div key={w}>
-            <div className="small muted">{w}</div>
-            <div className={'wd ' + cls}>{d.getDate()}</div>
-          </div>
-        )
-      })}
-    </div>
-  )
-}
-
 function Calendar({ done, rest }: { done: Set<string>; rest: Set<string> }) {
   const now = new Date()
   const first = new Date(now.getFullYear(), now.getMonth(), 1)
