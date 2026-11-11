@@ -20,13 +20,16 @@ export default function Review({ onStart }: { onStart: (s: Session) => void }) {
 
   return (
     <section>
-      <h1>复习</h1>
-      <p>
-        今天已答 {stats.answered} 题，答对 {stats.correct} 题。
-      </p>
-      <div className="review-box">
-        <div className="big-number">{due.length}</div>
-        <div className="muted">张卡片现在到期（每天的卡片里会自动复习，这里可以多练一次）</div>
+      <h2>多复习一次</h2>
+      <div className="row-card">
+        <div className="grow">
+          <div>
+            现在到期 <b>{due.length}</b> 张
+          </div>
+          <div className="small muted">
+            每天的卡片会自动复习。今天已答 {stats.answered} 题，答对 {stats.correct} 题。
+          </div>
+        </div>
         <button
           className="primary"
           disabled={!due.length}
@@ -35,12 +38,11 @@ export default function Review({ onStart }: { onStart: (s: Session) => void }) {
             onStart({ questions: due.slice(0, 20).map((k) => recallQuestion(k) ?? questionFor(k)), title: '复习' })
           }}
         >
-          开始复习
+          复习
         </button>
       </div>
 
-      <h2>标记过的问题</h2>
-      {flags.length === 0 && <p className="muted">还没有标记。</p>}
+      {flags.length > 0 && <h2>标记过的问题</h2>}
       <ul className="flags">
         {flags.map((f) => (
           <li key={f.id}>

@@ -32,7 +32,6 @@ export function AlphabetView({ onStart }: { onStart: (all?: boolean) => void }) 
   }
   return (
     <section className="alpha">
-      <h1>字母表</h1>
       <p className="muted small">
         30 个字母，四个一行。按行出声念，点字听读音。记牢了的字（字卡和路径里都算，复习间隔到了 {FLUENT_DAYS} 天以上）会亮金色，现在 {fluent} / 30。
       </p>
@@ -60,12 +59,8 @@ export function AlphabetView({ onStart }: { onStart: (all?: boolean) => void }) 
         书上 ཀ 和 ག、ཏ 和 ད 注音相同，但读音不同，要靠音频听出来。带小点的字是和直觉不一样的地方，点一下看说明。
       </div>
 
-      <h2>每日字卡</h2>
-      <p className="muted small">
-        30 个字母、4 个元音，加上 120 个字母 + 元音组合，一共 {ALL_CARDS.length} 张卡。循序渐进：先只考 30 个字母和 4 个元音；
-        一个字母和 4 个元音都有点熟了（至少答过两次、最近没答错），才开始考这个字母的 4 个组合。每天第一次打开 App 先考这个：到期的卡看字选注音、听音选字轮着考，
-        选项里放的是书上成对比较的形近字和发音相近的字；答错的当天再考，答得越快越稳，隔的天数越长。每天一组 15 张：到期的优先，剩下的按顺序带新卡（每天至少 5 张新卡）。拼读路径也按这个顺序学字母，两边共用一份记录。
-      </p>
+      <h2>单独练字母</h2>
+      <p className="muted small">每天的卡片里已经会按进度练字母。这里可以单独多练一组：到期的优先，再按顺序带新卡，和每天的卡片共用一份记录。</p>
       <p className="small">
         现在能考 <b>{counts.open}</b> / {ALL_CARDS.length} 张 · 今天到期 <b>{counts.due}</b> 张 · 能考的里还没见过 <b>{counts.freshOpen}</b> 张 · 已经记牢 <b>{counts.fluent}</b> 张
       </p>
@@ -147,7 +142,7 @@ export function AlphabetView({ onStart }: { onStart: (all?: boolean) => void }) 
         ))}
       </div>
 
-      <p className="muted small">字母的汉字近音照《安多藏语一本通》第一章，注音写法见资料库的“注音怎么读”；读音是安多会话教材里的真人录音。</p>
+      <p className="muted small">字母的汉字近音照《安多藏语一本通》第一章，注音写法见“资料 · 注音怎么读”；读音是安多会话教材里的真人录音。</p>
     </section>
   )
 }

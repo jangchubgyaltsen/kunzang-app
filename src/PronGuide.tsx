@@ -17,9 +17,9 @@ const ROWS: [string, string, string[]][] = [
   ['几个特别的声母', 'པྱ ཕྱ བྱ 读 x（不是 ch）；ལྷ 写 lh，舌头放在 l 的位置往外吹气；དབ དཔ 读 hw；下加 ར 读 zh、ch。', ['བྱ', 'ལྷ', 'དབང', 'ཁྲིད']],
 ]
 
-export default function PronGuide() {
+export default function PronGuide({ open = false }: { open?: boolean }) {
   return (
-    <details className="pron-guide">
+    <details className="pron-guide" open={open}>
       <summary>注音怎么读</summary>
       <p className="small muted">
         App 里藏文下面的小字是<strong>安多拼音</strong>：按安多话的实际读音、用汉语拼音字母写，不用 Wylie 转写。规律参考了安多话的语言学研究和夏河、泽库两地的词表，按规律推出来，没有逐个核对，和录音不一样时以录音为准。和普通话拼音不同的只有这几处：

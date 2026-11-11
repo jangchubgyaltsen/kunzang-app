@@ -45,3 +45,50 @@
 .ret-seg { display: flex; gap: 6px; }
 .ret-seg button { flex: 1; display: flex; flex-direction: column; gap: 2px; padding: 8px 4px; }
 .ret-seg button.on { border-color: var(--accent); background: #fbeee6; }
+
+/* 三层界面：页签（第一层）→ 带返回的一页（第二层）→ 课文、练习（第三层） */
+.home-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: -6px; }
+.icon-btn { border: none; background: none; padding: 6px; margin-right: -6px; color: var(--muted); border-radius: 50%; display: inline-grid; place-items: center; }
+.streak { border: none; background: var(--soft); color: var(--accent); border-radius: 999px; padding: 4px 12px; font-size: 13px; }
+.streak b { font-size: 15px; }
+.nowrap { white-space: nowrap; }
+
+.journey { display: flex; flex-direction: column; gap: 10px; }
+.journey .plan-head .link { display: inline-flex; align-items: center; gap: 2px; }
+.here { display: flex; flex-direction: column; gap: 0; }
+.here-name { font-size: 22px; font-weight: 700; color: var(--accent); }
+.track { display: flex; gap: 4px; }
+.track .seg { flex: 1; height: 10px; border-radius: 5px; background: var(--line); overflow: hidden; }
+.track .seg i { display: block; height: 100%; background: var(--accent); border-radius: 5px; min-width: 0; }
+.track .seg.done i { width: 100% !important; }
+.track .seg.todo { opacity: .55; }
+.stage-rows { list-style: none; margin: 0; padding: 0; }
+.stage-rows li { display: flex; gap: 12px; align-items: flex-start; padding: 9px 0; }
+.stage-rows li + li { border-top: 1px solid var(--rule); }
+.stage-n { flex: none; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; font-size: 13px; font-weight: 700; border: 2px solid var(--line); color: var(--muted); margin-top: 1px; }
+.stage-rows li.now .stage-n { border-color: var(--accent); color: var(--accent); }
+.stage-rows li.done .stage-n { background: var(--accent); border-color: var(--accent); color: #fff; }
+.stage-rows li.side .stage-n { border-style: dashed; }
+.stage-rows li.todo .stage-name { color: var(--muted); }
+.stage-line { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.stage-name { font-size: 16px; }
+.stage-rows li.now:not(.side) .stage-name { font-weight: 600; }
+.stage-num { font-variant-numeric: tabular-nums; white-space: nowrap; font-weight: 600; }
+.stage-num .muted { font-weight: 400; font-size: 13px; }
+.stage-rows .meter.thin { max-width: none; }
+.next-tip { margin: 0; background: var(--soft); border-radius: 10px; padding: 8px 12px; }
+.next-tip b { color: var(--accent); margin-right: 6px; }
+
+.sub-head { display: flex; flex-direction: column; gap: 2px; margin-bottom: 12px; }
+.sub-head h1 { margin: 0; }
+.back { align-self: flex-start; display: inline-flex; align-items: center; gap: 0; border: none; background: none; color: var(--accent); padding: 4px 0; margin-left: -6px; }
+
+.library h1 { margin-bottom: 4px; }
+.shelf { list-style: none; padding: 0; margin: 12px 0 0; background: var(--card); border: 1px solid var(--line); border-radius: 16px; overflow: hidden; }
+.shelf li + li { border-top: 1px solid var(--rule); }
+.shelf button { width: 100%; display: flex; align-items: center; gap: 10px; text-align: left; border: none; border-radius: 0; background: none; padding: 14px 16px; color: var(--muted); }
+.shelf .grow { display: flex; flex-direction: column; gap: 2px; }
+.shelf-name { color: var(--ink); font-size: 16px; font-weight: 600; }
+.settings h2:first-of-type { margin-top: 0; }
+.row-card { display: flex; gap: 12px; align-items: center; background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 12px 16px; }
+.row-card .primary { flex: none; padding: 10px 20px; }

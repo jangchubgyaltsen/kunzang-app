@@ -46,3 +46,20 @@ export async function downloadChapter(ch: Chapter, onProgress: (done: number, to
   }
   await Promise.all([worker(), worker(), worker(), worker()])
 }
+
+/** 段落编号是全书连续的（开篇 p0001 起）。每章第一段的编号，用来算一章读到哪、全书读到哪。 */
+const all = index as ChapterInfo[]
+export const paraStart = new Map<string, number>()
+{
+  let n = 1
+  for (const c of all) {
+    paraStart.set(c.id, n)
+    n += c.paras
+  }
+}
+/** 正文各章（开篇以外）一共多少段 */
+export const bodyParas = chapters.reduce((n, c) => n + c.paras, 0)
+/** 这一段之前，正文已经过去多少段（0 起） */
+export function parasBefore(paraId: string) {
+  return Math.max(0, Number(paraId.slice(1)) - (paraStart.get(chapters[0]?.id) ?? 1))
+}

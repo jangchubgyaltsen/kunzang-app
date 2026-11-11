@@ -11,6 +11,8 @@ const P: Record<string, string> = {
   down: 'M6 9l6 6 6-6',
   close: 'M6 6l12 12M18 6L6 18',
   stop: 'M7 7h10v10H7z',
+  back: 'M15 6l-6 6 6 6',
+  gear: 'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM19.4 13.5l1.6 1.2-2 3.4-1.9-.7a7.5 7.5 0 0 1-2 1.2l-.3 2h-4l-.3-2a7.5 7.5 0 0 1-2-1.2l-1.9.7-2-3.4 1.6-1.2a7.6 7.6 0 0 1 0-3L3 9.3l2-3.4 1.9.7a7.5 7.5 0 0 1 2-1.2l.3-2h4l.3 2a7.5 7.5 0 0 1 2 1.2l1.9-.7 2 3.4-1.6 1.2a7.6 7.6 0 0 1 0 3z',
 }
 
 export function Icon({ name, size = 22, className }: { name: keyof typeof P | 'play' | 'pathDots'; size?: number; className?: string }) {
