@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { AUSPICIOUS, dayKey, streakInfo } from './daily.ts'
 import { loadPlan, stepInfo, type DayPlan, type StepInfo, type StepKey } from './practice.ts'
-import { getOverview, type Overview, type StageState } from './overview.ts'
+import { getOverview, type Overview } from './overview.ts'
 import { Icon, StateDot } from './icons.tsx'
 // 签到印章和日历的样式在 games.css 里（小游戏收起来了，样式还在用）
 import './games.css'
@@ -49,7 +49,7 @@ export default function Today({ onPractice, onDetail, onSettings }: { onPractice
           </button>
         )}
       </div>
-      {info && (showCal ? <Calendar done={info.done} rest={info.rest} /> : <Week done={info.done} rest={info.rest} />)}
+      {info && showCal && <Calendar done={info.done} rest={info.rest} />}
       {showCal && info && (
         <div>
           <div className="small muted">八吉祥 · 累计签到点亮</div>
@@ -67,9 +67,7 @@ export default function Today({ onPractice, onDetail, onSettings }: { onPractice
         <div className="plan-card">
           <div className="plan-head">
             <b>今天的练习</b>
-            <span className="small muted">
-              {plan.done.length} / {plan.steps.length} 段{left.length ? ` · 还要约 ${minutes} 分钟` : ' · 做完了'}
-            </span>
+            <span className="small muted">{left.length ? `约 ${minutes} 分钟` : '做完了'}</span>
           </div>
           <ol className="plan-steps">
             {plan.steps.map((k) => {
@@ -77,10 +75,7 @@ export default function Today({ onPractice, onDetail, onSettings }: { onPractice
               return (
                 <li key={k} className={s}>
                   <StateDot state={s} />
-                  <div className="grow">
-                    <div className="step-name">{steps[k]?.label ?? '…'}</div>
-                    <div className="small muted">{k === 'cards' && s === 'done' ? '已签到' : steps[k]?.detail}</div>
-                  </div>
+                  <div className="grow step-name">{steps[k]?.label ?? '…'}</div>
                   {s !== 'done' && steps[k] && <span className="small muted nowrap">{steps[k].minutes} 分钟</span>}
                 </li>
               )
@@ -97,11 +92,8 @@ export default function Today({ onPractice, onDetail, onSettings }: { onPractice
   )
 }
 
-const STATE_LABEL: Record<StageState, string> = { todo: '未开始', now: '正在学', done: '学完了' }
-
 /** 学习进度：全程一条分三段的条子，下面每个阶段一行：学了多少 / 一共多少、还剩多少 */
 function Journey({ ov, onDetail }: { ov: Overview; onDetail: () => void }) {
-  const cur = ov.stages[ov.now]
   return (
     <section className="plan-card journey">
       <div className="plan-head">
@@ -109,10 +101,6 @@ function Journey({ ov, onDetail }: { ov: Overview; onDetail: () => void }) {
         <button className="link small" onClick={onDetail}>
           详细 <Icon name="chevron" size={14} />
         </button>
-      </div>
-      <div className="here">
-        <span className="small muted">现在在第 {ov.now + 1} 阶段</span>
-        <span className="here-name">{cur.name}</span>
       </div>
       <div className="track" aria-hidden="true">
         {ov.stages.map((s) => (
@@ -132,10 +120,6 @@ function Journey({ ov, onDetail }: { ov: Overview; onDetail: () => void }) {
                   {s.done.toLocaleString()} <span className="muted">/ {s.total.toLocaleString()} {s.unit}</span>
                 </span>
               </div>
-              <div className="small muted">
-                {STATE_LABEL[s.state]} · {s.note}
-                {s.state === 'now' && s.total > s.done ? ` · 还剩 ${(s.total - s.done).toLocaleString()} ${s.unit}` : ''}
-              </div>
             </div>
           </li>
         ))}
@@ -148,15 +132,9 @@ function Journey({ ov, onDetail }: { ov: Overview; onDetail: () => void }) {
                 {ov.talk.done} <span className="muted">/ {ov.talk.total} 句</span>
               </span>
             </div>
-            <div className="meter thin">
-              <i style={{ width: `${pct(ov.talk.done, ov.talk.total)}%` }} />
-            </div>
           </div>
         </li>
       </ol>
-      <p className="next-tip small">
-        <b>下一步</b> {ov.next}
-      </p>
     </section>
   )
 }
@@ -164,27 +142,6 @@ function Journey({ ov, onDetail }: { ov: Overview; onDetail: () => void }) {
 const pct = (a: number, b: number) => (b ? Math.min(100, (a / b) * 100) : 0)
 
 const WEEK = ['一', '二', '三', '四', '五', '六', '日']
-/** 这一周的签到：实心是签了，虚线圈是休息日（每周可以歇一天），描边是今天 */
-function Week({ done, rest }: { done: Set<string>; rest: Set<string> }) {
-  const now = new Date()
-  const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - ((now.getDay() + 6) % 7))
-  return (
-    <div className="week">
-      {WEEK.map((w, i) => {
-        const d = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + i)
-        const k = dayKey(d)
-        const cls = done.has(k) ? 'done' : rest.has(k) ? 'rest' : k === dayKey(now) ? 'now' : d > now ? 'later' : ''
-        return (
-          <div key={w}>
-            <div className="small muted">{w}</div>
-            <div className={'wd ' + cls}>{d.getDate()}</div>
-          </div>
-        )
-      })}
-    </div>
-  )
-}
-
 function Calendar({ done, rest }: { done: Set<string>; rest: Set<string> }) {
   const now = new Date()
   const first = new Date(now.getFullYear(), now.getMonth(), 1)
