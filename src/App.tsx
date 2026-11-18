@@ -1,31 +1,24 @@
 import { useEffect, useState } from 'react'
-import { passages, passageTitles, syllableMap, type Syllable } from './content.ts'
-import { audioStatus, onTrack, play, playSeq, stop } from './audio.ts'
-import { say } from './sound.ts'
+import { audioStatus, play } from './audio.ts'
 import { Icon } from './icons.tsx'
 import ProgressView from './Progress.tsx'
-import { useReaderPrefs } from './readerPrefs.ts'
-import { db, exportData, importData, importTranslationPack, resetProgress } from './db.ts'
+import { db, exportData, importData, resetProgress } from './db.ts'
 import { migrate } from './migrate.ts'
 import Lesson from './Lesson.tsx'
 import Review from './Review.tsx'
 import Today from './Today.tsx'
 import Practice from './Practice.tsx'
 import { AlphabetView, Drill } from './Alphabet.tsx'
-import { letterAudio, type Question } from './course.ts'
+import { letterAudio } from './course.ts'
 import { type Session } from './session.ts'
-import { linesOf, yitongOf, type Token } from './reading.ts'
-import { chapters } from './book.ts'
-import { chapterRead } from './overview.ts'
-import { BookChapter, GlossBlock } from './BookReader.tsx'
-import { glossOf, loadGloss, type WordGloss } from './gloss.ts'
 import AmdoView, { type Part as AmdoPart } from './Amdo.tsx'
 import { retention, RETENTION_LEVELS, setRetention, setWylie, wylieOn } from './prefs.ts'
 import PronGuide from './PronGuide.tsx'
+import RitualView from './Rituals.tsx'
 
 /**
  * 界面最多三层：
- * 第一层是底部三个页签：今天（练习 + 学习进度）、原文、资料。
+ * 第一层是底部三个页签：今天（练习 + 学习进度）、仪轨（偈颂逐句逐词）、资料。
  * 第二层是从页签点进去的一页（详细进度、设置、资料里的一项、目录），顶上有返回。
  * 第三层是在第二层里打开的东西（一课课文、一次练习、流利度测验）。
  */
@@ -33,7 +26,7 @@ type Tab = 'today' | 'reader' | 'library'
 type Page = 'progress' | 'settings' | 'alphabet' | 'pron' | AmdoPart
 const TABS: [Tab, string, Parameters<typeof Icon>[0]['name']][] = [
   ['today', '今天', 'today'],
-  ['reader', '原文', 'book'],
+  ['reader', '仪轨', 'book'],
   ['library', '资料', 'library'],
 ]
 const PAGE_TITLE: Record<Page, string> = {
@@ -61,7 +54,6 @@ export default function App() {
   const [page, setPage] = useState<Page | null>(null)
   // 第一次打开：先看一屏欢迎页
   const [welcome, setWelcome] = useState(() => localStorage.getItem('welcomed') !== '1')
-  const [passageId, setPassageId] = useState('title')
   const [session, setSession] = useState<Session | null>(null)
   // 字母页手动开的字卡。负数表示 150 张全部过一遍
   const [drill, setDrill] = useState(0)
@@ -71,14 +63,15 @@ export default function App() {
   const [homeKey, setHomeKey] = useState(0)
   const busy = session !== null || drill !== 0 || practice
 
-  // 原文页看的是哪一章：'00' 是开篇（逐词版），其余是正文各章
-  const [chapterId, setChapterId] = useState('00')
+  // 仪轨页打开的是哪一部（null 是列表）
+  const [ritualId, setRitualId] = useState<string | null>(null)
   useEffect(() => {
-    db.settings.get('reader-chapter').then((r) => r && setChapterId(String(r.value)))
+    db.settings.get('ritual-open').then((r) => r && setRitualId((r.value as string | null) ?? null))
   }, [])
-  const pickChapter = (id: string) => {
-    setChapterId(id)
-    db.settings.put({ key: 'reader-chapter', value: id })
+  const openRitual = (id: string | null) => {
+    setRitualId(id)
+    db.settings.put({ key: 'ritual-open', value: id })
+    window.scrollTo(0, 0)
   }
 
   const go = (t: Tab) => {
@@ -142,7 +135,7 @@ export default function App() {
         {show && page === 'progress' && (
           <ProgressView
             onRead={(id) => {
-              pickChapter(id)
+              openRitual(id)
               go('reader')
             }}
           />
@@ -153,9 +146,7 @@ export default function App() {
         {show && (page === 'talk' || page === 'words' || page === 'spell' || page === 'lessons') && <AmdoView part={page} onStart={setSession} />}
 
         {show && !page && tab === 'today' && <Today key={homeKey} onPractice={() => setPractice(true)} onDetail={() => open('progress')} onSettings={() => open('settings')} />}
-        {show && !page && tab === 'reader' && (
-          <ReaderView passageId={passageId} onSelect={setPassageId} chapterId={chapterId} onChapter={pickChapter} onQuiz={(questions, title) => setSession({ questions, title })} />
-        )}
+        {show && !page && tab === 'reader' && <RitualView ritualId={ritualId} onOpen={openRitual} />}
         {show && !page && tab === 'library' && <Library onOpen={open} />}
       </main>
       {show && (
@@ -195,318 +186,6 @@ function Library({ onOpen }: { onOpen: (p: Page) => void }) {
   )
 }
 
-const POS_KEY = 'reader-pos'
-/**
- * 原文页：顶上一个标题，点开是目录（开篇各段 + 14 章，写明读到哪）；显示设置收进“Aa”。
- * 正文居中排，每个词下面是注音和意思；有声音在放时底部出一个播放条，可以停。
- */
-function ReaderView({ passageId, onSelect, chapterId, onChapter, onQuiz }: { passageId: string; onSelect: (id: string) => void; chapterId: string; onChapter: (id: string) => void; onQuiz: (questions: Question[], title: string) => void }) {
-  const info = chapters.find((c) => c.id === chapterId)
-  const [picked, setPicked] = useState<Syllable | null>(null)
-  const [sheet, setSheet] = useState<'toc' | 'aa' | null>(null)
-  const [playing, setPlaying] = useState<string | null>(null)
-  useEffect(() => onTrack(setPlaying), [])
-  const pi = passages.findIndex((x) => x.id === passageId)
-  const title = info ? `第${CN_NUM[Number(info.id)]}章 · ${info.zh}` : passageTitles[passageId] ?? '开篇'
-  const sub = info ? `${info.paras} 段 · ${info.sents} 句` : `开篇 · 第 ${pi + 1} / ${passages.length} 段`
-  return (
-    <section className="reader">
-      <header className="reader-head">
-        <span className="head-side" />
-        <button className="reader-title" onClick={() => setSheet('toc')} aria-haspopup="dialog">
-          <span className="rt-main">
-            {title} <Icon name="down" size={14} />
-          </span>
-          <span className="small muted">{sub}</span>
-        </button>
-        <button className="aa" onClick={() => setSheet('aa')} aria-label="显示设置">
-          Aa
-        </button>
-      </header>
-      {info ? (
-        <BookChapter key={info.id} info={info} onPick={setPicked} onQuiz={onQuiz} />
-      ) : (
-        <OpeningReader passageId={passageId} onSelect={onSelect} onPick={setPicked} />
-      )}
-      {picked && <SyllableCard s={picked} onClose={() => setPicked(null)} />}
-      {playing && (
-        <div className="player">
-          <span className="eq" aria-hidden="true">
-            <i />
-            <i />
-            <i />
-          </span>
-          <span className="grow small">正在播放</span>
-          <button className="stop" onClick={() => stop()} aria-label="停止播放">
-            <Icon name="stop" size={18} />
-          </button>
-        </div>
-      )}
-      {sheet === 'toc' && (
-        <Toc
-          chapterId={info?.id ?? '00'}
-          passageId={passageId}
-          onClose={() => setSheet(null)}
-          onPassage={(id) => {
-            onSelect(id)
-            onChapter('00')
-            setSheet(null)
-            window.scrollTo(0, 0)
-          }}
-          onChapter={(id) => {
-            onChapter(id)
-            setSheet(null)
-            window.scrollTo(0, 0)
-          }}
-        />
-      )}
-      {sheet === 'aa' && <DisplaySheet book={!!info} onClose={() => setSheet(null)} />}
-    </section>
-  )
-}
-
-const CN_NUM = ['〇', '一', '二', '三', '四', '五', '六', '七', '八', '九', '十', '十一', '十二', '十三', '十四']
-
-/** 目录：开篇各段和 14 章，每章写明多少句、读到第几段 */
-function Toc({ chapterId, passageId, onClose, onPassage, onChapter }: { chapterId: string; passageId: string; onClose: () => void; onPassage: (id: string) => void; onChapter: (id: string) => void }) {
-  const [pos, setPos] = useState<Record<string, string>>({})
-  useEffect(() => {
-    db.settings.get(POS_KEY).then((r) => setPos((r?.value ?? {}) as Record<string, string>))
-  }, [])
-  return (
-    <div className="sheet" onClick={onClose}>
-      <div className="card toc" onClick={(e) => e.stopPropagation()} role="dialog" aria-label="目录">
-        <div className="grab" />
-        <div className="toc-head">
-          <h2>目录</h2>
-          <button className="link" onClick={onClose} aria-label="关闭">
-            <Icon name="close" />
-          </button>
-        </div>
-        <div className="toc-list">
-          <div className={'toc-ch' + (chapterId === '00' ? ' on' : '')}>
-            <div className="toc-row">
-              <span>开篇</span>
-              <span className="small muted">{passages.length} 段 · 有逐词注音</span>
-            </div>
-            {passages.map((x) => (
-              <button key={x.id} className={'toc-sub' + (chapterId === '00' && x.id === passageId ? ' on' : '')} onClick={() => onPassage(x.id)}>
-                {passageTitles[x.id] ?? x.id}
-              </button>
-            ))}
-          </div>
-          {chapters.map((c) => {
-            const p = chapterRead(c.id, pos[c.id], c.paras)
-            return (
-              <button key={c.id} className={'toc-ch toc-row' + (chapterId === c.id ? ' on' : '')} onClick={() => onChapter(c.id)}>
-                <span className="grow">
-                  第{CN_NUM[Number(c.id)]}章 · {c.zh}
-                  {p > 0 && (
-                    <span className="meter thin">
-                      <i style={{ width: `${Math.max(4, p * 100)}%` }} />
-                    </span>
-                  )}
-                </span>
-                <span className="small muted">{c.sents} 句</span>
-              </button>
-            )
-          })}
-        </div>
-      </div>
-    </div>
-  )
-}
-
-/** Aa：显示哪几行 */
-function DisplaySheet({ book, onClose }: { book: boolean; onClose: () => void }) {
-  const [p, set] = useReaderPrefs()
-  const rows: [keyof typeof p, string, string, boolean][] = [
-    ['pron', '注音', '安多类拼音，按规律推出来，以录音为准', true],
-    ['gloss', '逐词释义', '每个词下面一行小字', book],
-    ['zh', '中文', '需要先在首页右上角“设置”里导入译文包', true],
-    ['bySent', '逐句对照', '中文按句子放到对应的藏文下面', book && p.zh],
-    ['wylie', 'Wylie 转写', '', !book && wylieOn()],
-  ]
-  return (
-    <div className="sheet" onClick={onClose}>
-      <div className="card" onClick={(e) => e.stopPropagation()} role="dialog" aria-label="显示设置">
-        <div className="grab" />
-        <h2>显示</h2>
-        <div className="switches">
-          {rows
-            .filter((r) => r[3])
-            .map(([k, label, note]) => (
-              <label key={k} className="switch-row">
-                <span className="grow">
-                  <span>{label}</span>
-                  {note && <span className="small muted">{note}</span>}
-                </span>
-                <input type="checkbox" role="switch" checked={p[k]} onChange={(e) => set({ [k]: e.target.checked })} />
-              </label>
-            ))}
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function OpeningReader({ passageId, onSelect, onPick }: { passageId: string; onSelect: (id: string) => void; onPick: (s: Syllable) => void }) {
-  const [prefs] = useReaderPrefs()
-  const [word, setWord] = useState<Token | null>(null)
-  const pi = Math.max(0, passages.findIndex((x) => x.id === passageId))
-  const p = passages[pi]
-  const rl = linesOf(p.id)
-  const [chinese, setChinese] = useState<string | null>(null)
-  useEffect(() => {
-    db.translations.get(p.id).then((t) => setChinese(t?.chinese ?? null))
-  }, [p.id])
-  const zhLines = (chinese ?? '').split(/(?<=[，。！])/).filter(Boolean)
-  const prev = passages[pi - 1]
-  const next = passages[pi + 1]
-  const goto = (id: string) => {
-    onSelect(id)
-    window.scrollTo(0, 0)
-  }
-
-  return (
-    <>
-      <div className="meta-row">
-        <button className="pill small-pill" onClick={() => playSeq(p.lines.map((l) => l.audio))}>
-          <Icon name="play" size={14} /> 整段连读
-        </button>
-      </div>
-      <div className="lines reading">
-        {p.lines.map((l, i) => (
-          <div className="line" key={i}>
-            <div className="line-row">
-              <button className="play" onClick={() => play(l.audio)} aria-label="播放这一句">
-                <Icon name="play" size={16} />
-              </button>
-              <div className="syls">
-                {(rl[i]?.words ?? []).map((w, j, ws) => (
-                  <span key={w.id} className={'word' + (word?.id === w.id ? ' on' : '')} onClick={() => setWord(w)}>
-                    <span className="tib big">
-                      {w.tibetan}
-                      {j < ws.length - 1 ? '་' : p.lines.length > 1 ? ' །' : ''}
-                    </span>
-                    {prefs.pron && <span className="pron">{w.yitong}</span>}
-                    {prefs.wylie && wylieOn() && <span className="syl-wylie">{w.tibetan.split('་').map((s) => syllableMap.get(s)?.wylie ?? '').join(' ')}</span>}
-                  </span>
-                ))}
-              </div>
-              <span className="play-space" />
-            </div>
-            {prefs.zh && chinese && p.lines.length === zhLines.length && <div className="zh">{zhLines[i]}</div>}
-          </div>
-        ))}
-        {prefs.zh && chinese && p.lines.length !== zhLines.length && <div className="zh">{chinese}</div>}
-        {prefs.zh && !chinese && <p className="muted small center">还没有中文译文。请在首页右上角“设置”里导入中文译文包。</p>}
-      </div>
-      <div className="pager">
-        {prev ? (
-          <button className="link" onClick={() => goto(prev.id)}>
-            ‹ {passageTitles[prev.id]}
-          </button>
-        ) : (
-          <span />
-        )}
-        {next && (
-          <button className="link" onClick={() => goto(next.id)}>
-            {passageTitles[next.id]} ›
-          </button>
-        )}
-      </div>
-      <p className="muted small">
-        读音为安多音 TTS 自动生成：整句是连读，点词听的是从整句里切出来的那一段。注音是安多拼音，按规律推出来，尚未逐个核对。点词看意思和音节结构。
-      </p>
-      {word && <WordSheet w={word} onPick={onPick} onClose={() => setWord(null)} />}
-    </>
-  )
-}
-
-function WordSheet({ w, onPick, onClose }: { w: Token; onPick: (s: Syllable) => void; onClose: () => void }) {
-  useEffect(() => {
-    play(w.audio)
-  }, [w])
-  const [g, setG] = useState<WordGloss | null>(null)
-  useEffect(() => {
-    loadGloss().then((d) => setG(glossOf(d, w.tibetan)), () => setG({}))
-  }, [w])
-  return (
-    <div className="sheet" onClick={onClose}>
-      <div className="card" onClick={(e) => e.stopPropagation()}>
-        <div className="tib huge tap" onClick={() => play(w.audio)}>
-          {w.tibetan}
-        </div>
-        <div className="pron center big-pron">{w.yitong ?? yitongOf(w.tibetan)}</div>
-        <GlossBlock g={g ?? {}} loading={!g} />
-        <div className="small muted center">点音节看结构</div>
-        <div className="parts">
-          {w.tibetan.split('་').map((s, k) => (
-            <button key={k} className="part" onClick={() => syllableMap.get(s) && onPick(syllableMap.get(s)!)}>
-              <div className="tib">{s}</div>
-              {wylieOn() && <div className="small">{syllableMap.get(s)?.wylie}</div>}
-            </button>
-          ))}
-        </div>
-        <div className="actions">
-          <button onClick={() => play(w.audio)}>▶ 再听一遍</button>
-          <button onClick={onClose}>关闭</button>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-const PARTS: [keyof Syllable, string][] = [
-  ['prefix', '前加字'],
-  ['superscript', '上加字'],
-  ['root', '基字'],
-  ['subscript', '下加字'],
-  ['vowel', '元音'],
-  ['suffix', '后加字'],
-  ['postSuffix', '再后加字'],
-  ['particle', '结尾'],
-]
-
-function SyllableCard({ s, onClose }: { s: Syllable; onClose: () => void }) {
-  const [flagged, setFlagged] = useState(false)
-  useEffect(() => {
-    play(s.audio)
-    db.flags.where({ ref: s.tibetan }).count().then((n) => setFlagged(n > 0))
-  }, [s])
-
-  const flag = async () => {
-    const note = prompt('哪里有问题？（读音、拼写、结构拆分……）', '') ?? ''
-    await db.flags.add({ kind: 'syllable', ref: s.tibetan, note, createdAt: Date.now() })
-    setFlagged(true)
-  }
-
-  return (
-    <div className="sheet" onClick={onClose}>
-      <div className="card" onClick={(e) => e.stopPropagation()}>
-        <div className="tib huge tap" onClick={() => play(s.audio)}>{s.tibetan}</div>
-        {wylieOn() && <div className="wylie center">{s.wylie}</div>}
-        <div className="parts">
-          {PARTS.filter(([k]) => s[k]).map(([k, label]) => (
-            <div key={k} className={'part tap' + (k === 'root' ? ' root' : '')} onClick={() => k !== 'vowel' && say(String(s[k]))}>
-              <div className="tib">{k === 'vowel' ? '◌' + s.vowel : String(s[k])}</div>
-              <div className="small">{label}</div>
-            </div>
-          ))}
-        </div>
-        {s.needsCheck && <p className="warn small">这个音节的基字判断需要人工确认。</p>}
-        <p className="muted small">开篇中出现 {s.count} 次</p>
-        <div className="actions">
-          <button onClick={() => play(s.audio)}>▶ 再听一遍</button>
-          <button onClick={flag}>{flagged ? '已标记 · 再标一次' : '标记有问题'}</button>
-          <button onClick={onClose}>关闭</button>
-        </div>
-      </div>
-    </div>
-  )
-}
-
 function WylieSetting() {
   const [on, setOn] = useState(wylieOn())
   return (
@@ -533,11 +212,11 @@ function Welcome({ onStart }: { onStart: () => void }) {
   return (
     <section className="welcome">
       <div className="tib huge center">ཀུན་བཟང་</div>
-      <h1 className="center">普贤上师言教 · 藏文学习</h1>
-      <p>从零开始学安多音的藏文拼读，再按原文里出现的多少学词，最后能跟着念、读懂《普贤上师言教》的原文，也能说几句安多话。</p>
+      <h1 className="center">仪轨偈颂 · 藏文学习</h1>
+      <p>从零开始学安多音的藏文拼读，然后一句一句学常念的仪轨偈颂：每句先把词一个个拆开学，再看整句的意思，最后背下来。也能说几句安多话。</p>
       <ul>
         <li>
-          <b>每天点一次“开始”</b>：大约 15 分钟，三段——卡片（复习和新内容混在一起）、安多会话 3 句、原文一句或一段。卡片做完就算签到。
+          <b>每天点一次“开始”</b>：大约 15 分钟，三段——卡片（复习和新内容混在一起）、安多会话 3 句、偈颂 1–3 句。卡片做完就算签到。
         </li>
         <li>
           <b>开着声音</b>：读音都靠听。字母、元音和会话是老师的真人录音。
@@ -643,27 +322,8 @@ function SettingsView({ onStart }: { onStart: (s: Session) => void }) {
         </label>
       </div>
       {msg && <p>{msg}</p>}
-      <h2>中文译文</h2>
-      <p className="small muted">中文译文有版权，不随网站发布。导入一次后只保存在这台设备上。</p>
-      <label className="button">
-        导入中文译文包
-        <input
-          type="file"
-          accept="application/json"
-          hidden
-          onChange={async (e) => {
-            const f = e.target.files?.[0]
-            if (!f) return
-            try {
-              setMsg(`已导入 ${await importTranslationPack(JSON.parse(await f.text()))} 段译文。`)
-            } catch (err) {
-              setMsg('导入失败：' + (err as Error).message)
-            }
-          }}
-        />
-      </label>
       <h2>重新开始</h2>
-      <p className="small muted">清空全部学习进度：卡片和复习记录、签到。中文译文和标记的问题保留。建议先导出一份备份。</p>
+      <p className="small muted">清空全部学习进度：卡片和复习记录、签到。标记的问题保留。建议先导出一份备份。</p>
       <button
         className="danger"
         onClick={async () => {
@@ -676,7 +336,7 @@ function SettingsView({ onStart }: { onStart: (s: Session) => void }) {
       </button>
       <h2>关于内容</h2>
       <p className="small muted">
-        原文与译文：《大圆满前行·普贤上师言教》，华智仁波切著，索达吉堪布译，德钦·曲美多吉编排藏汉对照版，仅供个人学习。读音：Meta MMS 安多藏语 TTS（mms-tts-adx）生成，未经人工校对。
+        仪轨偈颂：藏文、汉译和课诵本音译来自喇荣课诵（2024-05-02 版），逐词释义取自「藏汉课诵阅读器」的颂词库，是草稿、还在校对，仅供个人学习。偈颂词的读音：Meta MMS 安多藏语 TTS（mms-tts-adx）合成，按词挑选过。字母、元音和会话是《安多方言会话教材》的真人录音。
       </p>
     </section>
   )

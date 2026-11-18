@@ -9,7 +9,6 @@
     "lint": "oxlint",
     "preview": "vite preview",
     "check:questions": "tsx scripts/check-questions.ts",
-    "check:align": "tsx scripts/check-align.ts",
     "check:pron": "tsx scripts/check-pron.ts"
   },
   "dependencies": {

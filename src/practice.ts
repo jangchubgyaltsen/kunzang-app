@@ -2,26 +2,26 @@ import { db } from './db.ts'
 import { ALL_CARDS, CV_MARKS, ROWS, isWarm, loadStats } from './alphabet.ts'
 import { SPELL_SEQ, introFor, questionFor, recallFor, recallQuestion, shuffle, writeQuestion, type KC, type Question } from './course.ts'
 import { amdoSets } from './amdo.ts'
-import { readLines } from './reading.ts'
 import { reviveCard } from './progress.ts'
 import { dayKey } from './daily.ts'
-import { fwords } from './fwords.ts'
-import { loadVocab } from './vocab.ts'
+import { course, lineByKey, loadVerses, maskCard, newLineSteps, pickLines, verseIntro, verseQuestion } from './verses.ts'
 
 /**
  * 今天：一个按钮，大约 15 分钟，按顺序三段：
- * 1. cards 卡片：到期复习和新卡混在一个队列里（字母、组合、规则、词、原文高频词交替出）。做完就算签到。
+ * 1. cards 卡片：到期复习和新卡混在一个队列里（字母、组合、规则、简单词，加上学过的偈颂词的复习）。做完就算签到。
  * 2. talk  安多会话：3 句新的（听、看、跟读录音）+ 到期的会话句复习。
- * 3. read  原文：高频词学到 300 个以前，听开篇的一句（只听不考）；之后是“今天的一段”有声精读。
+ * 3. verse 偈颂：30 个字母学过以前，读一句偈颂（只看不考）；之后每天学 1–3 句新的（拆词 → 整句 → 对照 → 遮字背诵），
+ *    加上到期的偈颂句复习（只留首字背）。
  *
- * 学的顺序只有一条线：拼读（字母、元音、组合、加字、简单词）→ 原文高频词（30 个字母都学过以后开始，和拼读并行）→ 有声精读。
+ * 学的顺序只有一条线：拼读（字母、元音、组合、加字、简单词）→ 仪轨偈颂（30 个字母都学过以后开始，和拼读并行）。
  * 不再有关卡、单元小测和定时抽查：FSRS 排的到期复习就是持续的抽查。
  * 新卡当天：介绍 → 选择题 → 过一会儿再一道选择题；以后复习都用回忆卡（先想再翻面，自评）。
  */
-export type StepKey = 'cards' | 'talk' | 'read'
-export const STEPS: StepKey[] = ['cards', 'talk', 'read']
+export type StepKey = 'cards' | 'talk' | 'verse'
+export const STEPS: StepKey[] = ['cards', 'talk', 'verse']
 export type DayPlan = { date: string; steps: StepKey[]; done: StepKey[] }
-const KEY = 'practice-day-v2'
+// v3：第三段从「原文」换成「偈颂」
+const KEY = 'practice-day-v3'
 
 /** 卡片一段的大小：复习最多这么多张；新卡按复习多少浮动 */
 const REVIEW_CAP = 60
@@ -34,8 +34,8 @@ const TALK_NEW = 3
 /** 一天最多几张默写字母（写字慢，太多会累） */
 const WRITE_MAX = 4
 const TALK_REVIEW = 5
-/** 学会这么多原文高频词以后，每天的原文从“听一句”换成“精读一段” */
-export const READ_FROM = 300
+/** 偈颂句一天最多复习几句（背一句要一会儿） */
+const VERSE_REVIEW = 12
 
 export async function loadPlan(): Promise<DayPlan> {
   const today = dayKey()
@@ -62,10 +62,11 @@ export type Progress = {
   /** 能开始学的字母元音组合（字母和 4 个元音都有点熟了），还没学的 */
   cvOpen: KC[]
   cvLeft: number
-  /** 30 个字母都学过了：开始学原文高频词 */
-  vocabOn: boolean
-  fLearned: number
-  readOn: boolean
+  /** 30 个字母都学过了：开始学偈颂 */
+  verseOn: boolean
+  /** 学过的偈颂词、偈颂句 */
+  gLearned: number
+  jLearned: number
   /** 做卡片的天数（签到天数） */
   days: number
 }
@@ -77,22 +78,24 @@ export async function getProgress(): Promise<Progress> {
   const cvAll = ALL_CARDS.filter((x) => x.key.startsWith('CV:'))
   const cvOpen = vowelsWarm ? cvAll.filter((x) => !introduced.has(x.key) && isWarm(stats['L:' + x.base])).map((x) => x.key) : []
   const letters = ROWS.flat()
-  const fLearned = [...introduced].filter((k) => k.startsWith('F:')).length
   return {
     introduced,
     spellLeft: SPELL_SEQ.filter((k) => !introduced.has(k)),
     cvOpen,
     cvLeft: cvAll.filter((x) => !introduced.has(x.key)).length,
-    vocabOn: letters.every((l) => introduced.has('L:' + l)),
-    fLearned,
-    readOn: fLearned >= READ_FROM,
+    verseOn: letters.every((l) => introduced.has('L:' + l)),
+    gLearned: [...introduced].filter((k) => k.startsWith('G:')).length,
+    jLearned: [...introduced].filter((k) => k.startsWith('J:')).length,
     days: await db.checkins.count(),
   }
 }
 
 const endOfToday = () => new Date(new Date().setHours(23, 59, 59, 999)).getTime()
 
-/** 到期的复习（会话句 A: 在会话那段里复习；全书段落题 B: 不进复习） */
+/**
+ * 到期的复习。会话句 A: 在会话那段里复习，偈颂句 J: 在偈颂那段里复习。
+ * 旧版的原文高频词 F:、全书段落题 B: 已经不学了，不再出。
+ */
 async function dueList(filter: (k: KC) => boolean, cap: number) {
   const rows = await db.cards.where('due').belowOrEqual(endOfToday()).toArray()
   return rows
@@ -101,16 +104,16 @@ async function dueList(filter: (k: KC) => boolean, cap: number) {
     .slice(0, cap)
 }
 
-/** 今天的新卡：拼读的和高频词各占多少 */
+const retired = (k: KC) => k.startsWith('F:') || k.startsWith('B:')
+const cardKC = (k: KC) => !k.startsWith('A:') && !k.startsWith('J:') && !retired(k)
+
+/** 今天的新卡（拼读）。偈颂词不在这里学，在偈颂那段里跟着句子学 */
 async function pickNew(p: Progress, dueCount: number): Promise<KC[]> {
   let n = Math.max(NEW_MIN, Math.min(NEW_MAX, TARGET - dueCount))
   if (p.days < 7) n = Math.min(n, EARLY_NEW)
-  const spell = [...p.spellLeft.slice(0, 6), ...p.cvOpen]
-  const vocab = p.vocabOn ? fwords.filter((f) => !p.introduced.has('F:' + f.w)).map((f) => 'F:' + f.w) : []
-  if (!vocab.length) return spell.slice(0, n)
-  if (!spell.length) return vocab.slice(0, n)
-  const half = Math.ceil(n / 2)
-  return [...spell.slice(0, half), ...vocab.slice(0, n - Math.min(half, spell.length))]
+  // 已经在学偈颂了：拼读的新卡少一点，留出时间
+  if (p.verseOn) n = Math.min(n, 8)
+  return [...p.spellLeft.slice(0, 6), ...p.cvOpen].slice(0, n)
 }
 
 /** 复习用哪种卡：大多是回忆卡；字母每隔几次凭记忆写一次；加字规则用原来的题；音节有时听音拼字 */
@@ -127,7 +130,7 @@ async function reviewQuestion(kc: KC, writes = { n: 0 }): Promise<Question> {
     const r = recallFor(kc)
     if (r) return r
   }
-  const listen = /^[FWDT]:/.test(kc) && Math.random() < 1 / 4
+  const listen = /^[GWDT]:/.test(kc) && Math.random() < 1 / 4
   return recallQuestion(kc, listen) ?? questionFor(kc)
 }
 
@@ -153,9 +156,9 @@ function interleave<T>(a: T[], b: T[]) {
  * 到期复习打散，插在各组之间。
  */
 export async function buildCards(): Promise<{ questions: Question[]; known: Set<KC> }> {
-  await loadVocab().catch(() => {})
+  const ok = await loadVerses().then(() => true, () => false)
   const p = await getProgress()
-  const due = await dueList((k) => !k.startsWith('A:') && !k.startsWith('B:') && (!k.startsWith('F:') || fwords.length > 0), REVIEW_CAP)
+  const due = await dueList((k) => cardKC(k) && (ok || !k.startsWith('G:')), REVIEW_CAP)
   const fresh = await pickNew(p, due.length)
   const known = new Set([...p.introduced, ...fresh])
   const writes = { n: 0 }
@@ -197,11 +200,40 @@ export async function buildTalk(): Promise<{ questions: Question[]; known: Set<K
   return { questions: out, known }
 }
 
-/** 高频词还不够时：开篇里的一句，只听、跟读，不考。按天轮换 */
-export function lineOfToday() {
-  const d = new Date()
-  const n = Math.floor(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 86400000)
-  return readLines[n % readLines.length]
+/**
+ * 偈颂这一段（照「科判颂词背诵器」）：
+ * 新句：这句里没学过的词，一个个介绍（藏文、安多拼音、释义、发音、这一句做例句），介绍完每个词考一道选意思；
+ * 然后整句（逐词释义、汉义）→ 对照（看藏文选汉义、看汉义选藏文）→ 遮字背诵（通读 → 遮三分之二 → 只留首字）。
+ * 到期的旧句：只留首字背一遍，自评。旧句复习放在新句前面，先热身。
+ */
+export async function buildVerse(): Promise<{ questions: Question[]; known: Set<KC> }> {
+  await loadVerses()
+  const introduced = new Set((await db.cards.toCollection().primaryKeys()) as KC[])
+  const due = await dueList((k) => k.startsWith('J:') && lineByKey.has(k.slice(2)), VERSE_REVIEW)
+  const out: Question[] = shuffle(due.map((r) => maskCard(r.kc, 3)))
+  const known = new Set(introduced)
+  for (const key of pickLines(introduced)) {
+    const { words, steps, wordQs } = newLineSteps(key, known)
+    words.forEach((w) => known.add(w))
+    known.add('J:' + key)
+    const k = words.length
+    // 词的介绍都看完了再一个个考（打乱），然后才是整句
+    out.push(...steps.slice(0, k), ...shuffle(wordQs), ...steps.slice(k))
+  }
+  return { questions: out, known }
+}
+
+/** 字母还没学完时：今天读一句偈颂（学习线上的第一句还没学的），只看不考 */
+export async function verseOfToday(): Promise<Question[]> {
+  await loadVerses()
+  const introduced = new Set((await db.cards.where('kc').startsWith('J:').primaryKeys()) as KC[])
+  const key = course.find((k) => !introduced.has('J:' + k)) ?? course[0]
+  return [verseIntro('J:' + key)]
+}
+
+/** 偈颂句的复习题（复习页用）：大多只留首字背，有时对照 */
+export function verseReview(kc: KC): Question {
+  return Math.random() < 0.25 ? verseQuestion(kc) : maskCard(kc, 3)
 }
 
 /** 今天这几段的说明（首页清单用） */
@@ -209,14 +241,15 @@ export type StepInfo = { label: string; detail: string; minutes: number }
 export async function stepInfo(key: StepKey, p?: Progress): Promise<StepInfo> {
   p ??= await getProgress()
   if (key === 'cards') {
-    const n = (await dueList((k) => !k.startsWith('A:') && !k.startsWith('B:'), REVIEW_CAP)).length
-    const stage = p.spellLeft.length || p.cvLeft ? (p.vocabOn ? '拼读收尾 + 原文高频词' : '拼读：字母、元音、加字') : '原文高频词'
+    const n = (await dueList(cardKC, REVIEW_CAP)).length
+    const stage = p.spellLeft.length || p.cvLeft ? (p.verseOn ? '拼读收尾 + 偈颂词复习' : '拼读：字母、元音、加字') : '偈颂词复习'
     return { label: '卡片', detail: `${stage} · 复习 ${n} 张 · 做完就签到`, minutes: Math.max(5, Math.round((n * 8 + 10 * 30) / 60)) }
   }
   if (key === 'talk') {
     const done = (await db.cards.where('kc').startsWith('A:').count())
     return { label: '安多会话', detail: `第 ${done + 1}–${done + TALK_NEW} 句 · 听、跟读`, minutes: 3 }
   }
-  if (p.readOn) return { label: '原文', detail: '今天的一段：听着读、自己读、跟读', minutes: 5 }
-  return { label: '原文', detail: `听开篇的一句，只听不考 · 高频词学到 ${READ_FROM} 个后开始精读`, minutes: 1 }
+  if (!p.verseOn) return { label: '偈颂', detail: '读一句偈颂，只看不考 · 30 个字母学完后开始逐词学', minutes: 1 }
+  const due = (await dueList((k) => k.startsWith('J:'), VERSE_REVIEW)).length
+  return { label: '偈颂', detail: `新学 1–3 句，拆词学 · 复习 ${due} 句`, minutes: 6 + Math.round(due / 2) }
 }

@@ -4,7 +4,8 @@ import { todayStats } from './progress.ts'
 import { questionFor, recallQuestion } from './course.ts'
 import { type Session } from './session.ts'
 import { say } from './sound.ts'
-import { loadVocab } from './vocab.ts'
+import { loadVerses } from './verses.ts'
+import { verseReview } from './practice.ts'
 
 export default function Review({ onStart }: { onStart: (s: Session) => void }) {
   const [due, setDue] = useState<string[]>([])
@@ -13,7 +14,7 @@ export default function Review({ onStart }: { onStart: (s: Session) => void }) {
 
   useEffect(() => {
     // 现在就到期的（今天的卡片做完以后又到期的，比如刚才答错的）
-    db.cards.where('due').belowOrEqual(Date.now()).primaryKeys().then((ks) => setDue((ks as string[]).filter((k) => !k.startsWith('B:'))))
+    db.cards.where('due').belowOrEqual(Date.now()).primaryKeys().then((ks) => setDue((ks as string[]).filter((k) => !k.startsWith('B:') && !k.startsWith('F:'))))
     todayStats().then(setStats)
     db.flags.orderBy('id').reverse().toArray().then(setFlags)
   }, [])
@@ -34,8 +35,9 @@ export default function Review({ onStart }: { onStart: (s: Session) => void }) {
           className="primary"
           disabled={!due.length}
           onClick={async () => {
-            await loadVocab().catch(() => {})
-            onStart({ questions: due.slice(0, 20).map((k) => recallQuestion(k) ?? questionFor(k)), title: '复习' })
+            const ok = await loadVerses().then(() => true, () => false)
+            const ks = due.filter((k) => ok || !/^[GJ]:/.test(k)).slice(0, 20)
+            onStart({ questions: ks.map((k) => (k.startsWith('J:') ? verseReview(k) : (recallQuestion(k) ?? questionFor(k)))), title: '复习' })
           }}
         >
           复习

@@ -10,7 +10,7 @@ type Info = Awaited<ReturnType<typeof streakInfo>>
 
 /**
  * 首页「学习」（第一层）：上面是今天的三段，一个按钮接着做；下面是学习进度：
- * 一条全程的条子分三段（拼读 → 原文高频词 → 有声精读），每段写明学了多少、还剩多少，再一句下一步是什么。
+ * 一条全程的条子分两段（拼读 → 仪轨偈颂），每段写明学了多少、一共多少。
  * 详细进度和设置是第二层，从这里点进去。
  */
 export default function Today({ onPractice, onDetail, onSettings }: { onPractice: () => void; onDetail: () => void; onSettings: () => void }) {
@@ -92,7 +92,7 @@ export default function Today({ onPractice, onDetail, onSettings }: { onPractice
   )
 }
 
-/** 学习进度：全程一条分三段的条子，下面每个阶段一行：学了多少 / 一共多少、还剩多少 */
+/** 学习进度：全程一条分段的条子，下面每个阶段一行：学了多少 / 一共多少 */
 function Journey({ ov, onDetail }: { ov: Overview; onDetail: () => void }) {
   return (
     <section className="plan-card journey">
@@ -120,6 +120,7 @@ function Journey({ ov, onDetail }: { ov: Overview; onDetail: () => void }) {
                   {s.done.toLocaleString()} <span className="muted">/ {s.total.toLocaleString()} {s.unit}</span>
                 </span>
               </div>
+              {s.extra && <div className="small muted">{s.extra}</div>}
             </div>
           </li>
         ))}
