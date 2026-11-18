@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
 import { onTrack, play, playSeq } from './audio.ts'
-import { maskedSyl, pronOf, wordAudio, type VLine } from './verses.ts'
+import { maskedSyl, wordAudio, wordPh, type VLine } from './verses.ts'
 import { say } from './sound.ts'
 import { Icon } from './icons.tsx'
 import './verse.css'
 
 /**
- * 一句偈颂：逐词排，每个词下面是安多拼音和这句里的释义（「科判颂词背诵器」的逐词对照）。
+ * 一句偈颂：逐词排，每个词下面是课诵本的汉字音译和这句里的释义（「科判颂词背诵器」的逐词对照）。
  * 点词听这个词的发音；「逐词听」把这句的词一个接一个放，正在放的词高亮。
  * mask：遮字背诵，遮住的音节字是透明的（位置还在），点一下偷看这个音节。
  */
@@ -81,7 +81,7 @@ export default function VerseLine({ line, show = { pron: true, gloss: true }, ma
                 )
               })}
             </span>
-            {!hid && show.pron && <span className="pron">{pronOf(w.t) || ' '}</span>}
+            {!hid && show.pron && <span className="pron">{wordPh(line, w) || '\u00a0'}</span>}
             {!hid && show.gloss && <span className="vgloss">{w.g && w.g !== '…' ? w.g : ' '}</span>}
           </span>
         )

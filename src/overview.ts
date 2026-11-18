@@ -15,8 +15,8 @@ export type Overview = { p: Progress; stages: Stage[]; now: number; talk: { done
 
 const CV_TOTAL = 120
 /** 偈颂学习线一共多少句、多少词（下载以后以实际为准） */
-const VERSE_TOTAL = 1580
-const WORD_TOTAL = 3451
+const VERSE_TOTAL = 1584
+const WORD_TOTAL = 3454
 
 export async function getOverview(): Promise<Overview> {
   const p = await getProgress()

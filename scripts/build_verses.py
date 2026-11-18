@@ -10,8 +10,9 @@
 
 逐词：用颂词库里每句的 beat_groups（按格律分组，每组带汉义）。
 w 定的规则是按格律分组，会把一个词拆成两组时后半组汉义写「…」，这里把它并回前一组，学的时候是一个完整的词。
+汉字音译：课诵本每个音节的音译（zh_ph），App 里发音提示一律用它。
 学习顺序：COURSE 里先列的短而常念的偈颂，然后其余有逐词释义的祈祷文、发愿文按句数从少到多。
-咒语、名号（没有逐词释义的句子）只在仪轨页里读，不进逐词学习。
+咒语不放（w 2026-11-18）：没有汉译的句子都去掉，去完没句子的仪轨整部不要；名号有音译和汉译，进学习线。
 同一句在几部仪轨里都有（如四无量心单独一部、释迦佛修法里也有）只学一次。
 """
 import json
@@ -35,6 +36,9 @@ COURSE = [
 # 最后学的长篇（在其余的后面，按这个顺序）
 LAST = ['eight-auspicious', 'bodhisattva-vow', 'shakyamuni', 'seven-line-guru-yoga', 'ngondro', 'inexpressible-confession',
         'manjushri-dzogchen-aspiration', 'samantabhadra-aspiration', 'sukhavati-aspiration']
+
+# 咒语都去掉了，「咒语名号」这一类只剩名号
+CAT_RENAME = {'咒语名号': '名号'}
 
 DOTS = {'…', '...', '……'}
 
@@ -115,12 +119,17 @@ def main():
     def glossed(rid):
         return sum(1 for s in rituals[rid]['sections'] for l in s['lines'] if l.get('beat_groups'))
 
-    rest = [r for r in rituals if r not in COURSE and r not in LAST and glossed(r) >= 2]
+    rest = [r for r in rituals if r not in COURSE and r not in LAST and glossed(r) >= 1]
     rest.sort(key=lambda r: (sum(len(s['lines']) for s in rituals[r]['sections']), r))
     order = [r for r in COURSE + rest + LAST if r in rituals]
+    # 名号短而常念，放在开头的短偈颂后面
+    names = [r for r in order if r.endswith('-name')]
+    order = [r for r in order if r not in names]
+    order[len(COURSE) - 1:len(COURSE) - 1] = names
 
     used_audio = set()
     gloss_count = defaultdict(Counter)
+    ph_count = defaultdict(Counter)
     word_n = Counter()
     seen_line = {}
     course = []
@@ -139,6 +148,8 @@ def main():
             'zh': l.get('zh', ''),
             'ph': l.get('zh_ph', ''),
             'syl': [s['bo'] for s in l.get('syllables') or []],
+            # 每个音节的汉字音译（课诵本自带的，如 森 坚）
+            'sp': [s.get('zh_ph', '') for s in l.get('syllables') or []],
             'w': words,
         }
 
@@ -147,13 +158,17 @@ def main():
         m = d['meta']
         secs = []
         for s in d['sections']:
-            secs.append({'title': s.get('title.zh', ''),
-                         'lines': [line_rec(rid, l) for l in s['lines']]})
+            # 咒语不放（w 2026-11-18）：没有汉译的句子（咒语、种子字）去掉；名号有音译和汉译，留着
+            ls = [line_rec(rid, l) for l in s['lines'] if (l.get('zh') or '').strip() and (l.get('zh_ph') or '').strip()]
+            if ls:
+                secs.append({'title': s.get('title.zh', ''), 'lines': ls})
+        if not secs:
+            continue
         recs[rid] = {
             'id': rid,
             'title': m.get('title.zh', rid),
             'titleBo': m.get('title.bo', ''),
-            'cats': cat_of.get(rid, ['咒语名号' if 'mantra' in rid or 'dharani' in rid or 'name' in rid else '其他']),
+            'cats': [CAT_RENAME.get(c, c) for c in cat_of.get(rid, ['咒语名号' if 'mantra' in rid or 'dharani' in rid or 'name' in rid else '其他'])],
             'gloss': 'draft' if 'draft' in (m.get('gloss.status') or '') else 'ok',
             'source': m.get('source.zh', ''),
             'sections': secs,
@@ -175,16 +190,20 @@ def main():
                 for w in l['w']:
                     if w['g']:
                         gloss_count[w['t']][w['g']] += 1
+                        ph = ''.join(l['sp'][w['s']:w['s'] + w['n']])
+                        if ph:
+                            ph_count[w['t']][ph] += 1
                         word_n[w['t']] += 1
 
     # 词表：每个词最常见的那个汉义、用到几次、发音
     words = {}
     for t, c in gloss_count.items():
         a = lex.get(lex_key(t))
-        words[t] = {'g': c.most_common(1)[0][0], 'n': word_n[t], **({'a': a.rsplit('.', 1)[0]} if a else {})}
+        p = ph_count[t].most_common(1)[0][0] if ph_count[t] else ''
+        words[t] = {'g': c.most_common(1)[0][0], 'n': word_n[t], 'p': p, **({'a': a.rsplit('.', 1)[0]} if a else {})}
 
     # 仪轨页的排序：分类顺序，分类里按 categories.list 的顺序
-    cat_names = [n for n, _ in cats] + ['其他']
+    cat_names = [CAT_RENAME.get(n, n) for n, _ in cats] + ['其他']
     pos = {rid: i for _, ids in cats for i, rid in enumerate(ids)}
     for rid in sorted(recs, key=lambda r: (cat_names.index(recs[r]['cats'][0]) if recs[r]['cats'][0] in cat_names else 99, pos.get(r, 999), r)):
         out_r.append(recs[rid])

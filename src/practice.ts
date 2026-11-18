@@ -4,7 +4,7 @@ import { SPELL_SEQ, introFor, questionFor, recallFor, recallQuestion, shuffle, w
 import { amdoSets } from './amdo.ts'
 import { reviveCard } from './progress.ts'
 import { dayKey } from './daily.ts'
-import { course, lineByKey, loadVerses, maskCard, newLineSteps, pickLines, verseIntro, verseQuestion } from './verses.ts'
+import { course, dayLines, lineByKey, loadVerses, maskCard, pickLines, verseIntro, verseQuestion } from './verses.ts'
 
 /**
  * 今天：一个按钮，大约 15 分钟，按顺序三段：
@@ -202,8 +202,9 @@ export async function buildTalk(): Promise<{ questions: Question[]; known: Set<K
 
 /**
  * 偈颂这一段（照「科判颂词背诵器」）：
- * 新句：这句里没学过的词，一个个介绍（藏文、安多拼音、释义、发音、这一句做例句），介绍完每个词考一道选意思；
- * 然后整句（逐词释义、汉义）→ 对照（看藏文选汉义、看汉义选藏文）→ 遮字背诵（通读 → 遮三分之二 → 只留首字）。
+ * 新句（几部仪轨的句子轮着取，混在一起学，见 verses.ts 的 pickLines、dayLines）：每句的词全部拆开，
+ * 一个个介绍（藏文、汉字音译、拆成音节、释义、发音、这一句做例句），然后这几句的词混在一起考；
+ * 再每句整句 → 对照，最后几句轮着遮字背诵（通读 → 遮三分之二 → 只留首字）。
  * 到期的旧句：只留首字背一遍，自评。旧句复习放在新句前面，先热身。
  */
 export async function buildVerse(): Promise<{ questions: Question[]; known: Set<KC> }> {
@@ -211,15 +212,9 @@ export async function buildVerse(): Promise<{ questions: Question[]; known: Set<
   const introduced = new Set((await db.cards.toCollection().primaryKeys()) as KC[])
   const due = await dueList((k) => k.startsWith('J:') && lineByKey.has(k.slice(2)), VERSE_REVIEW)
   const out: Question[] = shuffle(due.map((r) => maskCard(r.kc, 3)))
-  const known = new Set(introduced)
-  for (const key of pickLines(introduced)) {
-    const { words, steps, wordQs } = newLineSteps(key, known)
-    words.forEach((w) => known.add(w))
-    known.add('J:' + key)
-    const k = words.length
-    // 词的介绍都看完了再一个个考（打乱），然后才是整句
-    out.push(...steps.slice(0, k), ...shuffle(wordQs), ...steps.slice(k))
-  }
+  const day = dayLines(pickLines(introduced), introduced)
+  out.push(...day.questions)
+  const known = new Set([...introduced, ...day.learned])
   return { questions: out, known }
 }
 

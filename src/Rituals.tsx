@@ -5,11 +5,11 @@ import { Icon } from './icons.tsx'
 import { useReaderPrefs } from './readerPrefs.ts'
 import { say } from './sound.ts'
 import VerseLine, { playLine } from './VerseLine.tsx'
-import { lineKC, loadVerses, pronOf, ritualById, verseData, wordAudio, wordByT, type Ritual, type VLine, type VWord } from './verses.ts'
+import { lineKC, loadVerses, ritualById, sylParts, wordPh, verseData, wordAudio, wordByT, type Ritual, type VLine, type VWord } from './verses.ts'
 
 /**
  * 仪轨页（第一层页签「仪轨」）：颂词库里的仪轨，按课诵阅读器的分类排。
- * 点进一部：逐句排，每句逐词（藏文、安多拼音、这句里的释义），下面是汉义。点词听发音、看释义；
+ * 点进一部：逐句排，每句逐词（藏文、课诵本的汉字音译、这句里的释义），下面是汉义。点词听发音、看释义；
  * 每句前面的圆点：学过了是实心，在学习线上还没学是空心，不在学习线上（咒语等）不画。
  * 显示哪几行收在“Aa”里，和原来的原文页共用一份设置。
  */
@@ -162,7 +162,17 @@ function WordSheet({ l, w, onClose }: { l: VLine; w: VWord; onClose: () => void 
         <div className="tib huge tap center" onClick={sayIt}>
           {w.t}
         </div>
-        <div className="pron center big-pron">{pronOf(w.t)}</div>
+        <div className="pron center big-pron">{wordPh(l, w)}</div>
+        {w.n > 1 && (
+          <div className="parts">
+            {sylParts(l, w).map((p, k) => (
+              <div key={k} className="part">
+                <div className="tib">{p.ch}</div>
+                <div className="small">{p.role}</div>
+              </div>
+            ))}
+          </div>
+        )}
         <p className="gloss-big center">{w.g && w.g !== '…' ? w.g : '（没有释义）'}</p>
         {info && info.g !== w.g && <p className="small muted center">常见的意思：{info.g}</p>}
         <p className="small muted center">
@@ -184,7 +194,7 @@ function WordSheet({ l, w, onClose }: { l: VLine; w: VWord; onClose: () => void 
 function DisplaySheet({ onClose }: { onClose: () => void }) {
   const [p, set] = useReaderPrefs()
   const rows: [keyof typeof p, string, string][] = [
-    ['pron', '注音', '安多拼音，按规律推出来，以发音为准'],
+    ['pron', '汉字音译', '课诵本自带的音译'],
     ['gloss', '逐词释义', '每个词下面一行小字'],
     ['zh', '汉义', '课诵本的汉译'],
   ]

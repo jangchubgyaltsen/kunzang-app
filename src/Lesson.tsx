@@ -523,7 +523,7 @@ function Prompt({ q }: { q: Scored }) {
       return (
         <div className="prompt">
           <div className="ask">{q.kc.startsWith('B:') ? '这段话说的是什么？' : q.kc.startsWith('J:') ? '这句偈颂是什么意思？' : q.kc.startsWith('A:') ? '这句话是什么意思？' : '这个词是什么意思？'}</div>
-          <div className={'tib tap ' + (long(q) ? 'big center' : 'huge')} onClick={() => (q.audio ? play(q.audio) : say(q.prompt))}>{q.prompt}</div>
+          <div className={'tib tap ' + (long(q) || q.prompt.length > 8 ? 'big center' : 'huge')} onClick={() => (q.audio ? play(q.audio) : say(q.prompt))}>{q.prompt}</div>
         </div>
       )
     case 'pickWord':
