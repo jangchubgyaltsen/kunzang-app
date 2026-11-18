@@ -1,44 +1,41 @@
 import { useEffect, useRef, useState } from 'react'
 import { db } from './db.ts'
-import { chapters } from './book.ts'
 import { play } from './audio.ts'
 import { shuffle, SPELL_SEQ, RULES } from './course.ts'
-import { topSyls } from './fwords.ts'
-import { chapterCoverage, coverageOf, learnedF, loadVocab } from './vocab.ts'
-import { getProgress, READ_FROM, type Progress } from './practice.ts'
+import { course, loadVerses, ritualById, wordAudio, wordByT } from './verses.ts'
+import { getProgress, type Progress } from './practice.ts'
 
 /**
  * 详细进度（第二层，从首页“学习进度 · 详细”进来）：
- * 原文里认识的词占多少（全书和每一章，点一章去读）；拼读学到哪了、拼读流利度测验。
- * 三个阶段的总览在首页，记忆强度在设置里。
+ * 仪轨偈颂学到哪了（每部仪轨学了几句，点一部去仪轨页看）；拼读学到哪了、拼读流利度测验。
+ * 阶段总览在首页，记忆强度在设置里。
  */
 const FLUENCY_KEY = 'fluency-test'
 const FLUENCY_N = 20
 const FLUENCY_MS = 3000
 type FluencyResult = { at: number; score: number; total: number }
+type RitualRow = { id: string; title: string; done: number; total: number }
 
-/** 认词率曲线上的几个点：学会前 N 个高频词，大约认识全书多少 */
-const MILESTONES: [number, string][] = [
-  [100, '43%'],
-  [300, '58%'],
-  [1000, '76%'],
-  [1500, '82%'],
-]
-
-export default function ProgressView({ onRead }: { onRead: (chapter: string) => void }) {
+export default function ProgressView({ onRead }: { onRead: (ritual: string) => void }) {
   const [p, setP] = useState<Progress | null>(null)
-  const [cov, setCov] = useState(0)
-  const [chs, setChs] = useState<Map<string, number>>(new Map())
+  const [rows, setRows] = useState<RitualRow[]>([])
   const [fluency, setFluency] = useState<FluencyResult | null>(null)
   const [testing, setTesting] = useState(false)
 
   const load = async () => {
-    setP(await getProgress())
+    const pr = await getProgress()
+    setP(pr)
     setFluency(((await db.settings.get(FLUENCY_KEY))?.value as FluencyResult | undefined) ?? null)
-    await loadVocab().catch(() => {})
-    const known = await learnedF()
-    setCov(coverageOf(known))
-    setChs(chapterCoverage(known))
+    await loadVerses().catch(() => {})
+    const by = new Map<string, RitualRow>()
+    for (const k of course) {
+      const rid = k.split('/')[0]
+      const row = by.get(rid) ?? { id: rid, title: ritualById.get(rid)?.title ?? rid, done: 0, total: 0 }
+      row.total++
+      if (pr.introduced.has('J:' + k)) row.done++
+      by.set(rid, row)
+    }
+    setRows([...by.values()])
   }
   useEffect(() => {
     void load()
@@ -51,37 +48,30 @@ export default function ProgressView({ onRead }: { onRead: (chapter: string) => 
   const rulesDone = Object.keys(RULES).filter((k) => p.introduced.has(k)).length
   const spellDone = SPELL_SEQ.length - p.spellLeft.length
   const passed = fluency && fluency.score / fluency.total >= 0.9
+  // 学过的仪轨，加上正在学的下一部，再往后列三部
+  const cur = rows.findIndex((r) => r.done < r.total)
+  const shown = rows.slice(0, cur < 0 ? rows.length : cur + 4)
 
   return (
     <div className="progress-page">
       <section className="plan-card">
         <div className="plan-head">
-          <b>原文里认识的词</b>
-          <span className="big-pct">{Math.round(cov * 100)}%</span>
-        </div>
-        <div className="meter tall">
-          <i style={{ width: `${cov * 100}%` }} />
-          {MILESTONES.map(([n, pct]) => (
-            <span key={n} className="tick" style={{ left: pct }} title={`前 ${n} 个词`} />
-          ))}
+          <b>仪轨偈颂</b>
+          <span className="small muted">{p.jLearned} / {course.length} 句 · 词 {p.gLearned} / {wordByT.size}</span>
         </div>
         <p className="small muted">
-          已学 {p.fLearned} 个原文高频词。按词频学：前 300 个词约占全书 58%，前 1000 个约 76%，前 1500 个约 82%。认识 95% 以上就能比较顺地自己读。
-          {!p.vocabOn && ' 30 个字母都学过以后，每天的卡片里开始带高频词。'}
-          {p.vocabOn && !p.readOn && ` 学到 ${READ_FROM} 个以后，每天开始精读一段原文。`}
+          照背诵器的学法：每天新学 1–3 句，先把句里没学过的词一个个学，再看整句、对照意思，最后遮字背诵。词在全 App 只学一次，别的仪轨里再出现就只复习。
+          {!p.verseOn && ' 30 个字母都学过以后开始。'}
         </p>
-        {chs.size > 0 && (
+        {shown.length > 0 && (
           <div className="ch-grid">
-            {chapters.map((c) => {
-              const v = chs.get(c.id) ?? 0
-              return (
-                <button key={c.id} className="ch-cell" onClick={() => onRead(c.id)} title={c.zh}>
-                  <span className="small">{Number(c.id)} · {c.zh}</span>
-                  <span className="meter"><i style={{ width: `${v * 100}%` }} /></span>
-                  <span className="small muted">{Math.round(v * 100)}%</span>
-                </button>
-              )
-            })}
+            {shown.map((r) => (
+              <button key={r.id} className="ch-cell" onClick={() => onRead(r.id)}>
+                <span className="small">{r.title}</span>
+                <span className="meter"><i style={{ width: `${(r.done / r.total) * 100}%` }} /></span>
+                <span className="small muted">{r.done} / {r.total}</span>
+              </button>
+            ))}
           </div>
         )}
       </section>
@@ -99,7 +89,7 @@ export default function ProgressView({ onRead }: { onRead: (chapter: string) => 
           <div>
             <b>拼读流利度测验</b>
             <p className="small muted">
-              从原文最常见的 200 个音节里随机抽 {FLUENCY_N} 个，每个 3 秒内念出来，念完听录音自己对照。对 90% 算拼读过关。
+              从偈颂里最常见的 200 个词里随机抽 {FLUENCY_N} 个，每个 3 秒内念出来，念完听发音自己对照。对 90% 算拼读过关。
             </p>
             {fluency && (
               <p className="small">
@@ -115,16 +105,25 @@ export default function ProgressView({ onRead }: { onRead: (chapter: string) => 
   )
 }
 
-/** 拼读流利度：看到音节，3 秒内念出来，点“念了”，听录音自己判断对不对 */
+/** 偈颂里最常见、有发音的词（流利度测验用） */
+function topWords() {
+  return [...wordByT.entries()]
+    .filter(([, w]) => w.a)
+    .sort((a, b) => b[1].n - a[1].n)
+    .slice(0, 200)
+    .map(([t, w]) => ({ s: t, audio: wordAudio(w.a)! }))
+}
+
+/** 拼读流利度：看到词，3 秒内念出来，点“念了”，听发音自己判断对不对 */
 function FluencyTest({ onDone }: { onDone: () => void }) {
-  const [items, setItems] = useState<typeof topSyls>([])
+  const [items, setItems] = useState<{ s: string; audio: string }[]>([])
   const [i, setI] = useState(0)
   const [ms, setMs] = useState<number | null>(null)
   const [score, setScore] = useState(0)
   const shown = useRef(0)
 
   useEffect(() => {
-    loadVocab().then(() => setItems(shuffle(topSyls).slice(0, FLUENCY_N)))
+    loadVerses().then(() => setItems(shuffle(topWords()).slice(0, FLUENCY_N)))
   }, [])
   useEffect(() => {
     shown.current = performance.now()
@@ -146,7 +145,7 @@ function FluencyTest({ onDone }: { onDone: () => void }) {
     )
   }
   const it = items[i]
-  const clip = `book/${it.clip[0]}#${it.clip[1]}-${it.clip[2]}`
+  const clip = it.audio
   const answer = async (ok: boolean) => {
     const s = score + (ok && (ms ?? Infinity) <= FLUENCY_MS ? 1 : 0)
     setScore(s)

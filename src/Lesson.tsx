@@ -10,6 +10,8 @@ import { play, playSeq } from './audio.ts'
 import { say } from './sound.ts'
 import ShadowCard from './Shadow.tsx'
 import { db } from './db.ts'
+import VerseLine, { PlayLineButton, playLine } from './VerseLine.tsx'
+import { lineByKey, ritualById } from './verses.ts'
 import './lesson.css'
 
 type Result = { passed: boolean; unitDone?: boolean }
@@ -106,6 +108,7 @@ export default function Lesson({ level, questions, title, onExit, onFinish, onCo
   useEffect(() => {
     shownAt.current = performance.now()
     if (q && (q.kind === 'listen' || q.kind === 'intro' || q.kind === 'build') && q.audio) play(q.audio)
+    if (q?.kind === 'intro' && q.verse) playLine(q.verse.line)
     if (q?.kind !== 'listen' || !q.zh) return setReady(true)
     setReady(false)
     const t = setTimeout(() => {
@@ -151,7 +154,7 @@ export default function Lesson({ level, questions, title, onExit, onFinish, onCo
       </section>
     )
 
-  if (q.kind === 'recall' || q.kind === 'write')
+  if (q.kind === 'recall' || q.kind === 'write' || q.kind === 'mask')
     return (
       <section className="lesson">
         {top}
@@ -299,7 +302,7 @@ function withTib(t: string) {
 }
 
 // 会话整句：字号小一点，选项一行一个
-const long = (q: Scored) => q.kc.startsWith('A:') || q.kc.startsWith('B:') || q.kind === 'pickWord'
+const long = (q: Scored) => q.kc.startsWith('A:') || q.kc.startsWith('B:') || q.kc.startsWith('J:') || q.kind === 'pickWord'
 
 function labelOf(q: Scored, a: string | number) {
   if (q.kind === 'build') return a === q.answer ? q.target : String(a).replace(/\|/g, ' ')
@@ -310,10 +313,11 @@ function labelOf(q: Scored, a: string | number) {
 const ROLE_CLASS: Record<string, string> = { 前加字: 'r-pre', 上加字: 'r-sup', 基字: 'r-root', 下加字: 'r-sub', 后加字: 'r-suf', 再后加字: 'r-post', 元音: 'r-vowel' }
 
 function IntroCard({ q }: { q: Intro }) {
+  if (q.verse) return <VerseIntro q={q} />
   return (
     <div className="intro-card">
       <div className="intro-label">{q.label}</div>
-      <div className={'tib tap ' + (q.kc.startsWith('A:') ? 'big center' : 'huge')} onClick={() => (q.audio ? play(q.audio) : say(q.big))}>{q.big}</div>
+      <div className={'tib tap ' + (q.kc.startsWith('A:') || (q.kc.startsWith('G:') && q.big.length > 8) ? 'big center' : 'huge')} onClick={() => (q.audio ? play(q.audio) : say(q.big))}>{q.big}</div>
       {q.sub && <div className="latin-mid">{q.sub}</div>}
       {q.pron && (
         <div className="pron" title="安多类拼音，按规律推出来，以录音为准">
@@ -337,11 +341,71 @@ function IntroCard({ q }: { q: Intro }) {
   )
 }
 
+/** 偈颂整句：逐词排，下面是注音和逐词释义，再下面是汉义（课诵本的译文）和课诵本音译 */
+function VerseIntro({ q }: { q: Intro }) {
+  const { rid, line } = q.verse!
+  const r = ritualById.get(rid)
+  return (
+    <div className="intro-card verse-card">
+      <div className="intro-label">{q.label}</div>
+      <VerseLine line={line} big />
+      {line.zh && <p className="verse-zh">{line.zh}</p>}
+      {line.ph && <p className="small muted">课诵本音译：{line.ph}</p>}
+      <PlayLineButton line={line} />
+      <p className="small muted">点一个词听它的发音。{r?.gloss === 'draft' ? '逐词释义是草稿，还没校对完。' : ''}</p>
+    </div>
+  )
+}
+
+/**
+ * 遮字背诵（照「科判颂词背诵器」）：level 0 通读一遍（不记分）；2 遮三分之二；3 只留首字。
+ * 看着汉义把整句背出来，想不起来可以点空白偷看一个音节，背完点“看原文”对照，自评。
+ */
+function MaskCard({ q, onRate }: { q: Extract<SelfRated, { kind: 'mask' }>; onRate: (r: Grade | null) => void }) {
+  const [flipped, setFlipped] = useState(false)
+  const x = lineByKey.get(q.kc.slice(2))
+  if (!x) return null
+  const { l, r } = x
+  const label = q.level === 0 ? '背诵 · 先通读一遍' : q.level === 2 ? '背诵 · 遮住三分之二' : '背诵 · 只留首字'
+  return (
+    <>
+      <div className="intro-card verse-card">
+        <div className="intro-label">
+          {label} · {r.title}
+        </div>
+        {l.zh && <p className="verse-zh">{l.zh}</p>}
+        <VerseLine line={l} big mask={flipped || q.level === 0 ? undefined : q.level} show={{ pron: true, gloss: q.level === 0 }} />
+        {q.level === 0 && <PlayLineButton line={l} />}
+        {q.level !== 0 && !flipped && <p className="small muted">看着汉义，把整句念出来。想不起来可以点空白处偷看一个字。</p>}
+      </div>
+      {q.level === 0 ? (
+        <button className="primary" onClick={() => onRate(null)}>读完了，开始背</button>
+      ) : flipped ? (
+        <div className="rate3">
+          <button className="rate-again" onClick={() => onRate(Rating.Again)}>不会</button>
+          <button className="rate-hard" onClick={() => onRate(Rating.Hard)}>模糊</button>
+          <button className="rate-good primary" onClick={() => onRate(Rating.Good)}>记得</button>
+        </div>
+      ) : (
+        <button
+          className="primary"
+          onClick={() => {
+            setFlipped(true)
+            playLine(l)
+          }}
+        >
+          背完了，看原文
+        </button>
+      )}
+    </>
+  )
+}
+
 /** 例句：整句原文，要学的词标出来；点一下听整句 */
 function CtxLine({ ctx }: { ctx: Ctx }) {
   return (
     <div className="ctx tap" onClick={() => ctx.audio && play(ctx.audio)}>
-      <div className="small muted">原文例句{ctx.audio ? ' · 点一下听整句' : ''}</div>
+      <div className="small muted">例句{ctx.audio ? ' · 点一下听整句' : ''}</div>
       <div className="tib ctx-line">
         {ctx.words.map((w, k) => (
           <span key={k} className={k === ctx.i ? 'ctx-hit' : ''}>
@@ -365,6 +429,7 @@ function SelfCard({ q, onRate }: { q: SelfRated; onRate: (r: Grade | null) => vo
     if (q.kind === 'write' && !q.trace) play(q.audio)
   }, [q])
   if (q.kind === 'write') return <WriteCard q={q} onRate={onRate} />
+  if (q.kind === 'mask') return <MaskCard q={q} onRate={onRate} />
   const flip = () => {
     setFlipped(true)
     if (q.back.audio) play(q.back.audio)
@@ -457,8 +522,8 @@ function Prompt({ q }: { q: Scored }) {
     case 'meaning':
       return (
         <div className="prompt">
-          <div className="ask">{q.kc.startsWith('B:') ? '这段话说的是什么？' : q.kc.startsWith('A:') ? '这句话是什么意思？' : '这个词是什么意思？'}</div>
-          <div className={'tib tap ' + (long(q) ? 'big center' : 'huge')} onClick={() => (q.audio ? play(q.audio) : say(q.prompt))}>{q.prompt}</div>
+          <div className="ask">{q.kc.startsWith('B:') ? '这段话说的是什么？' : q.kc.startsWith('J:') ? '这句偈颂是什么意思？' : q.kc.startsWith('A:') ? '这句话是什么意思？' : '这个词是什么意思？'}</div>
+          <div className={'tib tap ' + (long(q) || q.prompt.length > 8 ? 'big center' : 'huge')} onClick={() => (q.audio ? play(q.audio) : say(q.prompt))}>{q.prompt}</div>
         </div>
       )
     case 'pickWord':
@@ -471,7 +536,7 @@ function Prompt({ q }: { q: Scored }) {
     case 'meaning2word':
       return (
         <div className="prompt">
-          <div className="ask">{q.kc.startsWith('A:') ? '哪一句的意思是' : '哪个词的意思是'}</div>
+          <div className="ask">{q.kc.startsWith('A:') || q.kc.startsWith('J:') ? '哪一句的意思是' : '哪个词的意思是'}</div>
           <div className="zh-big">{q.prompt}</div>
         </div>
       )

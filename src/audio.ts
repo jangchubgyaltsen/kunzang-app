@@ -12,17 +12,18 @@ if (nav.audioSession) nav.audioSession.type = 'playback'
 const blobs = new Map<string, Promise<string>>()
 // 已经取好的 blob 地址，点击时可以直接同步播放
 const ready = new Map<string, string>()
-// 开篇逐词和整句的新音频在 op/ 下，是 mp3；全书整句在 book/audio/ 下；其余是 m4a
+// 开篇逐词和整句的新音频在 op/ 下，是 mp3；其余是 m4a
 // 安多会话教材的真人录音在 amdo/ 下
+// 偈颂里的词在 verse/w/ 下，是 mp3（课诵阅读器的词库）
 const urlOf = (id: string) =>
-  id.startsWith('book/') ? `./book/audio/${id.slice(5)}.m4a` : id.startsWith('amdo/') ? `./${id}.m4a` : `./audio/${id}.${id.startsWith('op/') ? 'mp3' : 'm4a'}`
-// 全书有一万多句，只留最近听过的几十句的 blob，其余释放
+  id.startsWith('verse/') ? `./${id}.mp3` : id.startsWith('amdo/') ? `./${id}.m4a` : `./audio/${id}.${id.startsWith('op/') ? 'mp3' : 'm4a'}`
+// 偈颂词有两千多个，只留最近听过的一两百个的 blob，其余释放
 const recentBook: string[] = []
 function blobUrl(id: string) {
   let p = blobs.get(id)
-  if (!p && id.startsWith('book/')) {
+  if (!p && id.startsWith('verse/')) {
     recentBook.push(id)
-    if (recentBook.length > 40) {
+    if (recentBook.length > 200) {
       const old = recentBook.shift()!
       const u = ready.get(old)
       if (u) URL.revokeObjectURL(u)

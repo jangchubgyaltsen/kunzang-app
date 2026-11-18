@@ -1,22 +1,20 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { db } from './db.ts'
 import Lesson from './Lesson.tsx'
-import TodayReading from './TodayReading.tsx'
 import { introFor, type KC, type Question } from './course.ts'
 import { todayStats } from './progress.ts'
-import { loadVocab } from './vocab.ts'
 import { markDailyDone } from './alphabet.ts'
 import { play } from './audio.ts'
 import { dayKey } from './daily.ts'
 import { Icon, StateDot } from './icons.tsx'
-import { buildCards, buildTalk, getProgress, lineOfToday, loadPlan, markStep, stepInfo, type DayPlan, type StepInfo, type StepKey } from './practice.ts'
+import { buildCards, buildTalk, buildVerse, getProgress, loadPlan, markStep, stepInfo, verseOfToday, type DayPlan, type StepInfo, type StepKey } from './practice.ts'
 
-type Running = { key: StepKey; kind: 'questions'; questions: Question[]; title: string; known?: Set<KC> } | { key: StepKey; kind: 'reading' }
+type Running = { key: StepKey; kind: 'questions'; questions: Question[]; title: string; known?: Set<KC> }
 
-const TITLES: Record<StepKey, string> = { cards: '今天 · 卡片', talk: '今天 · 安多会话', read: '今天 · 原文' }
+const TITLES: Record<StepKey, string> = { cards: '今天 · 卡片', talk: '今天 · 安多会话', verse: '今天 · 偈颂' }
 
 /**
- * 今天：卡片 → 安多会话 → 原文，一段接一段做。
+ * 今天：卡片 → 安多会话 → 偈颂，一段接一段做。
  * 每段做完，小结页底部告诉你下一段是什么：可以“继续”，也可以“先到这里”。
  * 中途点 ✕ 回首页，下次从退出的地方接着做（每段的题当天排好就不变）。全部做完显示今天的总结。
  */
@@ -35,18 +33,12 @@ export default function Practice({ onExit, onRead }: { onExit: () => void; onRea
   const start = useCallback(async (key: StepKey) => {
     completed.current = false
     setNext(null)
-    if (key === 'read') {
-      const pr = await getProgress()
-      if (pr.readOn) return setRun({ key, kind: 'reading' })
-      const line = lineOfToday()
-      return setRun({ key, kind: 'questions', title: TITLES.read, questions: [{ kind: 'shadow', kc: 'X:' + line.id, line }] })
-    }
-    // 高频词卡出题要用词表（接着做时，答错补练也要现出题）
-    await loadVocab().catch(() => {})
+    // 字母还没学完：读一句偈颂，只看不考（不用存进度）
+    if (key === 'verse' && !(await getProgress()).verseOn) return setRun({ key, kind: 'questions', title: TITLES.verse, questions: await verseOfToday() })
     // 当天第一次进这一段时排好题；中途退出再进来，Lesson 按 resumeKey 接着做
     const saved = (await db.settings.get('lesson-resume:' + key))?.value as { day: string } | undefined
     if (saved?.day === new Date().toLocaleDateString('sv')) return setRun({ key, kind: 'questions', questions: [], title: TITLES[key] })
-    const built = key === 'cards' ? await buildCards() : await buildTalk()
+    const built = key === 'cards' ? await buildCards() : key === 'talk' ? await buildTalk() : await buildVerse()
     setRun({ key, kind: 'questions', ...built, title: TITLES[key] })
   }, [])
 
@@ -97,7 +89,6 @@ export default function Practice({ onExit, onRead }: { onExit: () => void; onRea
     />
   )
 
-  if (run?.kind === 'reading') return <TodayReading onExit={() => finishStep(false)} onComplete={() => void onComplete()} footer={footer} />
   if (run?.kind === 'questions')
     return (
       <Lesson
@@ -240,7 +231,7 @@ function DaySummary({ plan, onExit, onRead }: { plan: DayPlan; onExit: () => voi
         </>
       )}
       <div className="two">
-        <button onClick={onRead}>读一段原文</button>
+        <button onClick={onRead}>翻看仪轨</button>
       </div>
       <button className="link" onClick={onExit}>
         回首页

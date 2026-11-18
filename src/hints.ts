@@ -1,3 +1,4 @@
+import { verseData, wordByT } from './verses.ts'
 import { LETTERS, letterAudio, cvAudio, wordMap, words, type Scored } from './course.ts'
 import { CV_PRON, PRON, shapeMates, soundMates } from './pron.ts'
 import { amdoSentences, amdoWords } from './amdo.ts'
@@ -101,7 +102,18 @@ export function hintFor(q: Scored, chosen: string | number): Hint {
     const g = tibGloss.get(c)
     return { cat: 'word', text: `${c}${g ? `（${g}）` : ''} 不在这句里。一个词一个词对着看。` }
   }
-  if (type === 'B') return { cat: 'sent', text: '这是本章另一段的意思。抓住段里认识的词再看。' }
+  // 偈颂
+  if (type === 'J') {
+    const other = verseData?.rituals.flatMap((r) => r.sections.flatMap((x) => x.lines)).find((l) => l.zh === c || l.bo === c)
+    if (other && other.bo === c) return { cat: 'sent', text: `你选的那句意思是“${other.zh}”。` }
+    return { cat: 'sent', text: '这是另一句的意思。先认出句里学过的词，再对一对。' }
+  }
+  if (type === 'G') {
+    const byGloss = [...wordByT.entries()].find(([t, w]) => w.g === c && t !== val)
+    if (byGloss) return { cat: 'word', text: `“${c}”是 ${byGloss[0]} 的意思。`, audio: byGloss[1].a ? ['verse/w/' + byGloss[1].a] : undefined }
+    const w = wordByT.get(c)
+    if (w) return { cat: 'word', text: `你选的 ${c} 意思是“${w.g}”。`, audio: w.a ? ['verse/w/' + w.a] : undefined }
+  }
 
   // 会话句
   if (type === 'A') {

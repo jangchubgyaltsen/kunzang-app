@@ -11,8 +11,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['icon.svg'],
       manifest: {
-        name: '普贤上师言教 藏文学习',
-        short_name: '言教藏文',
+        name: '仪轨偈颂 藏文学习',
+        short_name: '偈颂藏文',
         lang: 'zh-CN',
         start_url: './',
         display: 'standalone',
@@ -22,8 +22,8 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,woff2,m4a,mp3}'],
-        // 全书原文和音频太大，不预先缓存：打开哪一章、听哪一句才下载，下载过的存起来离线可用
-        globIgnores: ['book/**', 'amdo/**'],
+        // 会话教材和偈颂词的发音太大，不预先缓存：用到才下载，下载过的存起来离线可用
+        globIgnores: ['amdo/**', 'verse/**'],
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
         runtimeCaching: [
           {
@@ -33,15 +33,15 @@ export default defineConfig({
             options: { cacheName: 'amdo', expiration: { maxEntries: 5000 }, cacheableResponse: { statuses: [200] } },
           },
           {
-            urlPattern: ({ url }) => url.pathname.includes('/book/audio/'),
+            urlPattern: ({ url }) => url.pathname.includes('/verse/w/'),
             handler: 'CacheFirst',
-            options: { cacheName: 'book-audio', expiration: { maxEntries: 12000 }, cacheableResponse: { statuses: [200] } },
+            options: { cacheName: 'verse-audio', expiration: { maxEntries: 4000 }, cacheableResponse: { statuses: [200] } },
           },
           {
-            // 章节文本、词表有改动时，下次打开就换成新的
-            urlPattern: ({ url }) => /\/book\/(ch\d+|gloss|vocab)\.json$/.test(url.pathname),
+            // 颂词库有改动时，下次打开就换成新的
+            urlPattern: ({ url }) => url.pathname.endsWith('/verse/verses.json'),
             handler: 'StaleWhileRevalidate',
-            options: { cacheName: 'book-text', cacheableResponse: { statuses: [200] } },
+            options: { cacheName: 'verse-text', cacheableResponse: { statuses: [200] } },
           },
         ],
       },
